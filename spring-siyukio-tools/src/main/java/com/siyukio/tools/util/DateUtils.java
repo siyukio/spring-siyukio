@@ -10,8 +10,8 @@ import java.util.Date;
 
 /**
  * Converts between Strings and Dates in various formats
- * <p>
- * Author: Buddy
+ *
+ * @author Buddy
  */
 @Slf4j
 public abstract class DateUtils {

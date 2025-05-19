@@ -8,8 +8,8 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * A general-purpose, thread-safe cache with no limit on the number of entries.
  * It is automatically cleared when the JVM is low on memory.
- * <p>
- * Author: Buddy
+ *
+ * @author Buddy
  */
 public class ConcurrentCache<K, V> {
 

@@ -17,8 +17,8 @@ import java.time.format.DateTimeFormatter;
 
 /**
  * Provides conversion from XML to JSON objects.
- * <p>
- * Author: Buddy
+ *
+ * @author Buddy
  */
 @Slf4j
 public abstract class XmlUtils {

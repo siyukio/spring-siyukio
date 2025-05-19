@@ -8,8 +8,8 @@ import java.util.*;
 /**
  * Converts between Strings and Dates in various formats, with thread safety.
  * Supports the formats: yyyy-MM-dd HH:mm:ss, yyyy-MM-dd HH:mm, yyyy-MM-dd, yyyy-MM-ddTHH:mm:ss
- * <p>
- * Author: Buddy
+ *
+ * @author Buddy
  */
 public class MultiDateFormat extends DateFormat {
 

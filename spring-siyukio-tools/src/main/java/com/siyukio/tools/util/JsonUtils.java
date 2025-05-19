@@ -21,8 +21,8 @@ import java.time.format.DateTimeFormatter;
 /**
  * Provides conversion between Strings and JSON objects or JSON collections.
  * Used for deep copying and transformation between JavaTypes.
- * <p>
- * Author: Buddy
+ *
+ * @author Buddy
  */
 public abstract class JsonUtils {
 
