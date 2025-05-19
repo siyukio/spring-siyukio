@@ -10,6 +10,9 @@
     <artifactId>spring-siyukio</artifactId>
     <version>3.3.11-SNAPSHOT</version>
     <packaging>pom</packaging>
+    <modules>
+        <module>spring-siyukio-tools</module>
+    </modules>
 
     <properties>
         <siyukio.version>3.3.11-SNAPSHOT</siyukio.version>
