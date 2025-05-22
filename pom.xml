@@ -12,7 +12,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>spring-siyukio-tools</module>
-        <!--        <module>spring-siyukio-app</module>-->
+        <module>spring-siyukio-application</module>
     </modules>
 
     <properties>

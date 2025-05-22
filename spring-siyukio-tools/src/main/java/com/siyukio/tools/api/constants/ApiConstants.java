@@ -7,6 +7,8 @@ public interface ApiConstants {
 
     public String AUTHORIZATION = "Authorization";
 
+    public String ATTRIBUTE_TOKEN = "siyukio.token";
+
 
     //ApiParameter
     public String TYPE_STRING = "String";
