@@ -1,6 +1,5 @@
 package com.siyukio.tools.api;
 
-import lombok.Getter;
 import lombok.ToString;
 
 import java.util.HashMap;
@@ -12,14 +11,13 @@ import java.util.Map;
  * @author Buddy
  */
 @ToString
-@Getter
 public final class ApiException extends RuntimeException {
 
-    private final int error;
+    public final int error;
 
-    private final String message;
+    public final String message;
 
-    private final Map<String, Object> data = new HashMap<>();
+    public final Map<String, Object> data = new HashMap<>();
 
     public ApiException(String message) {
         super(message);

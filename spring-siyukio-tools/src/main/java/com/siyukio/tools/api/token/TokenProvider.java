@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * @author Buddy
  */
-public final class JwtProvider {
+public final class TokenProvider {
 
     /**
      * Maximum lifespan of the access token (in minutes).
@@ -47,7 +47,7 @@ public final class JwtProvider {
     }
 
     public String createAuthorization(Token token) {
-        Duration duration = token.isRefreshing() ? Duration.ofDays(this.MAX_REFRESHING_TOKEN_LIVE_TIME) : Duration.ofMinutes(this.MAX_ACCESS_TOKEN_LIVE_TIME);
+        Duration duration = token.refreshing ? Duration.ofDays(this.MAX_REFRESHING_TOKEN_LIVE_TIME) : Duration.ofMinutes(this.MAX_ACCESS_TOKEN_LIVE_TIME);
         Date expireTime = new Date(System.currentTimeMillis() + duration.toMillis());
         String json = JsonUtils.toJSONString(token);
         return JWT.create()

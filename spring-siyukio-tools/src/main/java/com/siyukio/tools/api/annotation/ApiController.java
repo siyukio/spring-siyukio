@@ -37,11 +37,6 @@ public @interface ApiController {
     String[] tags();
 
     /**
-     * Whether it can be used as an MCP service tool, default is true.
-     */
-    boolean mcpTools() default true;
-
-    /**
      * Summary
      */
     String summary();

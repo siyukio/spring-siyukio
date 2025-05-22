@@ -57,4 +57,9 @@ public @interface ApiMapping {
      * Whether the API is deprecated.
      */
     boolean deprecated() default false;
+
+    /**
+     * Whether it can be used as an MCP service tool, default is true.
+     */
+    boolean mcpTool() default true;
 }
