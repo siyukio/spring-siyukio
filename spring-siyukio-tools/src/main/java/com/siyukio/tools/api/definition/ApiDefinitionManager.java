@@ -6,6 +6,8 @@ import com.siyukio.tools.api.annotation.ApiMapping;
 import com.siyukio.tools.api.annotation.ApiParameter;
 import com.siyukio.tools.api.annotation.Example;
 import com.siyukio.tools.api.constants.ApiConstants;
+import com.siyukio.tools.api.parameter.request.RequestValidator;
+import com.siyukio.tools.api.parameter.response.ResponseFilter;
 import com.siyukio.tools.api.token.Token;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import lombok.Getter;
@@ -51,15 +53,14 @@ public final class ApiDefinitionManager {
     }
 
     public ApiDefinition addApi(Class<?> type, Method method) {
-        if (!type.isAnnotationPresent(ApiController.class)) {
-            return null;
-        }
-        if (!method.isAnnotationPresent(ApiMapping.class)) {
-            return null;
-        }
         ApiController apiController = type.getAnnotation(ApiController.class);
+        assert apiController != null;
         ApiMapping apiMapping = method.getAnnotation(ApiMapping.class);
-        ApiDefinition apiDefinition = this.parseMethod(type, method);
+        assert apiMapping != null;
+
+        ApiDefinition apiDefinition = this.parseMethod(type, method, apiController, apiMapping);
+        RequestValidator.createRequestValidator(apiDefinition);
+        ResponseFilter.createResponseFilter(apiDefinition);
 
         String apiPath;
         for (String mappingPath : apiMapping.path()) {
@@ -91,10 +92,9 @@ public final class ApiDefinitionManager {
         return returnValueType;
     }
 
-    private ApiDefinition parseMethod(Class<?> type, Method method) {
-        ApiController apiController = type.getAnnotation(ApiController.class);
-        ApiMapping apiMapping = method.getAnnotation(ApiMapping.class);
+    private ApiDefinition parseMethod(Class<?> type, Method method, ApiController apiController, ApiMapping apiMapping) {
         ApiDefinition apiDefinition = new ApiDefinition();
+        apiDefinition.id = type.getSimpleName() + "_" + method.getName();
         apiDefinition.paths = new ArrayList<>();
         apiDefinition.summary = apiMapping.summary();
         apiDefinition.deprecated = apiMapping.deprecated();

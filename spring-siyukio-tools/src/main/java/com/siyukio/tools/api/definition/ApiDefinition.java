@@ -1,5 +1,7 @@
 package com.siyukio.tools.api.definition;
 
+import com.siyukio.tools.api.parameter.request.RequestValidator;
+import com.siyukio.tools.api.parameter.response.ResponseFilter;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -16,6 +18,8 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class ApiDefinition {
+
+    public String id;
 
     public List<String> paths;
 
@@ -44,5 +48,9 @@ public class ApiDefinition {
     public Class<?> returnType;
 
     public Class<?> realReturnType;
+
+    public RequestValidator requestValidator;
+
+    public ResponseFilter responseFilter;
 
 }

@@ -9,6 +9,10 @@ public interface ApiConstants {
 
     public String ATTRIBUTE_TOKEN = "siyukio.token";
 
+    public String ATTRIBUTE_REQUEST_BODY = "siyukio.requestBody";
+
+    public String ATTRIBUTE_REQUEST_BODY_JSON = "siyukio.requestBodyJson";
+
 
     //ApiParameter
     public String TYPE_STRING = "String";
@@ -24,5 +28,35 @@ public interface ApiConstants {
     public String TYPE_ARRAY = "Array";
 
     public String TYPE_OBJECT = "Object";
+
+    //error message
+
+    public String ERROR_PARAMETER_REQUIRED_FORMAT = "The parameter \"%s\" is required.";
+
+    public String ERROR_PARAMETER_PARSE_ARRAY_FORMAT = "The parameter \"%s\" unable to parse as an array.";
+
+    public String ERROR_PARAMETER_REQUIRED_ARRAY_FORMAT = "The parameter \"%s\" must be an array.";
+
+    public String ERROR_PARAMETER_REQUIRED_ARRAY_LIMIT_FORMAT = "The parameter \"%s\" must be an array[%s,%s].";
+
+    public String ERROR_PARAMETER_PARSE_OBJECT_FORMAT = "The parameter \"%s\" unable to parse as an object.";
+
+    public String ERROR_PARAMETER_REQUIRED_OBJECT_FORMAT = "The parameter \"%s\" must be an object.";
+
+    public String ERROR_PARAMETER_REQUIRED_BOOLEAN_FORMAT = "The parameter \"%s\" must be of boolean type [true | false | 1 | 0].";
+
+    public String ERROR_PARAMETER_REQUIRED_DATE_FORMAT = "The parameter \"%s\" must be a date in the format [yyyy-MM-dd[ HH:mm[:ss]] | millis].";
+
+    public String ERROR_PARAMETER_REQUIRED_INTEGER_FORMAT = "The parameter \"%s\" must be an integer.";
+
+    public String ERROR_PARAMETER_REQUIRED_INTEGER_LIMIT_FORMAT = "The parameter \"%s\" must be an integer[%s,%s].";
+
+    public String ERROR_PARAMETER_REQUIRED_NUMBER_FORMAT = "The parameter \"%s\" must be an number.";
+
+    public String ERROR_PARAMETER_REQUIRED_NUMBER_LIMIT_FORMAT = "The parameter \"%s\" must be an number[%s,%s].";
+
+    public String ERROR_PARAMETER_REQUIRED_REGEX_FORMAT = "The parameter \"%s\" must match the regular:%s expression.";
+
+    public String ERROR_PARAMETER_REQUIRED_STRING_LIMIT_FORMAT = "The parameter \"%s\" must be an string[%s,%s].";
 
 }

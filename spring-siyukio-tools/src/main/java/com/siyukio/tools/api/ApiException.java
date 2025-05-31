@@ -37,6 +37,10 @@ public final class ApiException extends RuntimeException {
         this.error = apiError.error;
     }
 
+    public static ApiException getInvalidApiException(String error) {
+        return new ApiException(ApiError.REQUEST_INVALID.error, error);
+    }
+
     public void putData(String name, Object value) {
         this.data.put(name, value);
     }
