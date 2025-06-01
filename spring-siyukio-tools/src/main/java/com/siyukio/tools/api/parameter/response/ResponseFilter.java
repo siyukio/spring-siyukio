@@ -56,10 +56,10 @@ public interface ResponseFilter {
         return new ArrayResponseFilter(name, responseFilter);
     }
 
-    public static void createResponseFilter(ApiDefinition apiDefinition) {
+    public static ResponseFilter createResponseFilter(ApiDefinition apiDefinition) {
         JSONArray responseParameters = apiDefinition.responseParameters;
         boolean dynamic = apiDefinition.realReturnType.isAssignableFrom(JSONObject.class);
-        apiDefinition.responseFilter = createObjectResponseFilter("ResponseBody", dynamic, responseParameters);
+        return createObjectResponseFilter("ResponseBody", dynamic, responseParameters);
     }
 
     public String getName();

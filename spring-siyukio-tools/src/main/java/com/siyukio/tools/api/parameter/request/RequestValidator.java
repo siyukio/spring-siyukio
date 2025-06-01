@@ -137,9 +137,9 @@ public interface RequestValidator {
         return requestValidator;
     }
 
-    public static void createRequestValidator(ApiDefinition apiDefinition) {
+    public static RequestValidator createRequestValidator(ApiDefinition apiDefinition) {
         JSONArray requestParameters = apiDefinition.requestParameters;
-        apiDefinition.requestValidator = createObjectRequestValidator("", true, requestParameters, false, "", "");
+        return createObjectRequestValidator("", true, requestParameters, false, "", "");
     }
 
     public String getName();

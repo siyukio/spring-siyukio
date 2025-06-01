@@ -6,8 +6,6 @@ import com.siyukio.tools.api.annotation.ApiMapping;
 import com.siyukio.tools.api.annotation.ApiParameter;
 import com.siyukio.tools.api.annotation.Example;
 import com.siyukio.tools.api.constants.ApiConstants;
-import com.siyukio.tools.api.parameter.request.RequestValidator;
-import com.siyukio.tools.api.parameter.response.ResponseFilter;
 import com.siyukio.tools.api.token.Token;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import lombok.Getter;
@@ -59,9 +57,6 @@ public final class ApiDefinitionManager {
         assert apiMapping != null;
 
         ApiDefinition apiDefinition = this.parseMethod(type, method, apiController, apiMapping);
-        RequestValidator.createRequestValidator(apiDefinition);
-        ResponseFilter.createResponseFilter(apiDefinition);
-
         String apiPath;
         for (String mappingPath : apiMapping.path()) {
             for (String controllerPath : apiController.path()) {
