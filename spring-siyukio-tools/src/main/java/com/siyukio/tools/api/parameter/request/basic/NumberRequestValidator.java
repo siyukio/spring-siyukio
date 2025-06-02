@@ -48,14 +48,13 @@ public class NumberRequestValidator extends AbstractRequestValidator {
         } else {
             throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_REQUIRED_NUMBER_FORMAT);
         }
-        
+
         if (this.numLimit) {
-            boolean isValid = true;
-            if (this.maximum != -1 && num > this.maximum) {
-                isValid = false;
-            }
-            if (this.minimum != -1 && num < this.minimum) {
-                isValid = false;
+            boolean isValid = this.maximum == -1 || !(num > this.maximum);
+            if (isValid) {
+                if (this.minimum != -1 && num < this.minimum) {
+                    isValid = false;
+                }
             }
             if (!isValid) {
                 throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_REQUIRED_NUMBER_LIMIT_FORMAT, this.toNumLimitString(this.minimum), this.toNumLimitString(this.maximum));

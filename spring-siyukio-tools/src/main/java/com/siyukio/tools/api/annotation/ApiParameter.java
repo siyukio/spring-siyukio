@@ -14,7 +14,7 @@ import static java.lang.annotation.ElementType.*;
  *
  * @author Buddy
  */
-@Target({METHOD, FIELD, PARAMETER})
+@Target({TYPE, METHOD, FIELD, PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @JsonIgnore
@@ -33,7 +33,7 @@ public @interface ApiParameter {
     /**
      * Description.
      */
-    String description();
+    String description() default "";
 
     /**
      * If the parameter is a number, sets the maximum allowed value for the parameter.
