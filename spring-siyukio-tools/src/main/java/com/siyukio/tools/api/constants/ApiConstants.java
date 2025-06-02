@@ -5,6 +5,14 @@ package com.siyukio.tools.api.constants;
  */
 public interface ApiConstants {
 
+    public String PROPERTY_API_JWT_PUBLIC = "API_JWT_PUBLIC_KEY";
+
+    public String PROPERTY_API_JWT_PRIVATE = "API_JWT_PRIVATE_KEY";
+
+    public String PROPERTY_API_JWT_ACCESS_TOKEN_DURATION = "API_JWT_ACCESS_DURATION";
+
+    public String PROPERTY_API_JWT_REFRESH_TOKEN_DURATION = "API_JWT_REFRESH_DURATION";
+
     public String PROPERTY_API_SIGNATURE_SALT = "API_SIGNATURE_SALT";
 
     public String PROPERTY_API_SIGNATURE_SKIP = "API_SIGNATURE_SKIP";

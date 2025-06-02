@@ -37,7 +37,7 @@ public final class Token {
     /**
      * Whether the token is used for refreshing the JWT token.
      */
-    public boolean refreshing = false;
+    public boolean refresh = false;
 
     /**
      * Whether the JWT token is expired.

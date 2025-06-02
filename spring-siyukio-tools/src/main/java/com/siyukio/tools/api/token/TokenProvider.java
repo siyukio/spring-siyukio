@@ -20,34 +20,34 @@ import java.util.List;
  */
 public final class TokenProvider {
 
-    /**
-     * Maximum lifespan of the access token (in minutes).
-     */
-    private final long MAX_ACCESS_TOKEN_LIVE_TIME = 15;
+    private final Duration maxAccessTokenDuration;
 
-    /**
-     * Maximum lifespan of the refreshing token (in days).
-     */
-    private final long MAX_REFRESHING_TOKEN_LIVE_TIME = 30;
+    private final Duration maxRefreshTokenDuration;
 
-    private Algorithm algorithm = Algorithm.HMAC256("siyukio");
+    private final Algorithm algorithm;
 
-    public void initAlgorithm(RSAPublicKey publicKey, RSAPrivateKey privateKey) {
-        this.algorithm = Algorithm.RSA256(publicKey, privateKey);
+    public TokenProvider(RSAPublicKey publicKey, RSAPrivateKey privateKey, Duration maxAccessTokenDuration, Duration maxRefreshTokenDuration) {
+        if (publicKey == null && privateKey == null) {
+            this.algorithm = Algorithm.HMAC256("siyukio");
+        } else {
+            this.algorithm = Algorithm.RSA256(publicKey, privateKey);
+        }
+        this.maxAccessTokenDuration = maxAccessTokenDuration;
+        this.maxRefreshTokenDuration = maxRefreshTokenDuration;
     }
 
     public String createAuthorization(String uid, String name, boolean refreshing) {
-        Token token = Token.builder().uid(uid).name(name).refreshing(refreshing).build();
+        Token token = Token.builder().uid(uid).name(name).refresh(refreshing).build();
         return this.createAuthorization(token);
     }
 
     public String createAuthorization(List<String> roles, boolean refreshing) {
-        Token token = Token.builder().roles(roles).refreshing(refreshing).build();
+        Token token = Token.builder().roles(roles).refresh(refreshing).build();
         return this.createAuthorization(token);
     }
 
     public String createAuthorization(Token token) {
-        Duration duration = token.refreshing ? Duration.ofDays(this.MAX_REFRESHING_TOKEN_LIVE_TIME) : Duration.ofMinutes(this.MAX_ACCESS_TOKEN_LIVE_TIME);
+        Duration duration = token.refresh ? this.maxRefreshTokenDuration : this.maxAccessTokenDuration;
         Date expireTime = new Date(System.currentTimeMillis() + duration.toMillis());
         String json = JsonUtils.toJSONString(token);
         return JWT.create()
