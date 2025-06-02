@@ -13,6 +13,7 @@
     <modules>
         <module>spring-siyukio-tools</module>
         <module>spring-siyukio-application</module>
+        <module>spring-siyukio-application-mcp</module>
     </modules>
 
     <properties>
@@ -53,6 +54,12 @@
             <dependency>
                 <groupId>com.siyukio</groupId>
                 <artifactId>spring-siyukio-tools</artifactId>
+                <version>${siyukio.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.siyukio</groupId>
+                <artifactId>spring-siyukio-application</artifactId>
                 <version>${siyukio.version}</version>
             </dependency>
         </dependencies>
