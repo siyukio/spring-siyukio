@@ -1,6 +1,8 @@
 package com.siyukio.tools.api;
 
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
+import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -11,6 +13,7 @@ import java.util.Map;
  * @author Buddy
  */
 @ToString
+@Slf4j
 public final class ApiException extends RuntimeException {
 
     public final int error;
@@ -41,8 +44,33 @@ public final class ApiException extends RuntimeException {
         return new ApiException(ApiError.REQUEST_INVALID.error, error);
     }
 
+    public static ApiException getUnknownApiException(Throwable ex) {
+        if (ex instanceof ApiException apiException) {
+            return apiException;
+        }
+
+        log.error("unknown exception", ex);
+
+        String message = ex.getClass().getName();
+        int index = message.lastIndexOf(".");
+        if (index > 0) {
+            message = message.substring(index + 1);
+        }
+        message = message + ":" + ex.getMessage();
+        int error = ApiError.EXCEPTION.error;
+        return new ApiException(error, message);
+    }
+
     public void putData(String name, Object value) {
         this.data.put(name, value);
+    }
+
+    public JSONObject toJson() {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("error", this.error);
+        jsonObject.put("message", this.message);
+        jsonObject.put("data", this.data);
+        return jsonObject;
     }
 
 }

@@ -18,4 +18,6 @@ public class ApiHandler {
 
     public ResponseFilter responseFilter;
 
+    public ApiInvoker apiInvoker;
+
 }

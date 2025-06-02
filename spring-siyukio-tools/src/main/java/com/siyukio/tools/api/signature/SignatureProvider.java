@@ -3,7 +3,6 @@ package com.siyukio.tools.api.signature;
 import com.siyukio.tools.api.ApiException;
 import com.siyukio.tools.collection.ConcurrentCache;
 import com.siyukio.tools.util.MessageDigestUtils;
-import lombok.Setter;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
@@ -15,11 +14,14 @@ public class SignatureProvider {
 
     private final ConcurrentCache<String, String> cache = new ConcurrentCache<>(10000);
 
-    @Setter
-    private String salt = "";
+    private final String salt;
 
-    @Setter
-    private boolean skip = false;
+    private final boolean skip;
+
+    public SignatureProvider(String salt, boolean skip) {
+        this.salt = salt;
+        this.skip = skip;
+    }
 
     public boolean validate(String ts, String nonce, String sign) {
         if (this.skip) {

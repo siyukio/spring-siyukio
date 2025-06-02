@@ -50,6 +50,10 @@ public final class ApiDefinitionManager {
         return apiDefinition;
     }
 
+    public boolean isApi(Class<?> type, Method method) {
+        return type.isAnnotationPresent(ApiController.class) && method.isAnnotationPresent(ApiMapping.class);
+    }
+
     public ApiDefinition addApi(Class<?> type, Method method) {
         ApiController apiController = type.getAnnotation(ApiController.class);
         assert apiController != null;
