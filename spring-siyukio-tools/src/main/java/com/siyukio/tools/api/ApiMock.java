@@ -1,5 +1,6 @@
 package com.siyukio.tools.api;
 
+import com.siyukio.tools.api.signature.SignatureProvider;
 import com.siyukio.tools.api.token.Token;
 import com.siyukio.tools.util.JsonUtils;
 import lombok.Getter;
@@ -27,12 +28,22 @@ public class ApiMock {
     @Autowired
     private AipHandlerManager aipHandlerManager;
 
+    @Autowired
+    private SignatureProvider signatureProvider;
+
     public JSONObject perform(String path, Object request) {
         JSONObject requestJson = JsonUtils.copy(request, JSONObject.class);
 
         ApiHandler apiHandler = this.aipHandlerManager.getApiHandler(path);
         if (apiHandler == null) {
             throw new ApiException(ApiError.NOT_FOUND);
+        }
+
+        if (apiHandler.apiDefinition.signature) {
+            long timestamp = requestJson.optLong("timestamp", 0);
+            String nonce = requestJson.optString("nonce");
+            String signature = requestJson.optString("signature");
+            this.signatureProvider.validate(timestamp, nonce, signature);
         }
 
         if (apiHandler.apiDefinition.authorization) {

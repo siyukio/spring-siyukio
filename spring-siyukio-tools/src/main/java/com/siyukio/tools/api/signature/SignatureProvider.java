@@ -20,38 +20,36 @@ public class SignatureProvider {
         this.salt = salt;
     }
 
-    public boolean validate(String ts, String nonce, String sign) {
+    public void validate(long timestamp, String nonce, String signature) {
         if (!StringUtils.hasText(this.salt)) {
-            return true;
+            return;
         }
-        if (!StringUtils.hasText(ts)) {
-            throw ApiException.getInvalidApiException("sign error: miss ts");
+        if (timestamp == 0) {
+            throw ApiException.getInvalidApiException("signature error: miss timestamp");
         }
         if (!StringUtils.hasText(nonce)) {
-            throw ApiException.getInvalidApiException("sign error: miss nonce");
+            throw ApiException.getInvalidApiException("signature error: miss nonce");
         }
-        if (!StringUtils.hasText(sign)) {
-            throw ApiException.getInvalidApiException("sign error: miss sign");
+        if (!StringUtils.hasText(signature)) {
+            throw ApiException.getInvalidApiException("signature error: miss signature");
         }
-        try {
-            long tsTime = Long.parseLong(ts);
-            if (tsTime < System.currentTimeMillis() - Duration.ofDays(1).toMillis()) {
-                throw ApiException.getInvalidApiException("sign error: ts expired");
-            }
-        } catch (NumberFormatException e) {
-            throw ApiException.getInvalidApiException("sign error: ts type error");
+        if (timestamp < System.currentTimeMillis() - Duration.ofDays(1).toMillis()) {
+            throw ApiException.getInvalidApiException("signature error: timestamp expired");
         }
         String value = this.cache.get(nonce);
         if (value != null) {
-            throw ApiException.getInvalidApiException("sign error: nonce error");
+            throw ApiException.getInvalidApiException("signature error: nonce used");
         }
         this.cache.put(nonce, "");
 
-        String text = this.salt + ts + nonce;
-        String mySign = MessageDigestUtils.md5(text);
-        if (!mySign.equals(sign)) {
-            throw ApiException.getInvalidApiException("sign error: md5 error");
+        String mySignature = this.createSignature(timestamp, nonce);
+        if (!mySignature.equals(signature)) {
+            throw ApiException.getInvalidApiException("signature error");
         }
-        return true;
+    }
+
+    public String createSignature(long timestamp, String nonce) {
+        String text = this.salt + timestamp + nonce;
+        return MessageDigestUtils.md5(text);
     }
 }

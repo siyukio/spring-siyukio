@@ -96,7 +96,7 @@ public final class ArrayRequestValidator extends AbstractRequestValidator {
         }
         //
         if (result.length() > this.maxItems || result.length() < this.minItems) {
-            throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_REQUIRED_ARRAY_LIMIT_FORMAT, this.minItems, this.minItems);
+            throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_REQUIRED_ARRAY_LIMIT_FORMAT, this.minItems, this.maxItems);
         }
         return result;
     }

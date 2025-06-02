@@ -20,20 +20,20 @@ import java.util.List;
  */
 public final class TokenProvider {
 
-    private final Duration maxAccessTokenDuration;
+    private final Duration accessTokenDuration;
 
-    private final Duration maxRefreshTokenDuration;
+    private final Duration refreshTokenDuration;
 
     private final Algorithm algorithm;
 
-    public TokenProvider(RSAPublicKey publicKey, RSAPrivateKey privateKey, Duration maxAccessTokenDuration, Duration maxRefreshTokenDuration) {
+    public TokenProvider(RSAPublicKey publicKey, RSAPrivateKey privateKey, Duration accessTokenDuration, Duration refreshTokenDuration) {
         if (publicKey == null && privateKey == null) {
             this.algorithm = Algorithm.HMAC256("siyukio");
         } else {
             this.algorithm = Algorithm.RSA256(publicKey, privateKey);
         }
-        this.maxAccessTokenDuration = maxAccessTokenDuration;
-        this.maxRefreshTokenDuration = maxRefreshTokenDuration;
+        this.accessTokenDuration = accessTokenDuration;
+        this.refreshTokenDuration = refreshTokenDuration;
     }
 
     public String createAuthorization(String uid, String name, boolean refreshing) {
@@ -47,7 +47,7 @@ public final class TokenProvider {
     }
 
     public String createAuthorization(Token token) {
-        Duration duration = token.refresh ? this.maxRefreshTokenDuration : this.maxAccessTokenDuration;
+        Duration duration = token.refresh ? this.refreshTokenDuration : this.accessTokenDuration;
         Date expireTime = new Date(System.currentTimeMillis() + duration.toMillis());
         String json = JsonUtils.toJSONString(token);
         return JWT.create()
