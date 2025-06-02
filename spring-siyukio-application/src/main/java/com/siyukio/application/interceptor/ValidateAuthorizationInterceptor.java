@@ -1,11 +1,7 @@
 package com.siyukio.application.interceptor;
 
-import com.siyukio.tools.api.ApiError;
-import com.siyukio.tools.api.ApiException;
-import com.siyukio.tools.api.ApiProfiles;
+import com.siyukio.tools.api.*;
 import com.siyukio.tools.api.constants.ApiConstants;
-import com.siyukio.tools.api.definition.ApiDefinition;
-import com.siyukio.tools.api.definition.ApiDefinitionManager;
 import com.siyukio.tools.api.token.Token;
 import com.siyukio.tools.api.token.TokenProvider;
 import jakarta.servlet.DispatcherType;
@@ -24,14 +20,14 @@ import java.util.Set;
  *
  * @author Buddy
  */
-public final class ValidateTokenInterceptor implements HandlerInterceptor {
+public final class ValidateAuthorizationInterceptor implements HandlerInterceptor {
 
-    private final ApiDefinitionManager apiDefinitionManager;
+    private final AipHandlerManager aipHandlerManager;
 
     private final TokenProvider tokenProvider;
 
-    public ValidateTokenInterceptor(ApiDefinitionManager apiDefinitionManager, TokenProvider tokenProvider) {
-        this.apiDefinitionManager = apiDefinitionManager;
+    public ValidateAuthorizationInterceptor(AipHandlerManager aipHandlerManager, TokenProvider tokenProvider) {
+        this.aipHandlerManager = aipHandlerManager;
         this.tokenProvider = tokenProvider;
     }
 
@@ -61,8 +57,8 @@ public final class ValidateTokenInterceptor implements HandlerInterceptor {
         }
         //
         String path = ApiProfiles.getApiPath(request.getRequestURI());
-        ApiDefinition apiDefinition = this.apiDefinitionManager.getApiDefinition(path);
-        if (apiDefinition == null || !apiDefinition.authorization) {
+        ApiHandler apiHandler = this.aipHandlerManager.getApiHandler(path);
+        if (apiHandler == null || !apiHandler.apiDefinition.authorization) {
             return true;
         }
 
@@ -72,15 +68,15 @@ public final class ValidateTokenInterceptor implements HandlerInterceptor {
             token = this.tokenProvider.verifyToken(authorization);
         }
 
-        if (token == null || token.refreshing || token.expired) {
+        if (token == null || token.refresh || token.expired) {
             throw new ApiException(ApiError.AUTHORIZED_ERROR);
         }
 
-        if (!apiDefinition.roles.isEmpty()) {
-            Set<String> roleSet = new HashSet<>(apiDefinition.roles);
+        if (!apiHandler.apiDefinition.roles.isEmpty()) {
+            Set<String> roleSet = new HashSet<>(apiHandler.apiDefinition.roles);
 
             roleSet.retainAll(token.roles);
-            if (roleSet.size() != apiDefinition.roles.size()) {
+            if (roleSet.size() != apiHandler.apiDefinition.roles.size()) {
                 throw new ApiException(ApiError.FORBIDDEN_ROLE);
             }
         }
