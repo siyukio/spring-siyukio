@@ -32,7 +32,7 @@ public final class RequestArgumentResolver implements HandlerMethodArgumentResol
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
         Class<?> parameterType = parameter.getParameterType();
-        if (parameterType == ApiRequest.class || parameterType == JSONObject.class) {
+        if (parameterType == ApiRequest.class || parameterType == JSONObject.class || parameter.hasParameterAnnotation(RequestBody.class)) {
             return true;
         }
         if (ApiDefinitionManager.isBasicType(parameterType) || parameterType.isArray() || Collection.class.isAssignableFrom(parameterType) || Token.class.isAssignableFrom(parameterType) || parameterType.getPackageName().startsWith("java.")) {
