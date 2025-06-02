@@ -2,8 +2,8 @@ package com.siyukio.tools.api;
 
 import com.siyukio.tools.api.signature.SignatureProvider;
 import com.siyukio.tools.api.token.Token;
+import com.siyukio.tools.api.token.TokenProvider;
 import com.siyukio.tools.util.JsonUtils;
-import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
@@ -15,14 +15,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * @author Buddy
- */
-@Setter
-@Getter
+
 @Slf4j
 public class ApiMock {
 
+    @Setter
     private Token token;
 
     @Autowired
@@ -30,6 +27,13 @@ public class ApiMock {
 
     @Autowired
     private SignatureProvider signatureProvider;
+
+    @Autowired
+    private TokenProvider tokenProvider;
+
+    public void setAuthorization(String authorization) {
+        this.token = this.tokenProvider.verifyToken(authorization);
+    }
 
     public JSONObject perform(String path, Object request) {
         JSONObject requestJson = JsonUtils.copy(request, JSONObject.class);

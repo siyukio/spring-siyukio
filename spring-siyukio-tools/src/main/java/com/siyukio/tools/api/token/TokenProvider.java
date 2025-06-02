@@ -36,13 +36,13 @@ public final class TokenProvider {
         this.refreshTokenDuration = refreshTokenDuration;
     }
 
-    public String createAuthorization(String uid, String name, boolean refreshing) {
-        Token token = Token.builder().uid(uid).name(name).refresh(refreshing).build();
+    public String createAuthorization(String uid, String name, boolean refresh) {
+        Token token = Token.builder().uid(uid).name(name).refresh(refresh).build();
         return this.createAuthorization(token);
     }
 
-    public String createAuthorization(List<String> roles, boolean refreshing) {
-        Token token = Token.builder().roles(roles).refresh(refreshing).build();
+    public String createAuthorization(List<String> roles, boolean refresh) {
+        Token token = Token.builder().roles(roles).refresh(refresh).build();
         return this.createAuthorization(token);
     }
 
