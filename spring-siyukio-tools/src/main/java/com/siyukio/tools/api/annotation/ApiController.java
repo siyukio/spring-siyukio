@@ -34,11 +34,11 @@ public @interface ApiController {
     /**
      * Category tags.
      */
-    String[] tags();
+    String[] tags() default {};
 
     /**
      * Summary
      */
-    String summary();
+    String summary() default "";
 
 }

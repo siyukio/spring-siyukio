@@ -63,11 +63,17 @@ public final class ApiDefinitionManager {
         ApiDefinition apiDefinition = this.parseMethod(type, method, apiController, apiMapping);
         String apiPath;
         for (String mappingPath : apiMapping.path()) {
-            for (String controllerPath : apiController.path()) {
-                apiPath = controllerPath + mappingPath;
-                if (this.apiDefinitionMap.containsKey(apiPath)) {
-                    continue;
+            if (apiController.path().length > 0) {
+                for (String controllerPath : apiController.path()) {
+                    apiPath = controllerPath + mappingPath;
+                    if (this.apiDefinitionMap.containsKey(apiPath)) {
+                        continue;
+                    }
+                    apiDefinition.paths.add(apiPath);
+                    this.apiDefinitionMap.put(apiPath, apiDefinition);
                 }
+            } else {
+                apiPath = mappingPath;
                 apiDefinition.paths.add(apiPath);
                 this.apiDefinitionMap.put(apiPath, apiDefinition);
             }

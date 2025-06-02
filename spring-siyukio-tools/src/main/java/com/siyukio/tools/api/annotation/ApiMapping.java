@@ -41,7 +41,7 @@ public @interface ApiMapping {
     /**
      * Validates whether the authorization contains the specified role.
      */
-    String[] roles() default "";
+    String[] roles() default {};
 
     /**
      * Summary.

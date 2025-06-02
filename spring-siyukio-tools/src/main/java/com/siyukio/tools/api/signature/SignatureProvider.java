@@ -16,15 +16,12 @@ public class SignatureProvider {
 
     private final String salt;
 
-    private final boolean skip;
-
-    public SignatureProvider(String salt, boolean skip) {
+    public SignatureProvider(String salt) {
         this.salt = salt;
-        this.skip = skip;
     }
 
     public boolean validate(String ts, String nonce, String sign) {
-        if (this.skip) {
+        if (!StringUtils.hasText(this.salt)) {
             return true;
         }
         if (!StringUtils.hasText(ts)) {

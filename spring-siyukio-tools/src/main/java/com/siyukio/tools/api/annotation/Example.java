@@ -16,6 +16,6 @@ public @interface Example {
 
     String value();
 
-    String summary();
+    String summary() default "";
 
 }
