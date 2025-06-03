@@ -26,19 +26,19 @@ public interface ApiConstants {
 
 
     //ApiParameter
-    public String TYPE_STRING = "String";
+    public String TYPE_STRING = "string";
 
-    public String TYPE_INTEGER = "Integer";
+    public String TYPE_INTEGER = "integer";
 
-    public String TYPE_NUMBER = "Number";
+    public String TYPE_NUMBER = "number";
 
-    public String TYPE_DATE = "Date";
+    public String TYPE_DATE = "date";
 
-    public String TYPE_BOOLEAN = "Boolean";
+    public String TYPE_BOOLEAN = "boolean";
 
-    public String TYPE_ARRAY = "Array";
+    public String TYPE_ARRAY = "array";
 
-    public String TYPE_OBJECT = "Object";
+    public String TYPE_OBJECT = "object";
 
     //error message
 
