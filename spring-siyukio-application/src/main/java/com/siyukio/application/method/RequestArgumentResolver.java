@@ -50,10 +50,16 @@ public final class RequestArgumentResolver implements HandlerMethodArgumentResol
         }
 
         String body = String.valueOf(httpServletRequest.getAttribute(ApiConstants.ATTRIBUTE_REQUEST_BODY));
-
-        String ip = httpServletRequest.getRemoteAddr();
+        String ip = httpServletRequest.getHeader("X-FORWARDED-FOR");
+        if (!StringUtils.hasText(ip)) {
+            ip = httpServletRequest.getRemoteAddr();
+        }
         if (ip == null) {
             ip = "";
+        }
+        String[] ips = ip.split(",");
+        if (ips.length > 1) {
+            ip = ips[0].trim();
         }
         //ua
         String userAgent = httpServletRequest.getHeader("User-Agent");
