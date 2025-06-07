@@ -2,6 +2,7 @@ package com.siyukio.tools.util;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.StreamReadFeature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
@@ -42,6 +43,8 @@ public abstract class JsonUtils {
         OBJECT_MAPPER.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 //        OBJECT_MAPPER.disable(MapperFeature.DEFAULT_VIEW_INCLUSION);
         OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        
+        OBJECT_MAPPER.getFactory().enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION.mappedFeature());
     }
 
     public static ObjectMapper getObjectMapper() {
