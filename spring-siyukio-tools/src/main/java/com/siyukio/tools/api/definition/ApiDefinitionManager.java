@@ -137,10 +137,14 @@ public final class ApiDefinitionManager {
         LinkedList<Class<?>> responseClassLinkedList = new LinkedList<>();
         JSONArray responseParameters = this.getSubResponseParameters(method, returnValueType, responseClassLinkedList);
 
+        String summary = apiMapping.summary();
+        if (!StringUtils.hasText(summary)) {
+            summary = method.getName();
+        }
         ApiDefinition.ApiDefinitionBuilder builder = ApiDefinition.builder();
         builder.id(type.getSimpleName() + "_" + method.getName())
                 .paths(new ArrayList<>())
-                .summary(apiMapping.summary())
+                .summary(summary)
                 .deprecated(apiMapping.deprecated())
                 .description(apiMapping.description())
                 .authorization(apiMapping.authorization())

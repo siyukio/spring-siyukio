@@ -109,7 +109,7 @@ public abstract class OpenApiUtils {
         postJson.put("tags", apiDefinition.tags());
         //pathItem.post.summary
         postJson.put("summary", apiDefinition.summary());
-        //pathItem.post.notes
+        //pathItem.post.description
         postJson.put("description", apiDefinition.description());
         return pathItemJson;
     }
