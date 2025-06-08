@@ -62,7 +62,7 @@ public final class ApiReturnValueHandler implements HandlerMethodReturnValueHand
             return;
         }
 
-        if (apiHandler.apiDefinition.realReturnType == String.class) {
+        if (apiHandler.apiDefinition().realReturnType() == String.class) {
 
             MediaType mediaType = new MediaType(MediaType.TEXT_PLAIN, StandardCharsets.UTF_8);
             String fileName = httpServletRequest.getParameter("fileName");
@@ -92,7 +92,7 @@ public final class ApiReturnValueHandler implements HandlerMethodReturnValueHand
         httpServletRequest.setAttribute(HandlerMapping.PRODUCIBLE_MEDIA_TYPES_ATTRIBUTE, mediaTypes);
 
 
-        if (apiHandler.apiDefinition.returnType == void.class || apiHandler.apiDefinition.realReturnType == Void.class) {
+        if (apiHandler.apiDefinition().returnType() == void.class || apiHandler.apiDefinition().realReturnType() == Void.class) {
             JSONObject responseJson = new JSONObject();
             this.handlerMethodReturnValueHandler.handleReturnValue(responseJson, returnType, mavContainer, webRequest);
             return;
@@ -100,7 +100,7 @@ public final class ApiReturnValueHandler implements HandlerMethodReturnValueHand
 
         JSONObject resultJson = JsonUtils.copy(returnValue, JSONObject.class);
 
-        apiHandler.responseFilter.filter(resultJson);
+        apiHandler.responseFilter().filter(resultJson);
         this.handlerMethodReturnValueHandler.handleReturnValue(resultJson, returnType, mavContainer, webRequest);
     }
 

@@ -58,7 +58,7 @@ public final class ValidateAuthorizationInterceptor implements HandlerIntercepto
         //
         String path = ApiProfiles.getApiPath(request.getRequestURI());
         ApiHandler apiHandler = this.aipHandlerManager.getApiHandler(path);
-        if (apiHandler == null || !apiHandler.apiDefinition.authorization) {
+        if (apiHandler == null || !apiHandler.apiDefinition().authorization()) {
             return true;
         }
 
@@ -72,11 +72,11 @@ public final class ValidateAuthorizationInterceptor implements HandlerIntercepto
             throw new ApiException(ApiError.AUTHORIZED_ERROR);
         }
 
-        if (!apiHandler.apiDefinition.roles.isEmpty()) {
-            Set<String> roleSet = new HashSet<>(apiHandler.apiDefinition.roles);
+        if (!apiHandler.apiDefinition().roles().isEmpty()) {
+            Set<String> roleSet = new HashSet<>(apiHandler.apiDefinition().roles());
 
             roleSet.retainAll(token.roles);
-            if (roleSet.size() != apiHandler.apiDefinition.roles.size()) {
+            if (roleSet.size() != apiHandler.apiDefinition().roles().size()) {
                 throw new ApiException(ApiError.FORBIDDEN_ROLE);
             }
         }

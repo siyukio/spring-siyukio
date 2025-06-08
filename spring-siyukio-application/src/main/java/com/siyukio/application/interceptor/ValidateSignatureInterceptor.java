@@ -40,7 +40,7 @@ public final class ValidateSignatureInterceptor implements HandlerInterceptor {
 
         String path = ApiProfiles.getApiPath(request.getRequestURI());
         ApiHandler apiHandler = this.aipHandlerManager.getApiHandler(path);
-        if (apiHandler == null || !apiHandler.apiDefinition.signature) {
+        if (apiHandler == null || !apiHandler.apiDefinition().signature()) {
             return true;
         }
 

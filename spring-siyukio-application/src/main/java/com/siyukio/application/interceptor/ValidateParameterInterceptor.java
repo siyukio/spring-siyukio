@@ -71,7 +71,7 @@ public final class ValidateParameterInterceptor implements HandlerInterceptor {
         }
         JSONObject requestBodyJson;
         try {
-            requestBodyJson = this.validate(requestBody, apiHandler.requestValidator);
+            requestBodyJson = this.validate(requestBody, apiHandler.requestValidator());
         } catch (ApiException ex) {
             log.debug("request error:{},{},{}", ex.error, ex.message, ex.data);
             log.debug("request error content type:{}", request.getContentType());

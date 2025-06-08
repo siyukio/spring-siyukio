@@ -8,7 +8,6 @@ import com.siyukio.tools.api.annotation.Example;
 import com.siyukio.tools.api.constants.ApiConstants;
 import com.siyukio.tools.api.token.Token;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -23,7 +22,6 @@ import java.util.*;
 @Slf4j
 public final class ApiDefinitionManager {
 
-    @Getter
     private final Map<String, ApiDefinition> apiDefinitionMap = new HashMap<>();
 
     private final Set<Class<?>> alternativeSet = new HashSet<>();
@@ -50,6 +48,10 @@ public final class ApiDefinitionManager {
         return apiDefinition;
     }
 
+    public Map<String, ApiDefinition> getApiDefinitionMap() {
+        return Collections.unmodifiableMap(this.apiDefinitionMap);
+    }
+
     public boolean isApi(Class<?> type, Method method) {
         return type.isAnnotationPresent(ApiController.class) && method.isAnnotationPresent(ApiMapping.class);
     }
@@ -69,12 +71,12 @@ public final class ApiDefinitionManager {
                     if (this.apiDefinitionMap.containsKey(apiPath)) {
                         continue;
                     }
-                    apiDefinition.paths.add(apiPath);
+                    apiDefinition.paths().add(apiPath);
                     this.apiDefinitionMap.put(apiPath, apiDefinition);
                 }
             } else {
                 apiPath = mappingPath;
-                apiDefinition.paths.add(apiPath);
+                apiDefinition.paths().add(apiPath);
                 this.apiDefinitionMap.put(apiPath, apiDefinition);
             }
         }
@@ -98,47 +100,33 @@ public final class ApiDefinitionManager {
     }
 
     private ApiDefinition parseMethod(Class<?> type, Method method, ApiController apiController, ApiMapping apiMapping) {
-        ApiDefinition apiDefinition = new ApiDefinition();
-        apiDefinition.id = type.getSimpleName() + "_" + method.getName();
-        apiDefinition.paths = new ArrayList<>();
-        apiDefinition.summary = apiMapping.summary();
-        apiDefinition.deprecated = apiMapping.deprecated();
-        apiDefinition.description = apiMapping.description();
-        apiDefinition.authorization = apiMapping.authorization();
-        apiDefinition.signature = apiMapping.signature();
-        apiDefinition.tags = List.of(apiController.tags());
-        apiDefinition.mcpTool = apiMapping.mcpTool();
-        apiDefinition.roles = List.of(apiMapping.roles());
-        apiDefinition.requestParameters = new JSONArray();
-        apiDefinition.responseParameters = new JSONArray();
-        apiDefinition.returnType = method.getReturnType();
-        apiDefinition.realReturnType = this.getRealReturnType(method);
-        apiDefinition.sampling = false;
 
+        boolean sampling = false;
+        JSONArray requestParameters = new JSONArray();
         //create request parameter
         LinkedList<Class<?>> requestClassLinked = new LinkedList<>();
-        JSONObject parameterJson;
+        JSONObject requestParameter;
         Set<String> existParameterNameSet = new HashSet<>();
-        JSONArray requestParameters;
+        JSONArray subRequestParameters;
         String parameterName;
         Parameter[] parameters = method.getParameters();
         for (Parameter parameter : parameters) {
-            if (!apiDefinition.sampling && parameter.getType() == McpSyncServerExchange.class) {
-                apiDefinition.sampling = true;
+            if (!sampling && parameter.getType() == McpSyncServerExchange.class) {
+                sampling = true;
             }
-            requestParameters = this.getSubRequestParameters(method, parameter.getType(), requestClassLinked);
-            for (int index = 0; index < requestParameters.length(); index++) {
-                parameterJson = requestParameters.getJSONObject(index);
-                parameterName = parameterJson.optString("name");
+            subRequestParameters = this.getSubRequestParameters(method, parameter.getType(), requestClassLinked);
+            for (int index = 0; index < subRequestParameters.length(); index++) {
+                requestParameter = subRequestParameters.getJSONObject(index);
+                parameterName = requestParameter.optString("name");
                 if (!existParameterNameSet.contains(parameterName)) {
                     existParameterNameSet.add(parameterName);
-                    apiDefinition.requestParameters.put(parameterJson);
+                    requestParameters.put(requestParameter);
                 }
             }
         }
 
         //create response parameter
-        Class<?> returnValueType = apiDefinition.realReturnType;
+        Class<?> returnValueType = this.getRealReturnType(method);
         if (returnValueType != void.class && returnValueType != Void.class && returnValueType != String.class) {
             if (isBasicType(returnValueType) || returnValueType.isArray() || Collection.class.isAssignableFrom(returnValueType) || returnValueType.getPackageName().startsWith("java.")) {
                 throw new RuntimeException(type.getName() + "." + method.getName() + " unsupported returnValueType:" + returnValueType.getSimpleName());
@@ -148,16 +136,24 @@ public final class ApiDefinitionManager {
 
         LinkedList<Class<?>> responseClassLinkedList = new LinkedList<>();
         JSONArray responseParameters = this.getSubResponseParameters(method, returnValueType, responseClassLinkedList);
-        for (int index = 0; index < responseParameters.length(); index++) {
-            parameterJson = responseParameters.getJSONObject(index);
-            parameterName = parameterJson.optString("name");
-            if (!existParameterNameSet.contains(parameterName)) {
-                existParameterNameSet.add(parameterName);
-                apiDefinition.responseParameters.put(parameterJson);
-            }
-        }
 
-        return apiDefinition;
+        ApiDefinition.ApiDefinitionBuilder builder = ApiDefinition.builder();
+        builder.id(type.getSimpleName() + "_" + method.getName())
+                .paths(new ArrayList<>())
+                .summary(apiMapping.summary())
+                .deprecated(apiMapping.deprecated())
+                .description(apiMapping.description())
+                .authorization(apiMapping.authorization())
+                .signature(apiMapping.signature())
+                .tags(List.of(apiController.tags()))
+                .mcpTool(apiMapping.mcpTool())
+                .roles(List.of(apiMapping.roles()))
+                .returnType(method.getReturnType())
+                .realReturnType(returnValueType)
+                .sampling(sampling)
+                .requestParameters(requestParameters)
+                .responseParameters(responseParameters);
+        return builder.build();
     }
 
     private JSONObject createBasicArrayRequestParameter(Class<?> typeClass, String name, ApiParameter apiParameter) {
@@ -536,7 +532,7 @@ public final class ApiDefinitionManager {
     }
 
     public JSONArray getSubResponseParameters(Method method, Class<?> paramClass, LinkedList<Class<?>> responseClassLinked) {
-        JSONArray responseParamArray = new JSONArray();
+        JSONArray responseParameters = new JSONArray();
         if (!responseClassLinked.contains(paramClass)) {
             responseClassLinked.addLast(paramClass);
             //
@@ -553,35 +549,35 @@ public final class ApiDefinitionManager {
                         type = field.getType();
                         if (isBasicType(type)) {
                             responseParameter = this.createBasicResponseParameter(type, parameterName, apiParameter);
-                            responseParamArray.put(responseParameter);
+                            responseParameters.put(responseParameter);
                         } else if (Collection.class.isAssignableFrom(type)) {
                             Class<?> subType = this.getResponseListActualType(method, paramClass, field);
                             responseParameter = this.createCollectionResponseParameter(method, subType, parameterName, apiParameter, responseClassLinked);
-                            responseParamArray.put(responseParameter);
+                            responseParameters.put(responseParameter);
                         } else if (type.isArray()) {
                             Class<?> componentType = type.getComponentType();
                             responseParameter = this.createCollectionResponseParameter(method, componentType, parameterName, apiParameter, responseClassLinked);
-                            responseParamArray.put(responseParameter);
+                            responseParameters.put(responseParameter);
                         } else if (JSONArray.class == type) {
                             responseParameter = this.createObjectResponseParameter(parameterName, apiParameter);
-                            responseParamArray.put(responseParameter);
+                            responseParameters.put(responseParameter);
                         } else if (JSONObject.class == type) {
                             responseParameter = createObjectResponseParameter(parameterName, apiParameter);
-                            responseParamArray.put(responseParameter);
+                            responseParameters.put(responseParameter);
                         } else if (Object.class == type) {
                             Class<?> subType = this.getRequestListActualType(method, paramClass, field);
                             responseParameter = this.createObjectResponseParameter(method, subType, responseClassLinked, parameterName, apiParameter);
-                            responseParamArray.put(responseParameter);
+                            responseParameters.put(responseParameter);
                         } else {
                             responseParameter = this.createObjectResponseParameter(method, type, responseClassLinked, parameterName, apiParameter);
-                            responseParamArray.put(responseParameter);
+                            responseParameters.put(responseParameter);
                         }
                     }
                 }
             }
             responseClassLinked.removeLast();
         }
-        return responseParamArray;
+        return responseParameters;
     }
 
     private JSONObject createBasicResponseParameter(Class<?> typeClass, String name, ApiParameter apiParameter) {

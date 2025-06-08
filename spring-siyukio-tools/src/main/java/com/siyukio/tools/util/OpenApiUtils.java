@@ -103,20 +103,20 @@ public abstract class OpenApiUtils {
         postJson.put("responses", responsesJson);
 
         //pathItem.post.deprecated
-        postJson.put("deprecated", apiDefinition.deprecated);
+        postJson.put("deprecated", apiDefinition.deprecated());
 
         //pathItem.post.tags
-        postJson.put("tags", apiDefinition.tags);
+        postJson.put("tags", apiDefinition.tags());
         //pathItem.post.summary
-        postJson.put("summary", apiDefinition.summary);
+        postJson.put("summary", apiDefinition.summary());
         //pathItem.post.notes
-        postJson.put("description", apiDefinition.description);
+        postJson.put("description", apiDefinition.description());
         return pathItemJson;
     }
 
     public static JSONArray createGlobalParameters(ApiDefinition apiDefinition) {
         JSONArray parameters = new JSONArray();
-        if (apiDefinition.authorization) {
+        if (apiDefinition.authorization()) {
             JSONObject authHeader = new JSONObject();
             authHeader.put("name", "Authorization");
             authHeader.put("in", "header");
@@ -139,7 +139,7 @@ public abstract class OpenApiUtils {
         requestBodyContentJson.put("application/json", applicationJson);
 
         //content.application/json.schema
-        JSONObject schemaJson = createObjectRequest(apiDefinition.requestParameters);
+        JSONObject schemaJson = createObjectRequest(apiDefinition.requestParameters());
         applicationJson.put("schema", schemaJson);
         return requestBodyJson;
     }
@@ -270,7 +270,7 @@ public abstract class OpenApiUtils {
         requestBodyContentJson.put("application/json", applicationJson);
 
         //content.application/json.schema
-        JSONObject schemaJson = createObjectResponse(apiDefinition.responseParameters);
+        JSONObject schemaJson = createObjectResponse(apiDefinition.responseParameters());
         applicationJson.put("schema", schemaJson);
         return responseJson;
     }

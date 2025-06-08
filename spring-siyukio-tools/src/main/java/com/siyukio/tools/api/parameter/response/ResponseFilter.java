@@ -57,8 +57,8 @@ public interface ResponseFilter {
     }
 
     public static ResponseFilter createResponseFilter(ApiDefinition apiDefinition) {
-        JSONArray responseParameters = apiDefinition.responseParameters;
-        boolean dynamic = apiDefinition.realReturnType.isAssignableFrom(JSONObject.class);
+        JSONArray responseParameters = apiDefinition.responseParameters();
+        boolean dynamic = apiDefinition.realReturnType().isAssignableFrom(JSONObject.class);
         return createObjectResponseFilter("ResponseBody", dynamic, responseParameters);
     }
 

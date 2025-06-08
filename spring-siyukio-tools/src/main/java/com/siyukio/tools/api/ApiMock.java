@@ -43,20 +43,20 @@ public class ApiMock {
             throw new ApiException(ApiError.NOT_FOUND);
         }
 
-        if (apiHandler.apiDefinition.signature) {
+        if (apiHandler.apiDefinition().signature()) {
             long timestamp = requestJson.optLong("timestamp", 0);
             String nonce = requestJson.optString("nonce");
             String signature = requestJson.optString("signature");
             this.signatureProvider.validate(timestamp, nonce, signature);
         }
 
-        if (apiHandler.apiDefinition.authorization) {
+        if (apiHandler.apiDefinition().authorization()) {
             if (token == null) {
                 throw new ApiException(ApiError.AUTHORIZED_ERROR);
             }
 
-            if (!apiHandler.apiDefinition.roles.isEmpty()) {
-                Set<String> roleSet = new HashSet<>(apiHandler.apiDefinition.roles);
+            if (!apiHandler.apiDefinition().roles().isEmpty()) {
+                Set<String> roleSet = new HashSet<>(apiHandler.apiDefinition().roles());
 
                 roleSet.retainAll(token.roles);
                 if (roleSet.isEmpty()) {
@@ -65,7 +65,7 @@ public class ApiMock {
             }
         }
 
-        requestJson = apiHandler.requestValidator.validate(requestJson);
+        requestJson = apiHandler.requestValidator().validate(requestJson);
 
         List<Object> paramList = new ArrayList<>();
         if (token != null) {
@@ -75,7 +75,7 @@ public class ApiMock {
         Object[] params = paramList.toArray(new Object[0]);
         Object resultValue;
         try {
-            resultValue = apiHandler.apiInvoker.invoke(requestJson, params);
+            resultValue = apiHandler.apiInvoker().invoke(requestJson, params);
         } catch (IllegalAccessException | IllegalArgumentException ex) {
             throw ApiException.getUnknownApiException(ex);
         } catch (InvocationTargetException ex) {
@@ -83,7 +83,7 @@ public class ApiMock {
             throw ApiException.getUnknownApiException(throwable);
         }
 
-        Class<?> returnType = apiHandler.apiDefinition.realReturnType;
+        Class<?> returnType = apiHandler.apiDefinition().realReturnType();
 
         if (returnType == void.class) {
             return new JSONObject();
@@ -91,7 +91,7 @@ public class ApiMock {
 
         JSONObject resultJson = JsonUtils.copy(resultValue, JSONObject.class);
 
-        apiHandler.responseFilter.filter(resultJson);
+        apiHandler.responseFilter().filter(resultJson);
         return resultJson;
     }
 }
