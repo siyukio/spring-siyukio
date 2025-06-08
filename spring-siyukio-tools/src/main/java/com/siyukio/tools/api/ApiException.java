@@ -29,7 +29,7 @@ public final class ApiException extends RuntimeException {
         this.error = HttpStatus.UNPROCESSABLE_ENTITY.value();
     }
 
-    private ApiException(int error, String message) {
+    public ApiException(int error, String message) {
         super(message);
         this.message = message;
         this.error = error;
