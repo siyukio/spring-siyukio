@@ -3,6 +3,7 @@ package com.siyukio.tools.api;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
+import org.springframework.http.HttpStatus;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,23 +26,23 @@ public final class ApiException extends RuntimeException {
     public ApiException(String message) {
         super(message);
         this.message = message;
-        this.error = ApiError.PROCESS_ERROR.error;
+        this.error = HttpStatus.UNPROCESSABLE_ENTITY.value();
     }
 
-    public ApiException(int error, String message) {
+    private ApiException(int error, String message) {
         super(message);
         this.message = message;
         this.error = error;
     }
 
-    public ApiException(ApiError apiError) {
-        super(apiError.message);
-        this.message = apiError.message;
-        this.error = apiError.error;
+    public ApiException(HttpStatus httpStatus) {
+        super(httpStatus.getReasonPhrase());
+        this.message = httpStatus.getReasonPhrase();
+        this.error = httpStatus.value();
     }
 
     public static ApiException getInvalidApiException(String error) {
-        return new ApiException(ApiError.REQUEST_INVALID.error, error);
+        return new ApiException(HttpStatus.BAD_REQUEST.value(), error);
     }
 
     public static ApiException getUnknownApiException(Throwable ex) {
@@ -57,8 +58,7 @@ public final class ApiException extends RuntimeException {
             message = message.substring(index + 1);
         }
         message = message + ":" + ex.getMessage();
-        int error = ApiError.EXCEPTION.error;
-        return new ApiException(error, message);
+        return new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.value(), message);
     }
 
     public void putData(String name, Object value) {

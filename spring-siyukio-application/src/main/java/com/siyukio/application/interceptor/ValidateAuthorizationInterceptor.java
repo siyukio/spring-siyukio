@@ -1,12 +1,16 @@
 package com.siyukio.application.interceptor;
 
-import com.siyukio.tools.api.*;
+import com.siyukio.tools.api.AipHandlerManager;
+import com.siyukio.tools.api.ApiException;
+import com.siyukio.tools.api.ApiHandler;
+import com.siyukio.tools.api.ApiProfiles;
 import com.siyukio.tools.api.constants.ApiConstants;
 import com.siyukio.tools.api.token.Token;
 import com.siyukio.tools.api.token.TokenProvider;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -69,7 +73,7 @@ public final class ValidateAuthorizationInterceptor implements HandlerIntercepto
         }
 
         if (token == null || token.refresh || token.expired) {
-            throw new ApiException(ApiError.AUTHORIZED_ERROR);
+            throw new ApiException(HttpStatus.UNAUTHORIZED);
         }
 
         if (!apiHandler.apiDefinition().roles().isEmpty()) {
@@ -77,7 +81,7 @@ public final class ValidateAuthorizationInterceptor implements HandlerIntercepto
 
             roleSet.retainAll(token.roles);
             if (roleSet.size() != apiHandler.apiDefinition().roles().size()) {
-                throw new ApiException(ApiError.FORBIDDEN_ROLE);
+                throw new ApiException(HttpStatus.FORBIDDEN);
             }
         }
 

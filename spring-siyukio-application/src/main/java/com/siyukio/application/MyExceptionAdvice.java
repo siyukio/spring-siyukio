@@ -1,10 +1,10 @@
 package com.siyukio.application;
 
-import com.siyukio.tools.api.ApiError;
 import com.siyukio.tools.api.ApiException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -22,13 +22,13 @@ public class MyExceptionAdvice {
 
     @ExceptionHandler(value = HttpRequestMethodNotSupportedException.class)
     public JSONObject errorHandler(HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
-        ApiException apiException = new ApiException(ApiError.METHOD_NOT_ALLOWED);
+        ApiException apiException = new ApiException(HttpStatus.METHOD_NOT_ALLOWED);
         return apiException.toJson();
     }
 
     @ExceptionHandler(value = NoHandlerFoundException.class)
     public JSONObject errorHandler(NoHandlerFoundException ex, HttpServletRequest request) {
-        ApiException apiException = new ApiException(ApiError.NOT_FOUND);
+        ApiException apiException = new ApiException(HttpStatus.NOT_FOUND);
         return apiException.toJson();
     }
 

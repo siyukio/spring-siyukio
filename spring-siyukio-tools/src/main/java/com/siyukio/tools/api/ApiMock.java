@@ -8,6 +8,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -40,7 +41,7 @@ public class ApiMock {
 
         ApiHandler apiHandler = this.aipHandlerManager.getApiHandler(path);
         if (apiHandler == null) {
-            throw new ApiException(ApiError.NOT_FOUND);
+            throw new ApiException(HttpStatus.NOT_FOUND);
         }
 
         if (apiHandler.apiDefinition().signature()) {
@@ -52,7 +53,7 @@ public class ApiMock {
 
         if (apiHandler.apiDefinition().authorization()) {
             if (token == null) {
-                throw new ApiException(ApiError.AUTHORIZED_ERROR);
+                throw new ApiException(HttpStatus.UNAUTHORIZED);
             }
 
             if (!apiHandler.apiDefinition().roles().isEmpty()) {
@@ -60,7 +61,7 @@ public class ApiMock {
 
                 roleSet.retainAll(token.roles);
                 if (roleSet.isEmpty()) {
-                    throw new ApiException(ApiError.FORBIDDEN_ROLE);
+                    throw new ApiException(HttpStatus.FORBIDDEN);
                 }
             }
         }
