@@ -24,6 +24,10 @@ public final class IdUtils {
         return toBase(id);
     }
 
+    public static String getUUID() {
+        return GUID.v7().toUUID().toString();
+    }
+
     public static String toBase(String id) {
         BigInteger big = new BigInteger(id, 16);
         StringBuilder sb = new StringBuilder();
