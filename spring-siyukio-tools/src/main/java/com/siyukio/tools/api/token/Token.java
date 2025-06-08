@@ -20,6 +20,11 @@ import java.util.List;
 public final class Token {
 
     /**
+     * session id
+     */
+    public String sid = "";
+
+    /**
      * User id
      */
     public String uid = "";
