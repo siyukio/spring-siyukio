@@ -18,7 +18,6 @@ import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguratio
 import org.springframework.boot.web.servlet.context.ServletWebServerInitializedEvent;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
 import org.springframework.web.servlet.DispatcherServlet;
 
@@ -32,7 +31,6 @@ import java.util.Map;
  * @author Buddy
  */
 @Slf4j
-@Configuration
 @AutoConfigureAfter({WebMvcAutoConfiguration.class, JacksonAutoConfiguration.class,
         HttpMessageConvertersAutoConfiguration.class, RepositoryRestMvcAutoConfiguration.class})
 @ComponentScan("com.siyukio.application")
