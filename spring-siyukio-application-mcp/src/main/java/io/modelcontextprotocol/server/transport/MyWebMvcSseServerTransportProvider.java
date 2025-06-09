@@ -7,13 +7,16 @@ package io.modelcontextprotocol.server.transport;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.siyukio.tools.api.ApiException;
+import com.siyukio.tools.api.ApiProfiles;
 import com.siyukio.tools.api.constants.ApiConstants;
 import com.siyukio.tools.api.token.Token;
 import com.siyukio.tools.api.token.TokenProvider;
 import com.siyukio.tools.util.IdUtils;
+import com.siyukio.tools.util.JsonUtils;
 import io.modelcontextprotocol.spec.*;
 import io.modelcontextprotocol.util.Assert;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.function.RouterFunction;
@@ -25,8 +28,13 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -225,6 +233,21 @@ public class MyWebMvcSseServerTransportProvider implements McpServerTransportPro
         return token;
     }
 
+    private String encodeSessionId(String sessionId) {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("sessionId", sessionId);
+        jsonObject.put("originIp", ApiProfiles.IP4);
+        jsonObject.put("originPort", ApiProfiles.PORT);
+        String json = JsonUtils.toJSONString(jsonObject);
+        return Base64.getEncoder().encodeToString(json.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private JSONObject decodeSessionId(String sessionId) {
+        byte[] decode = Base64.getDecoder().decode(sessionId.getBytes(StandardCharsets.UTF_8));
+        String json = new String(decode, StandardCharsets.UTF_8);
+        return JsonUtils.parseObject(json);
+    }
+
     /**
      * Handles new SSE connection requests from clients by creating a new session and
      * establishing an SSE connection. This method:
@@ -274,10 +297,12 @@ public class MyWebMvcSseServerTransportProvider implements McpServerTransportPro
                 if (session instanceof MyMcpServerSession myMcpServerSession) {
                     myMcpServerSession.setToken(token);
                 }
+
+                String encodeSessionId = this.encodeSessionId(sessionId);
                 try {
                     sseBuilder.id(sessionId)
                             .event(ENDPOINT_EVENT_TYPE)
-                            .data(this.baseUrl + this.messageEndpoint + "?sessionId=" + sessionId);
+                            .data(this.baseUrl + this.messageEndpoint + "?sessionId=" + encodeSessionId);
                 } catch (Exception e) {
                     log.error("Failed to send initial endpoint event: {}", e.getMessage());
                     sseBuilder.error(e);
@@ -312,6 +337,33 @@ public class MyWebMvcSseServerTransportProvider implements McpServerTransportPro
         }
 
         String sessionId = request.param("sessionId").get();
+        JSONObject decodeSession = this.decodeSessionId(sessionId);
+
+        String originIp = decodeSession.optString("originIp", "");
+        int originPort = decodeSession.optInt("originPort", 80);
+        if (!originIp.equals(ApiProfiles.IP4) || originPort != ApiProfiles.PORT) {
+            String newBaseUri = "http://" + originIp + ":" + originPort + this.messageEndpoint + "?sessionId=" + sessionId;
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
+                    .uri(URI.create(newBaseUri));
+            try {
+                String body = request.body(String.class);
+                builder.method(request.method().name(), HttpRequest.BodyPublishers.ofString(body));
+                request.headers().asHttpHeaders().forEach((name, values) ->
+                        {
+                            if (!invalidHeaderSet.contains(name)) {
+                                values.forEach(value -> builder.header(name, value));
+                            }
+                        }
+                );
+                this.httpClient.sendAsync(builder.build(), HttpResponse.BodyHandlers.discarding()).get();
+            } catch (Exception e) {
+                log.error("Error proxy message: {}", e.getMessage());
+                return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new McpError(e.getMessage()));
+            }
+            return ServerResponse.ok().build();
+        }
+        
+        sessionId = decodeSession.optString("sessionId", "");
         McpServerSession session = sessions.get(sessionId);
 
         if (session == null) {
