@@ -55,12 +55,13 @@ public interface RequestValidator {
         String name = requestParam.getString("name");
         JSONObject items = requestParam.getJSONObject("items");
         String itemType = items.getString("type");
+        boolean dynamic = items.optBoolean("dynamic", false);
         int maxItems = requestParam.optInt("maxItems");
         int minItems = requestParam.optInt("minItems");
         String error = requestParam.optString("error", "");
         if (itemType.equals(ApiConstants.TYPE_OBJECT)) {
             JSONArray childArray = items.getJSONArray("childArray");
-            requestValidator = createObjectRequestValidator(name, false, childArray, false, parent, error);
+            requestValidator = createObjectRequestValidator(name, false, childArray, dynamic, parent, error);
         } else {
             RequestValidator typeRequestValidator = createArrayItemRequestValidator(name, itemType, requestParam, parent);
             requestValidator = new BasicRequestValidator(typeRequestValidator, null, parent, error);

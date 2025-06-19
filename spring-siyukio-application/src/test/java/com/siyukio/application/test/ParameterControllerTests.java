@@ -189,6 +189,21 @@ class ParameterControllerTests {
     }
 
     @Test
+    void testObjectArray() {
+        JSONObject listDto = new JSONObject();
+        listDto.put("objectArray", """
+                [
+                    {\"name\":\"test\"},
+                    {\"index\":1},
+                    {\"show\":true}
+                ]
+                """);
+        JSONObject requestJson = this.apiMock.perform("/testList", listDto);
+        log.info("{}", listDto);
+        log.info("{}", requestJson);
+    }
+
+    @Test
     void testPage() {
         JSONObject listDto = new JSONObject();
         listDto.put("uid", "123");

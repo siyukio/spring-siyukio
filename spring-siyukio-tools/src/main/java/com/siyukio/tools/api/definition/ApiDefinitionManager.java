@@ -332,6 +332,39 @@ public final class ApiDefinitionManager {
         return result;
     }
 
+    private JSONObject createJsonArrayRequestParam(String name, ApiParameter apiParameter) {
+        JSONObject requestParam = new JSONObject();
+        requestParam.put("name", name);
+        requestParam.put("type", ApiConstants.TYPE_ARRAY);
+        requestParam.put("description", apiParameter.description());
+        requestParam.put("required", apiParameter.required());
+        requestParam.put("error", apiParameter.error());
+        requestParam.put("masked", false);
+        JSONObject items = new JSONObject();
+        items.put("type", ApiConstants.TYPE_OBJECT);
+        items.put("childArray", new JSONArray());
+        items.put("dynamic", true);
+
+        requestParam.put("items", items);
+        int maxItems = apiParameter.maxItems();
+        int minItems = apiParameter.minItems();
+        if (minItems < 0) {
+            minItems = 0;
+        }
+        if (maxItems <= 0) {
+            maxItems = 255;
+        }
+        int newMaxSize = Math.max(maxItems, minItems);
+        int newMinSize = Math.min(maxItems, minItems);
+        maxItems = newMaxSize;
+        minItems = newMinSize;
+        requestParam.put("maxItems", maxItems);
+        if (minItems > 0) {
+            requestParam.put("minItems", minItems);
+        }
+        return requestParam;
+    }
+
     private JSONObject createCollectionRequestParameter(Method method, Class<?> typeClass, String name, ApiParameter apiParameter, LinkedList<Class<?>> requestClassLinked) {
         JSONObject requestParameter;
         if (isBasicType(typeClass)) {
@@ -515,6 +548,9 @@ public final class ApiDefinitionManager {
                         } else if (type.isArray()) {
                             Class<?> componentType = type.getComponentType();
                             requestParameter = this.createCollectionRequestParameter(method, componentType, parameterName, apiParameter, requestClassLinked);
+                            requestParameters.put(requestParameter);
+                        } else if (JSONArray.class == type) {
+                            requestParameter = this.createJsonArrayRequestParam(parameterName, apiParameter);
                             requestParameters.put(requestParameter);
                         } else if (JSONObject.class == type) {
                             requestParameter = this.createObjectRequestParameter(parameterName, apiParameter);
