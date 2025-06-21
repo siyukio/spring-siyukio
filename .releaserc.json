@@ -1,10 +1,6 @@
 {
   "branches": [
-    "main",
-    {
-      "name": "refs/tags/v*",
-      "channel": "release"
-    }
+    "main"
   ],
   "plugins": [
     "@semantic-release/commit-analyzer",
