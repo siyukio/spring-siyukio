@@ -49,9 +49,9 @@ public @interface ApiParameter {
 
     /**
      * If the parameter is a String, sets the maximum length of the String.
-     * Default is 255.
+     * Default is 1024.
      */
-    int maxLength() default 255;
+    int maxLength() default 1024;
 
     /**
      * If the parameter is a String, validates the text content using a regular expression.
@@ -66,9 +66,9 @@ public @interface ApiParameter {
 
     /**
      * If the parameter is an array, sets the maximum number of elements.
-     * Default is 255.
+     * Default is 1024.
      */
-    int maxItems() default 255;
+    int maxItems() default 1024;
 
     /**
      * If the parameter is an array, sets the minimum number of elements.
