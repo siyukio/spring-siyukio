@@ -1,6 +1,9 @@
 {
   "branches": [
-    "main"
+    {
+      "name": "v*",
+      "channel": "release"
+    }
   ],
   "plugins": [
     "@semantic-release/commit-analyzer",
