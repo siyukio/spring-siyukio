@@ -1,5 +1,6 @@
 {
   "branches": [
+    "main",
     {
       "name": "refs/tags/v*",
       "channel": "release"
