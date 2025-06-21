@@ -19,12 +19,12 @@ jobs:
       - name: Install dependencies
         run: npm install semantic-release @semantic-release/changelog @semantic-release/github -D
 
-      - name: Debug CI_TOKEN
+      - name: Debug token and remote
         run: |
-          echo "CI_TOKEN is set: ${#GITHUB_TOKEN} characters"
-          echo "Preview: ${GITHUB_TOKEN:0:5}*****"
+          echo "Token length: ${#GITHUB_TOKEN}"
+          echo "Preview token: ${GITHUB_TOKEN:0:20}*****"
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/siyukio/spring-siyukio.git
           git remote -v
-          git remote get-url origin
           curl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/user
         env:
           GITHUB_TOKEN: ${{ secrets.CI_TOKEN }}
