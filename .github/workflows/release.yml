@@ -22,7 +22,6 @@ jobs:
       - name: Set remote URL with personal access token
         run: |
           git remote set-url origin https://x-access-token:${{ secrets.CI_TOKEN }}@github.com/siyukio/spring-siyukio.git
-          git remote -v
 
       - name: Release
         env:
