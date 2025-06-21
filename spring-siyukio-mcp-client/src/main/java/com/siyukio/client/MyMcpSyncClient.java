@@ -7,6 +7,7 @@ import com.siyukio.tools.util.JsonUtils;
 import io.modelcontextprotocol.client.MyMcpAsyncClient;
 import io.modelcontextprotocol.client.MyMcpClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
+import io.modelcontextprotocol.client.transport.HttpClientWebSocketClientTransport;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,7 @@ import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.net.URI;
 import java.net.http.HttpRequest;
 import java.time.Duration;
 import java.util.HashMap;
@@ -43,27 +45,22 @@ public class MyMcpSyncClient {
 
     private final Duration requestTimeout;
 
+    private final boolean webSocket;
+
     private final Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler;
     private final Supplier<String> tokenSupplier;
     private MyMcpAsyncClient mcpAsyncClient = null;
     private McpSchema.InitializeResult result = null;
     private volatile long lastPingTime = System.currentTimeMillis();
 
-    public MyMcpSyncClient(String baseUri) {
-        this.baseUri = baseUri;
-        this.tokenSupplier = null;
-        this.authorization = "";
-        this.samplingHandler = null;
-        this.requestTimeout = Duration.ofSeconds(60);
-    }
-
-    public MyMcpSyncClient(String baseUri, Duration requestTimeout, Supplier<String> tokenSupplier, String authorization, Map<String, String> headers, Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler) {
+    public MyMcpSyncClient(String baseUri, Duration requestTimeout, boolean webSocket, Supplier<String> tokenSupplier, String authorization, Map<String, String> headers, Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler) {
         this.baseUri = baseUri;
         this.requestTimeout = requestTimeout;
         this.tokenSupplier = tokenSupplier;
         this.authorization = authorization;
         this.headers.putAll(headers);
         this.samplingHandler = samplingHandler;
+        this.webSocket = webSocket;
     }
 
     public static Builder builder(String baseUri) {
@@ -95,6 +92,20 @@ public class MyMcpSyncClient {
     private MyMcpAsyncClient initMcpAsyncClient() {
         String newBaseUri = this.baseUri;
         log.debug("use baseUri: {}", newBaseUri);
+        if (this.webSocket) {
+            URI uri = URI.create(newBaseUri);
+            newBaseUri = "";
+            if (uri.getScheme().equalsIgnoreCase("https")) {
+                newBaseUri += "wss://";
+            } else {
+                newBaseUri += "ws://";
+            }
+            newBaseUri += uri.getHost();
+            if (uri.getPort() > 0) {
+                newBaseUri += ":" + uri.getPort();
+            }
+            log.debug("use webSocket baseUri: {}", newBaseUri);
+        }
 
         String token = this.authorization;
         if (this.tokenSupplier != null) {
@@ -110,17 +121,22 @@ public class MyMcpSyncClient {
         }
 
         final McpClientTransport transport;
-        HttpRequest.Builder httpRequestBuilder = HttpRequest.newBuilder();
-        for (Map.Entry<String, String> entry : headerMap.entrySet()) {
-            httpRequestBuilder.header(entry.getKey(), entry.getValue());
-        }
-        httpRequestBuilder.header("Content-Type", "application/json");
+        if (this.webSocket) {
+            transport = new HttpClientWebSocketClientTransport(newBaseUri, headerMap, JsonUtils.getObjectMapper());
+        } else {
 
-        transport = HttpClientSseClientTransport
-                .builder(newBaseUri)
-                .objectMapper(JsonUtils.getObjectMapper())
-                .requestBuilder(httpRequestBuilder)
-                .build();
+            HttpRequest.Builder httpRequestBuilder = HttpRequest.newBuilder();
+            for (Map.Entry<String, String> entry : headerMap.entrySet()) {
+                httpRequestBuilder.header(entry.getKey(), entry.getValue());
+            }
+            httpRequestBuilder.header("Content-Type", "application/json");
+
+            transport = HttpClientSseClientTransport
+                    .builder(newBaseUri)
+                    .objectMapper(JsonUtils.getObjectMapper())
+                    .requestBuilder(httpRequestBuilder)
+                    .build();
+        }
 
         MyMcpClient.AsyncSpec asyncSpec = MyMcpClient.async(transport)
                 .clientInfo(new McpSchema.Implementation("Siyukio MCP Client", "0.9.0"))
@@ -189,9 +205,13 @@ public class MyMcpSyncClient {
         }
     }
 
-    public <T> T callTool(String toolName, Object params, Class<T> returnType) {
+    public McpSchema.CallToolResult callTool(String toolName, Object params) {
         Map<String, Object> arguments = JsonUtils.copy(params, Map.class, String.class, Object.class);
-        McpSchema.CallToolResult result = this.callTool(new McpSchema.CallToolRequest(toolName, arguments));
+        return this.callTool(new McpSchema.CallToolRequest(toolName, arguments));
+    }
+
+    public <T> T callTool(String toolName, Object params, Class<T> returnType) {
+        McpSchema.CallToolResult result = this.callTool(toolName, params);
         JSONObject contentJson = JsonUtils.copy(result.content().getFirst(), JSONObject.class);
         String text = contentJson.optString("text");
         if (result.isError()) {
@@ -241,11 +261,9 @@ public class MyMcpSyncClient {
         private final String baseUri;
 
         private final Map<String, String> headers = new HashMap<>();
-
+        private boolean webSocket = false;
         private String authorization = "";
-
         private Duration requestTimeout = Duration.ofSeconds(60);
-
         private Supplier<String> tokenSupplier;
 
         private Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler = null;
@@ -261,6 +279,11 @@ public class MyMcpSyncClient {
 
         public void addHeader(String name, String value) {
             this.headers.put(name, value);
+        }
+
+        public Builder setWebsocket(boolean webSocket) {
+            this.webSocket = webSocket;
+            return this;
         }
 
         public Builder setTokenSupplier(Supplier<String> tokenSupplier) {
@@ -279,7 +302,7 @@ public class MyMcpSyncClient {
         }
 
         public MyMcpSyncClient build() {
-            return new MyMcpSyncClient(this.baseUri, this.requestTimeout, this.tokenSupplier, this.authorization, this.headers, this.samplingHandler);
+            return new MyMcpSyncClient(this.baseUri, this.requestTimeout, this.webSocket, this.tokenSupplier, this.authorization, this.headers, this.samplingHandler);
         }
     }
 }

@@ -18,6 +18,8 @@ public interface ApiConstants {
 
     public String AUTHORIZATION = "Authorization";
 
+    public String SEC_WEBSOCKET_PROTOCOL = "Sec-WebSocket-Protocol";
+
     public String ATTRIBUTE_TOKEN = "siyukio.token";
 
     public String ATTRIBUTE_REQUEST_BODY = "siyukio.requestBody";

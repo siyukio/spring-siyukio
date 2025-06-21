@@ -19,7 +19,7 @@ import java.util.function.Supplier;
 
 @Slf4j
 @SpringBootTest
-class McpClientTests {
+class McpSeeClientTests {
 
     private final String baseUri = "http://localhost:8080";
 

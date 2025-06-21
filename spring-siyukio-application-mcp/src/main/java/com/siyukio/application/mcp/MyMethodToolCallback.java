@@ -6,22 +6,23 @@ import com.siyukio.tools.api.definition.ApiDefinition;
 import com.siyukio.tools.api.token.Token;
 import com.siyukio.tools.util.JsonUtils;
 import com.siyukio.tools.util.OpenApiUtils;
+import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.MyMcpSyncServerExchange;
+import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.mcp.McpToolUtils;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.http.HttpStatus;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Bugee
@@ -36,6 +37,46 @@ public class MyMethodToolCallback implements ToolCallback {
     public MyMethodToolCallback(ToolDefinition toolDefinition, ApiHandler apiHandler) {
         this.toolDefinition = toolDefinition;
         this.apiHandler = apiHandler;
+    }
+
+    private static ToolCallback addTool(String path, ApiHandler apiHandler) {
+        ApiDefinition apiDefinition = apiHandler.apiDefinition();
+        String description = apiDefinition.summary();
+        if (StringUtils.hasText(apiDefinition.description())) {
+            description += System.lineSeparator() + apiDefinition.description();
+        }
+
+        JSONObject inputSchemaJson = OpenApiUtils.createObjectRequest(apiDefinition.requestParameters());
+        ToolDefinition toolDefinition = new DefaultToolDefinition(path,
+                description,
+                JsonUtils.toJSONString(inputSchemaJson));
+
+        return new MyMethodToolCallback(toolDefinition, apiHandler);
+    }
+
+    public static McpServerFeatures.SyncToolSpecification toSyncToolSpecification(String path, ApiHandler apiHandler) {
+        ToolCallback toolCallback = addTool(path, apiHandler);
+        var tool = new McpSchema.Tool(toolCallback.getToolDefinition().name(),
+                toolCallback.getToolDefinition().description(), toolCallback.getToolDefinition().inputSchema());
+
+        return new McpServerFeatures.SyncToolSpecification(tool, (exchange, args) -> {
+            Map<String, Object> context = new HashMap<>();
+            context.put(McpToolUtils.TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchange);
+            ToolContext tooContext = new ToolContext(context);
+            try {
+                String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(args), tooContext);
+                return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false);
+            } catch (ApiException ex) {
+                JSONObject responseJson = ex.toJson();
+                String text = JsonUtils.toJSONString(responseJson);
+                return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(text)), true);
+            } catch (Exception e) {
+                ApiException apiException = ApiException.getUnknownApiException(e);
+                JSONObject responseJson = apiException.toJson();
+                String text = JsonUtils.toJSONString(responseJson);
+                return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(text)), true);
+            }
+        });
     }
 
     @Override
