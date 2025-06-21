@@ -19,10 +19,6 @@ jobs:
       - name: Install dependencies
         run: npm install semantic-release @semantic-release/changelog @semantic-release/github -D
 
-      - name: Set remote URL with personal access token
-        run: |
-          git remote set-url origin https://x-access-token:${{ secrets.CI_TOKEN }}@github.com/siyukio/spring-siyukio.git
-
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.CI_TOKEN }}
