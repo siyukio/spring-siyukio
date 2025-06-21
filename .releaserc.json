@@ -1,5 +1,6 @@
 {
   "branches": [
+    "main",
     {
       "name": "v*",
       "channel": "release"
