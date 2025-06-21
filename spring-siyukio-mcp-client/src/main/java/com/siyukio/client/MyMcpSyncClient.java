@@ -41,6 +41,8 @@ public class MyMcpSyncClient {
 
     private final Map<String, String> headers = new HashMap<>();
 
+    private final Duration requestTimeout;
+
     private final Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler;
     private final Supplier<String> tokenSupplier;
     private MyMcpAsyncClient mcpAsyncClient = null;
@@ -52,10 +54,12 @@ public class MyMcpSyncClient {
         this.tokenSupplier = null;
         this.authorization = "";
         this.samplingHandler = null;
+        this.requestTimeout = Duration.ofSeconds(60);
     }
 
-    public MyMcpSyncClient(String baseUri, Supplier<String> tokenSupplier, String authorization, Map<String, String> headers, Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler) {
+    public MyMcpSyncClient(String baseUri, Duration requestTimeout, Supplier<String> tokenSupplier, String authorization, Map<String, String> headers, Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler) {
         this.baseUri = baseUri;
+        this.requestTimeout = requestTimeout;
         this.tokenSupplier = tokenSupplier;
         this.authorization = authorization;
         this.headers.putAll(headers);
@@ -120,7 +124,7 @@ public class MyMcpSyncClient {
 
         MyMcpClient.AsyncSpec asyncSpec = MyMcpClient.async(transport)
                 .clientInfo(new McpSchema.Implementation("Siyukio MCP Client", "0.9.0"))
-                .requestTimeout(Duration.ofSeconds(60))
+                .requestTimeout(this.requestTimeout)
                 .initializationTimeout(Duration.ofSeconds(6));
         if (this.samplingHandler != null) {
             Function<McpSchema.CreateMessageRequest, Mono<McpSchema.CreateMessageResult>> samplingHandler = r -> Mono
@@ -240,6 +244,8 @@ public class MyMcpSyncClient {
 
         private String authorization = "";
 
+        private Duration requestTimeout = Duration.ofSeconds(60);
+
         private Supplier<String> tokenSupplier;
 
         private Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler = null;
@@ -262,14 +268,18 @@ public class MyMcpSyncClient {
             return this;
         }
 
+        public Builder setRequestTimeout(Duration requestTimeout) {
+            this.requestTimeout = requestTimeout;
+            return this;
+        }
+
         public Builder setSamplingHandler(Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler) {
             this.samplingHandler = samplingHandler;
             return this;
         }
 
-
         public MyMcpSyncClient build() {
-            return new MyMcpSyncClient(this.baseUri, this.tokenSupplier, this.authorization, this.headers, this.samplingHandler);
+            return new MyMcpSyncClient(this.baseUri, this.requestTimeout, this.tokenSupplier, this.authorization, this.headers, this.samplingHandler);
         }
     }
 }
