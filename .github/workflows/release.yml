@@ -19,6 +19,16 @@ jobs:
       - name: Install dependencies
         run: npm install semantic-release @semantic-release/changelog @semantic-release/github -D
 
+      - name: Debug CI_TOKEN
+        run: |
+          echo "CI_TOKEN is set: ${#CI_TOKEN} characters"
+          echo "Preview: ${CI_TOKEN:0:5}*****"
+          git remote -v
+          git remote get-url origin
+          curl -H "Authorization: token $CI_TOKEN" https://api.github.com/user
+        env:
+          GITHUB_TOKEN: ${{ secrets.CI_TOKEN }}
+
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.CI_TOKEN }}
