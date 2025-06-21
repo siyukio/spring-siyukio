@@ -1,8 +1,7 @@
 {
   "branches": [
-    "main",
     {
-      "name": "v*",
+      "name": "refs/tags/v*",
       "channel": "release"
     }
   ],
