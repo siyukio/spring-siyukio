@@ -1,2 +1,2 @@
-com.siyukio.application.boot.starter.autoconfigure.MySseMcpServerConfiguration
-com.siyukio.application.boot.starter.autoconfigure.MyWebSocketMcpServerConfiguration
+io.github.siyukio.application.boot.starter.autoconfigure.MySseMcpServerConfiguration
+io.github.siyukio.application.boot.starter.autoconfigure.MyWebSocketMcpServerConfiguration

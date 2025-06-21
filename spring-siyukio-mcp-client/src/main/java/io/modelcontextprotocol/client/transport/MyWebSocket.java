@@ -1,6 +1,6 @@
 package io.modelcontextprotocol.client.transport;
 
-import com.siyukio.tools.util.AsyncUtils;
+import io.github.siyukio.tools.util.AsyncUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.http.WebSocket;

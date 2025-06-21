@@ -6,8 +6,8 @@ package io.modelcontextprotocol.server.transport;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.siyukio.tools.api.token.Token;
-import com.siyukio.tools.util.AsyncUtils;
+import io.github.siyukio.tools.api.token.Token;
+import io.github.siyukio.tools.util.AsyncUtils;
 import io.modelcontextprotocol.spec.*;
 import io.modelcontextprotocol.util.Assert;
 import lombok.Getter;

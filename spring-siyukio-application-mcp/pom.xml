@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.siyukio</groupId>
+        <groupId>io.github.siyukio</groupId>
         <artifactId>spring-siyukio</artifactId>
         <version>3.3.11-SNAPSHOT</version>
     </parent>
@@ -14,7 +14,7 @@
     <dependencies>
 
         <dependency>
-            <groupId>com.siyukio</groupId>
+            <groupId>io.github.siyukio</groupId>
             <artifactId>spring-siyukio-application</artifactId>
         </dependency>
 
@@ -40,7 +40,7 @@
         </dependency>
 
         <dependency>
-            <groupId>com.siyukio</groupId>
+            <groupId>io.github.siyukio</groupId>
             <artifactId>spring-siyukio-mcp-client</artifactId>
             <scope>test</scope>
         </dependency>

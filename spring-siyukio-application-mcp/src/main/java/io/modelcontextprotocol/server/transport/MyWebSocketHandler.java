@@ -1,9 +1,9 @@
 package io.modelcontextprotocol.server.transport;
 
-import com.siyukio.tools.api.ApiException;
-import com.siyukio.tools.api.constants.ApiConstants;
-import com.siyukio.tools.api.token.Token;
-import com.siyukio.tools.api.token.TokenProvider;
+import io.github.siyukio.tools.api.ApiException;
+import io.github.siyukio.tools.api.constants.ApiConstants;
+import io.github.siyukio.tools.api.token.Token;
+import io.github.siyukio.tools.api.token.TokenProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.ServerHttpRequest;

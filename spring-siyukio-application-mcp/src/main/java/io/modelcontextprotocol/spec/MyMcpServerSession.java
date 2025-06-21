@@ -1,7 +1,7 @@
 package io.modelcontextprotocol.spec;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.siyukio.tools.api.token.Token;
+import io.github.siyukio.tools.api.token.Token;
 import io.modelcontextprotocol.MyMcpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.MyMcpSyncServerExchange;

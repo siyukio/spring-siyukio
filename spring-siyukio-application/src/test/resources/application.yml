@@ -44,7 +44,8 @@ API_SIGNATURE_SALT: siyukio
 logging:
   level:
     root: INFO
-    com:
-      siyukio: DEBUG
+    io:
+      github:
+        siyukio: DEBUG
 server:
   port: 8080

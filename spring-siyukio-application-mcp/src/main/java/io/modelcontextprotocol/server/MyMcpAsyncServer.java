@@ -2,7 +2,7 @@ package io.modelcontextprotocol.server;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.siyukio.tools.util.IdUtils;
+import io.github.siyukio.tools.util.IdUtils;
 import io.modelcontextprotocol.spec.*;
 import io.modelcontextprotocol.util.Utils;
 import lombok.extern.slf4j.Slf4j;

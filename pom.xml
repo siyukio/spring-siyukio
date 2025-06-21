@@ -6,7 +6,7 @@
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.3.11</version>
     </parent>
-    <groupId>com.siyukio</groupId>
+    <groupId>io.github.siyukio</groupId>
     <artifactId>spring-siyukio</artifactId>
     <version>3.3.11-SNAPSHOT</version>
     <packaging>pom</packaging>
@@ -59,25 +59,25 @@
             </dependency>
 
             <dependency>
-                <groupId>com.siyukio</groupId>
+                <groupId>io.github.siyukio</groupId>
                 <artifactId>spring-siyukio-tools</artifactId>
                 <version>${siyukio.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>com.siyukio</groupId>
+                <groupId>io.github.siyukio</groupId>
                 <artifactId>spring-siyukio-application</artifactId>
                 <version>${siyukio.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>com.siyukio</groupId>
+                <groupId>io.github.siyukio</groupId>
                 <artifactId>spring-siyukio-application-mcp</artifactId>
                 <version>${siyukio.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>com.siyukio</groupId>
+                <groupId>io.github.siyukio</groupId>
                 <artifactId>spring-siyukio-mcp-client</artifactId>
                 <version>${siyukio.version}</version>
             </dependency>

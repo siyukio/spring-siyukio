@@ -1,6 +1,6 @@
 package io.modelcontextprotocol.server;
 
-import com.siyukio.tools.api.token.Token;
+import io.github.siyukio.tools.api.token.Token;
 import io.modelcontextprotocol.MyMcpAsyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpServerSession;

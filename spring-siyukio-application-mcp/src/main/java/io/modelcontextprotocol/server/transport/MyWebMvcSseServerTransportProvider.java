@@ -6,13 +6,13 @@ package io.modelcontextprotocol.server.transport;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.siyukio.tools.api.ApiException;
-import com.siyukio.tools.api.ApiProfiles;
-import com.siyukio.tools.api.constants.ApiConstants;
-import com.siyukio.tools.api.token.Token;
-import com.siyukio.tools.api.token.TokenProvider;
-import com.siyukio.tools.util.IdUtils;
-import com.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.api.ApiException;
+import io.github.siyukio.tools.api.ApiProfiles;
+import io.github.siyukio.tools.api.constants.ApiConstants;
+import io.github.siyukio.tools.api.token.Token;
+import io.github.siyukio.tools.api.token.TokenProvider;
+import io.github.siyukio.tools.util.IdUtils;
+import io.github.siyukio.tools.util.JsonUtils;
 import io.modelcontextprotocol.spec.*;
 import io.modelcontextprotocol.util.Assert;
 import lombok.extern.slf4j.Slf4j;
@@ -362,7 +362,7 @@ public class MyWebMvcSseServerTransportProvider implements McpServerTransportPro
             }
             return ServerResponse.ok().build();
         }
-        
+
         sessionId = decodeSession.optString("sessionId", "");
         McpServerSession session = sessions.get(sessionId);
 
