@@ -63,20 +63,21 @@ public interface RequestValidator {
             JSONArray childArray = items.getJSONArray("childArray");
             requestValidator = createObjectRequestValidator(name, false, childArray, dynamic, parent, error);
         } else {
-            RequestValidator typeRequestValidator = createArrayItemRequestValidator(name, itemType, requestParam, parent);
+            RequestValidator typeRequestValidator = createArrayItemRequestValidator(name, items, requestParam, parent);
             requestValidator = new BasicRequestValidator(typeRequestValidator, null, parent, error);
         }
         return new ArrayRequestValidator(name, requestParam.optBoolean("required"), requestValidator, maxItems, minItems, parent, error);
     }
 
-    private static RequestValidator createArrayItemRequestValidator(String name, String itemType, JSONObject requestParam, String parent) {
+    private static RequestValidator createArrayItemRequestValidator(String name, JSONObject items, JSONObject requestParam, String parent) {
         String itemName = name + ".item";
         boolean required = false;
-        long maximum = requestParam.optLong("maximum", -1);
-        long minimum = requestParam.optLong("minimum", -1);
-        int maxLength = requestParam.optInt("maxLength", -1);
-        int minLength = requestParam.optInt("minLength", -1);
-        String pattern = requestParam.optString("pattern", "");
+        String itemType = items.getString("type");
+        long maximum = items.optLong("maximum", -1);
+        long minimum = items.optLong("minimum", -1);
+        int maxLength = items.optInt("maxLength", -1);
+        int minLength = items.optInt("minLength", -1);
+        String regex = items.optString("regex", "");
         String error = requestParam.optString("error", "");
         RequestValidator requestValidator;
         switch (itemType) {
@@ -93,10 +94,10 @@ public interface RequestValidator {
                 requestValidator = new DateRequestValidator(itemName, required, parent, error);
                 break;
             default:
-                if (pattern.isEmpty()) {
+                if (regex.isEmpty()) {
                     requestValidator = new StringRequestValidator(itemName, required, maxLength, minLength, parent, error);
                 } else {
-                    requestValidator = new RegexRequestValidator(itemName, required, pattern, parent, error);
+                    requestValidator = new RegexRequestValidator(itemName, required, regex, parent, error);
                 }
                 break;
         }

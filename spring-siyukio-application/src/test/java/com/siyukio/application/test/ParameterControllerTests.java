@@ -131,6 +131,16 @@ class ParameterControllerTests {
     }
 
     @Test
+    void testStringListItemMax() {
+        List<String> list = List.of("1", "2", "3333");
+        JSONObject listDto = new JSONObject();
+        listDto.put("stringList", list);
+        JSONObject resultJson = this.apiMock.perform("/testList", listDto);
+        log.info("{}", listDto);
+        log.info("{}", resultJson);
+    }
+
+    @Test
     void testStringListByNum() {
         List<Integer> list = List.of(1, 2, 3, 4, 5, 6);
         JSONObject listDto = new JSONObject();

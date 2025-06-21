@@ -18,7 +18,7 @@ import java.util.List;
 @NoArgsConstructor
 public class ListRequest {
 
-    @ApiParameter(required = false, minItems = 3, maxItems = 6)
+    @ApiParameter(required = false, minItems = 3, maxItems = 6, maxLength = 3)
     public List<String> stringList;
 
     @ApiParameter(required = false, minItems = 3, maxItems = 6)

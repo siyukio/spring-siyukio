@@ -169,20 +169,28 @@ public final class ApiDefinitionManager {
         requestParameter.put("error", apiParameter.error());
 
         String itemType;
+        JSONObject items = new JSONObject();
         if (typeClass == boolean.class || typeClass == Boolean.class) {
             itemType = ApiConstants.TYPE_BOOLEAN;
         } else if (typeClass == long.class || typeClass == Long.class || int.class == typeClass || typeClass == Integer.class || short.class == typeClass || typeClass == Short.class) {
             itemType = ApiConstants.TYPE_INTEGER;
+            items.put("maximum", apiParameter.maximum());
+            items.put("minimum", apiParameter.minimum());
         } else if (typeClass == double.class || typeClass == Double.class || typeClass == float.class || typeClass == Float.class || Number.class.isAssignableFrom(typeClass)) {
             itemType = ApiConstants.TYPE_NUMBER;
+            items.put("maximum", apiParameter.maximum());
+            items.put("minimum", apiParameter.minimum());
         } else if (typeClass == String.class) {
             itemType = ApiConstants.TYPE_STRING;
+            items.put("maxLength", apiParameter.maxLength());
+            items.put("minLength", apiParameter.minLength());
+            items.put("regex", apiParameter.regex());
         } else if (typeClass == Date.class) {
             itemType = ApiConstants.TYPE_DATE;
         } else {
             itemType = typeClass.getSimpleName();
         }
-        JSONObject items = new JSONObject();
+
         items.put("type", itemType);
         requestParameter.put("items", items);
         return requestParameter;
