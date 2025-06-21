@@ -21,11 +21,11 @@ jobs:
 
       - name: Debug CI_TOKEN
         run: |
-          echo "CI_TOKEN is set: ${#CI_TOKEN} characters"
-          echo "Preview: ${CI_TOKEN:0:5}*****"
+          echo "CI_TOKEN is set: ${#GITHUB_TOKEN} characters"
+          echo "Preview: ${GITHUB_TOKEN:0:5}*****"
           git remote -v
           git remote get-url origin
-          curl -H "Authorization: token $CI_TOKEN" https://api.github.com/user
+          curl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/user
         env:
           GITHUB_TOKEN: ${{ secrets.CI_TOKEN }}
 
