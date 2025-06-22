@@ -10,6 +10,8 @@
     <artifactId>spring-siyukio</artifactId>
     <version>3.3.11</version>
     <packaging>pom</packaging>
+    <name>Siyukio Parent</name>
+
     <modules>
         <module>spring-siyukio-tools</module>
         <module>spring-siyukio-application</module>

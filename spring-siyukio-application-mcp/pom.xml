@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>spring-siyukio-application-mcp</artifactId>
+    <name>MCP implementation of the API</name>
 
     <dependencies>
 

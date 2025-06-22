@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>spring-siyukio-mcp-client</artifactId>
+    <name>MCP Client</name>
 
     <dependencies>
 
