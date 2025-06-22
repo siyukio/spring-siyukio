@@ -47,8 +47,24 @@ jobs:
           java-version: '21'
           cache: 'maven'
 
-      - name: Deploy to Maven Central
-        run: mvn --batch-mode --no-transfer-progress clean deploy -Prelease
+      - name: Create settings.xml
+        run: |
+          echo "MAVEN_USERNAME: $MAVEN_USERNAME"
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<EOF
+          <settings>
+            <servers>
+              <server>
+                <id>central</id>
+                <username>$MAVEN_USERNAME</username>
+                <password>$MAVEN_PASSWORD</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
         env:
-          CI_MAVEN_USERNAME: ${{ secrets.CI_MAVEN_USERNAME }}
-          CI_MAVEN_PASSWORD: ${{ secrets.CI_MAVEN_PASSWORD }}
+          MAVEN_USERNAME: ${{ secrets.CI_MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.CI_MAVEN_PASSWORD }}
+
+      - name: Deploy to Maven Central
+        run: mvn --batch-mode --no-transfer-progress clean deploy
