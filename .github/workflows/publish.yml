@@ -1,0 +1,29 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read # for checkout
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Deploy to Maven Central
+        run: mvn --batch-mode --no-transfer-progress clean deploy -Prelease
+        env:
+          CI_MAVEN_USERNAME: ${{ secrets.CI_MAVEN_USERNAME }}
+          CI_MAVEN_PASSWORD: ${{ secrets.CI_MAVEN_PASSWORD }}
