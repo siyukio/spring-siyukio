@@ -47,6 +47,17 @@ jobs:
           java-version: '21'
           cache: 'maven'
 
+      - name: Import GPG key
+        run: |
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --yes --import
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.CI_GPG_PRIVATE_KEY }}
+
+      - name: Trust imported GPG key
+        run: |
+          KEY_ID=$(gpg --list-secret-keys --with-colons | grep '^sec' | cut -d':' -f5)
+          echo -e "5\ny\n" | gpg --command-fd 0 --expert --edit-key "$KEY_ID" trust
+
       - name: Create settings.xml
         run: |
           echo "MAVEN_USERNAME: $MAVEN_USERNAME"
@@ -60,11 +71,20 @@ jobs:
                 <password>$MAVEN_PASSWORD</password>
               </server>
             </servers>
+            <profiles>
+              <profile>
+                <id>release</id>
+                <properties>
+                  <gpg.passphrase>$GPG_PASSPHRASE</gpg.passphrase>
+                </properties>
+              </profile>
+            </profiles>
           </settings>
           EOF
         env:
           MAVEN_USERNAME: ${{ secrets.CI_MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.CI_MAVEN_PASSWORD }}
+          GPG_PASSPHRASE: ${{ secrets.CI_GPG_PASSPHRASE }}
 
       - name: Deploy to Maven Central
-        run: mvn --batch-mode --no-transfer-progress clean deploy
+        run: mvn clean deploy -P release --batch-mode --no-transfer-progress
