@@ -12,6 +12,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     permissions:
+      packages: write  # to be able to publish a GitHub packages
       contents: write # to be able to publish a GitHub release
       issues: write # to be able to comment on released issues
       pull-requests: write # to be able to comment on released pull requests
@@ -40,51 +41,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.CI_TOKEN }}
         run: npx semantic-release
 
-      - name: Set up Java
+      - name: Set up Apache Maven Central
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
-          cache: 'maven'
+          server-id: central
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_CENTRAL_TOKEN
+          gpg-private-key: ${{ secrets.CI_GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
-      - name: Import GPG key
-        run: |
-          echo "$GPG_PRIVATE_KEY" | gpg --batch --yes --import
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.CI_GPG_PRIVATE_KEY }}
-
-      - name: Trust imported GPG key
-        run: |
-          KEY_ID=$(gpg --list-secret-keys --with-colons | grep '^sec' | cut -d':' -f5)
-          echo -e "5\ny\n" | gpg --command-fd 0 --expert --edit-key "$KEY_ID" trust
-
-      - name: Create settings.xml
-        run: |
-          echo "MAVEN_USERNAME: $MAVEN_USERNAME"
-          mkdir -p ~/.m2
-          cat > ~/.m2/settings.xml <<EOF
-          <settings>
-            <servers>
-              <server>
-                <id>central</id>
-                <username>$MAVEN_USERNAME</username>
-                <password>$MAVEN_PASSWORD</password>
-              </server>
-            </servers>
-            <profiles>
-              <profile>
-                <id>release</id>
-                <properties>
-                  <gpg.passphrase>$GPG_PASSPHRASE</gpg.passphrase>
-                </properties>
-              </profile>
-            </profiles>
-          </settings>
-          EOF
+      - name: Publish to Apache Maven Central
+        run: mvn deploy -P release --batch-mode --no-transfer-progress
         env:
           MAVEN_USERNAME: ${{ secrets.CI_MAVEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.CI_MAVEN_PASSWORD }}
-          GPG_PASSPHRASE: ${{ secrets.CI_GPG_PASSPHRASE }}
-
-      - name: Deploy to Maven Central
-        run: mvn clean deploy -P release --batch-mode --no-transfer-progress
+          MAVEN_CENTRAL_TOKEN: ${{ secrets.CI_MAVEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.CI_GPG_PASSPHRASE }}
