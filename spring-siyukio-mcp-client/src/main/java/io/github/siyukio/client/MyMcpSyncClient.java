@@ -139,7 +139,7 @@ public class MyMcpSyncClient {
         }
 
         MyMcpClient.AsyncSpec asyncSpec = MyMcpClient.async(transport)
-                .clientInfo(new McpSchema.Implementation("Siyukio MCP Client", "0.9.0"))
+                .clientInfo(new McpSchema.Implementation("mcp-client", "0.10.0"))
                 .requestTimeout(this.requestTimeout)
                 .initializationTimeout(Duration.ofSeconds(6));
         if (this.samplingHandler != null) {

@@ -7,7 +7,7 @@ import io.github.siyukio.tools.api.ApiHandler;
 import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.JsonUtils;
 import io.modelcontextprotocol.server.McpSyncServer;
-import io.modelcontextprotocol.server.MySyncSpecification;
+import io.modelcontextprotocol.server.MyMcpServer;
 import io.modelcontextprotocol.server.transport.MyWebSocketHandler;
 import io.modelcontextprotocol.server.transport.MyWebSocketServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -75,8 +75,9 @@ public class MyWebSocketMcpServerConfiguration implements WebSocketConfigurer, A
         // Create the server with both tool and resource capabilities
         String serverName = mcpServerProperties.getName();
         String serverVersion = mcpServerProperties.getVersion();
-        MySyncSpecification spec = new MySyncSpecification(webSocketServerTransportProvider)
+        MyMcpServer.SyncSpecification spec = new MyMcpServer.SyncSpecification(webSocketServerTransportProvider)
                 .serverInfo(serverName, serverVersion)
+                .requestTimeout(mcpServerProperties.getRequestTimeout())
                 .capabilities(capabilities);
 
         for (Map.Entry<String, ApiHandler> entry : aipHandlerManager.getApiHandlerMap().entrySet()) {

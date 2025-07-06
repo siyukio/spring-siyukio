@@ -35,6 +35,7 @@ public class MyMcpServerFeatures {
                  Map<String, McpServerFeatures.AsyncResourceSpecification> resources,
                  List<McpSchema.ResourceTemplate> resourceTemplates,
                  Map<String, McpServerFeatures.AsyncPromptSpecification> prompts,
+                 Map<McpSchema.CompleteReference, McpServerFeatures.AsyncCompletionSpecification> completions,
                  List<BiFunction<McpAsyncServerExchange, List<McpSchema.Root>, Mono<Void>>> rootsChangeConsumers,
                  String instructions) {
 
@@ -55,6 +56,7 @@ public class MyMcpServerFeatures {
               List<McpServerFeatures.AsyncToolSpecification> tools, Map<String, McpServerFeatures.AsyncResourceSpecification> resources,
               List<McpSchema.ResourceTemplate> resourceTemplates,
               Map<String, McpServerFeatures.AsyncPromptSpecification> prompts,
+              Map<McpSchema.CompleteReference, McpServerFeatures.AsyncCompletionSpecification> completions,
               List<BiFunction<McpAsyncServerExchange, List<McpSchema.Root>, Mono<Void>>> rootsChangeConsumers,
               String instructions) {
 
@@ -62,7 +64,8 @@ public class MyMcpServerFeatures {
 
             this.serverInfo = serverInfo;
             this.serverCapabilities = (serverCapabilities != null) ? serverCapabilities
-                    : new McpSchema.ServerCapabilities(null, // experimental
+                    : new McpSchema.ServerCapabilities(null, // completions
+                    null, // experimental
                     new McpSchema.ServerCapabilities.LoggingCapabilities(), // Enable
                     // logging
                     // by
@@ -76,6 +79,7 @@ public class MyMcpServerFeatures {
             this.resources = (resources != null) ? resources : Map.of();
             this.resourceTemplates = (resourceTemplates != null) ? resourceTemplates : List.of();
             this.prompts = (prompts != null) ? prompts : Map.of();
+            this.completions = (completions != null) ? completions : Map.of();
             this.rootsChangeConsumers = (rootsChangeConsumers != null) ? rootsChangeConsumers : List.of();
             this.instructions = instructions;
         }
@@ -105,6 +109,11 @@ public class MyMcpServerFeatures {
                 prompts.put(key, McpServerFeatures.AsyncPromptSpecification.fromSync(prompt));
             });
 
+            Map<McpSchema.CompleteReference, McpServerFeatures.AsyncCompletionSpecification> completions = new HashMap<>();
+            syncSpec.completions().forEach((key, completion) -> {
+                completions.put(key, McpServerFeatures.AsyncCompletionSpecification.fromSync(completion));
+            });
+
             List<BiFunction<McpAsyncServerExchange, List<McpSchema.Root>, Mono<Void>>> rootChangeConsumers = new ArrayList<>();
 
             for (var rootChangeConsumer : syncSpec.rootsChangeConsumers()) {
@@ -114,7 +123,7 @@ public class MyMcpServerFeatures {
             }
 
             return new McpServerFeatures.Async(syncSpec.serverInfo(), syncSpec.serverCapabilities(), tools, resources,
-                    syncSpec.resourceTemplates(), prompts, rootChangeConsumers, syncSpec.instructions());
+                    syncSpec.resourceTemplates(), prompts, completions, rootChangeConsumers, syncSpec.instructions());
         }
     }
 

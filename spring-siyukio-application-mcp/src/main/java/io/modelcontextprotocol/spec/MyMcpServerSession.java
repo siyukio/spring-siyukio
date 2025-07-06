@@ -30,6 +30,12 @@ public class MyMcpServerSession extends McpServerSession implements McpSession {
     private static final int STATE_INITIALIZING = 1;
     private static final int STATE_INITIALIZED = 2;
     private final ConcurrentHashMap<Object, MonoSink<McpSchema.JSONRPCResponse>> pendingResponses = new ConcurrentHashMap<>();
+
+    /**
+     * Duration to wait for request responses before timing out
+     */
+    private final Duration requestTimeout;
+
     private final AtomicLong requestCounter = new AtomicLong(0);
     private final InitRequestHandler initRequestHandler;
     private final InitNotificationHandler initNotificationHandler;
@@ -60,15 +66,16 @@ public class MyMcpServerSession extends McpServerSession implements McpSession {
      * @param requestHandlers         map of request handlers to use
      * @param notificationHandlers    map of notification handlers to use
      */
-    public MyMcpServerSession(String id, McpServerTransport transport, InitRequestHandler initHandler,
+    public MyMcpServerSession(String id, Duration requestTimeout, McpServerTransport transport, InitRequestHandler initHandler,
                               InitNotificationHandler initNotificationHandler, Map<String, RequestHandler<?>> requestHandlers,
                               Map<String, NotificationHandler> notificationHandlers) {
-        super(id, transport, initHandler, initNotificationHandler, requestHandlers, notificationHandlers);
+        super(id, requestTimeout, transport, initHandler, initNotificationHandler, requestHandlers, notificationHandlers);
         this.transport = transport;
         this.initRequestHandler = initHandler;
         this.initNotificationHandler = initNotificationHandler;
         this.requestHandlers = requestHandlers;
         this.notificationHandlers = notificationHandlers;
+        this.requestTimeout = requestTimeout;
     }
 
     /**
@@ -115,6 +122,7 @@ public class MyMcpServerSession extends McpServerSession implements McpSession {
         }
 
         String requestId = this.generateRequestId();
+
         return Mono.<McpSchema.JSONRPCResponse>create(sink -> {
             this.pendingResponses.put(requestId, sink);
             McpSchema.JSONRPCRequest jsonrpcRequest = new McpSchema.JSONRPCRequest(McpSchema.JSONRPC_VERSION, method,
@@ -124,7 +132,7 @@ public class MyMcpServerSession extends McpServerSession implements McpSession {
                 this.pendingResponses.remove(requestId);
                 sink.error(error);
             });
-        }).timeout(Duration.ofSeconds(10)).handle((jsonRpcResponse, sink) -> {
+        }).timeout(this.requestTimeout).handle((jsonRpcResponse, sink) -> {
             if (jsonRpcResponse.error() != null) {
                 sink.error(new McpError(jsonRpcResponse.error()));
             } else {
@@ -255,6 +263,10 @@ public class MyMcpServerSession extends McpServerSession implements McpSession {
             }
             return this.exchangeSink.asMono().flatMap(exchange -> handler.handle(exchange, notification.params()));
         });
+    }
+
+    private MethodNotFoundError getMethodNotFoundError(String method) {
+        return new MethodNotFoundError(method, "Method not found: " + method, null);
     }
 
     @Override

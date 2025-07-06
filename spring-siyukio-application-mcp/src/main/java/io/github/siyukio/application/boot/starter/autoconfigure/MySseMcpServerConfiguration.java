@@ -7,7 +7,7 @@ import io.github.siyukio.tools.api.ApiHandler;
 import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.JsonUtils;
 import io.modelcontextprotocol.server.McpSyncServer;
-import io.modelcontextprotocol.server.MySyncSpecification;
+import io.modelcontextprotocol.server.MyMcpServer;
 import io.modelcontextprotocol.server.transport.MyWebMvcSseServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
@@ -54,8 +54,9 @@ public class MySseMcpServerConfiguration {
         // Create the server with both tool and resource capabilities
         String serverName = mcpServerProperties.getName();
         String serverVersion = mcpServerProperties.getVersion();
-        MySyncSpecification spec = new MySyncSpecification(webMvcSseServerTransportProvider)
+        MyMcpServer.SyncSpecification spec = new MyMcpServer.SyncSpecification(webMvcSseServerTransportProvider)
                 .serverInfo(serverName, serverVersion)
+                .requestTimeout(mcpServerProperties.getRequestTimeout())
                 .capabilities(capabilities);
 
 
