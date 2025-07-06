@@ -9,6 +9,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -25,7 +26,6 @@ class McpSeeClientTests {
 
     @Autowired
     private TokenProvider tokenProvider;
-
     private final Supplier<String> tokenSupplier = () -> {
         Token token = Token.builder().uid("321")
                 .name("hello")
@@ -34,10 +34,14 @@ class McpSeeClientTests {
         return this.tokenProvider.createAuthorization(token);
     };
 
+    @Autowired
+    private McpClientCommonProperties mcpClientCommonProperties;
+
     @Test
     void testListTools() {
         MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
                 .setTokenSupplier(this.tokenSupplier)
+                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
                 .build();
 
         McpSchema.ListToolsResult toolsList = client.listTools();
@@ -54,6 +58,7 @@ class McpSeeClientTests {
 
         MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
                 .setTokenSupplier(this.tokenSupplier)
+                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
                 .build();
 
         JSONObject result = client.callTool("/getToken",
@@ -68,6 +73,7 @@ class McpSeeClientTests {
     void testCallTool() {
         MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
                 .setTokenSupplier(this.tokenSupplier)
+                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
                 .build();
 
         CreateAuthorizationRequest createAuthorizationRequest = CreateAuthorizationRequest.builder()
@@ -98,6 +104,7 @@ class McpSeeClientTests {
 
         MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
                 .setTokenSupplier(this.tokenSupplier)
+                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
                 .setSamplingHandler(samplingHandler)
                 .build();
 

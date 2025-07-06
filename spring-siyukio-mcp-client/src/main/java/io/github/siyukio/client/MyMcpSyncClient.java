@@ -12,6 +12,7 @@ import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
+import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
@@ -47,15 +48,27 @@ public class MyMcpSyncClient {
 
     private final boolean webSocket;
 
+    private final String name;
+
+    private final String version;
+
     private final Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler;
     private final Supplier<String> tokenSupplier;
     private MyMcpAsyncClient mcpAsyncClient = null;
     private McpSchema.InitializeResult result = null;
     private volatile long lastPingTime = System.currentTimeMillis();
 
-    public MyMcpSyncClient(String baseUri, Duration requestTimeout, boolean webSocket, Supplier<String> tokenSupplier, String authorization, Map<String, String> headers, Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler) {
+    public MyMcpSyncClient(String baseUri,
+                           Duration requestTimeout,
+                           boolean webSocket, String name, String version,
+                           Supplier<String> tokenSupplier,
+                           String authorization,
+                           Map<String, String> headers,
+                           Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler) {
         this.baseUri = baseUri;
         this.requestTimeout = requestTimeout;
+        this.name = name;
+        this.version = version;
         this.tokenSupplier = tokenSupplier;
         this.authorization = authorization;
         this.headers.putAll(headers);
@@ -139,7 +152,7 @@ public class MyMcpSyncClient {
         }
 
         MyMcpClient.AsyncSpec asyncSpec = MyMcpClient.async(transport)
-                .clientInfo(new McpSchema.Implementation("mcp-client", "0.10.0"))
+                .clientInfo(new McpSchema.Implementation(this.name, this.version))
                 .requestTimeout(this.requestTimeout)
                 .initializationTimeout(Duration.ofSeconds(6));
         if (this.samplingHandler != null) {
@@ -264,6 +277,8 @@ public class MyMcpSyncClient {
         private boolean webSocket = false;
         private String authorization = "";
         private Duration requestTimeout = Duration.ofSeconds(60);
+        private String name = "mcp-client";
+        private String version = "0.10.0";
         private Supplier<String> tokenSupplier;
 
         private Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler = null;
@@ -291,8 +306,25 @@ public class MyMcpSyncClient {
             return this;
         }
 
+        public Builder setName(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder setVersion(String version) {
+            this.version = version;
+            return this;
+        }
+
         public Builder setRequestTimeout(Duration requestTimeout) {
             this.requestTimeout = requestTimeout;
+            return this;
+        }
+
+        public Builder setMcpClientCommonProperties(McpClientCommonProperties mcpClientCommonProperties) {
+            this.name = mcpClientCommonProperties.getName();
+            this.version = mcpClientCommonProperties.getVersion();
+            this.requestTimeout = mcpClientCommonProperties.getRequestTimeout();
             return this;
         }
 
@@ -302,7 +334,10 @@ public class MyMcpSyncClient {
         }
 
         public MyMcpSyncClient build() {
-            return new MyMcpSyncClient(this.baseUri, this.requestTimeout, this.webSocket, this.tokenSupplier, this.authorization, this.headers, this.samplingHandler);
+            return new MyMcpSyncClient(this.baseUri, this.requestTimeout, this.webSocket,
+                    this.name, this.version, this.tokenSupplier,
+                    this.authorization, this.headers,
+                    this.samplingHandler);
         }
     }
 }

@@ -9,6 +9,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -34,11 +35,15 @@ class McpWebsocketClientTests {
         return this.tokenProvider.createAuthorization(token);
     };
 
+    @Autowired
+    private McpClientCommonProperties mcpClientCommonProperties;
+
     @Test
     void testListTools() {
         MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
                 .setWebsocket(true)
                 .setTokenSupplier(this.tokenSupplier)
+                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
                 .build();
 
         McpSchema.ListToolsResult toolsList = client.listTools();
@@ -56,6 +61,7 @@ class McpWebsocketClientTests {
         MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
                 .setWebsocket(true)
                 .setTokenSupplier(this.tokenSupplier)
+                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
                 .build();
 
         JSONObject result = client.callTool("/getToken",
@@ -71,6 +77,7 @@ class McpWebsocketClientTests {
         MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
                 .setWebsocket(true)
                 .setTokenSupplier(this.tokenSupplier)
+                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
                 .build();
 
         CreateAuthorizationRequest createAuthorizationRequest = CreateAuthorizationRequest.builder()
@@ -102,6 +109,7 @@ class McpWebsocketClientTests {
         MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
                 .setWebsocket(true)
                 .setTokenSupplier(this.tokenSupplier)
+                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
                 .setSamplingHandler(samplingHandler)
                 .build();
 

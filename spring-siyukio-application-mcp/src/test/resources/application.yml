@@ -45,9 +45,12 @@ spring:
   ai:
     mcp:
       server:
-        name: siyukio
+        name: siyukio-server
         version: 3.3.12-SNAPSHOT
-
+      client:
+        name: siyukio-client
+        version: 3.3.12-SNAPSHOT
+        requestTimeout: 60000
 
 logging:
   level:
