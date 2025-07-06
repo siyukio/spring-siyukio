@@ -104,7 +104,7 @@ class McpWebsocketClientTests {
             log.info("client: {}", request);
             return McpSchema.CreateMessageResult.builder()
                     .role(McpSchema.Role.USER)
-                    .message("ok")
+                    .message("websocket ok")
                     .build();
         };
 

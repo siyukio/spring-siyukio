@@ -53,13 +53,9 @@ public class McpController {
                         .metadata(metadata)
                         .messages(List.of())
                         .build();
-                try {
-                    if (exchange instanceof MyMcpSyncServerExchange myMcpSyncServerExchange) {
-                        myMcpSyncServerExchange.createMessageNoReply(request);
-                    }
-                } catch (Exception e) {
-                    log.error("", e);
-                }
+
+                McpSchema.CreateMessageResult result = exchange.createMessage(request);
+                log.info("server CreateMessageResult: {}", JsonUtils.toPrettyJSONString(result));
 
             }, 6, TimeUnit.SECONDS);
         }

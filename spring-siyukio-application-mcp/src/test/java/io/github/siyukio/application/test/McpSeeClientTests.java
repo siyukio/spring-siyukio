@@ -100,7 +100,7 @@ class McpSeeClientTests {
             log.info("client: {}", request);
             return McpSchema.CreateMessageResult.builder()
                     .role(McpSchema.Role.USER)
-                    .message("ok")
+                    .message("sse ok")
                     .build();
         };
 

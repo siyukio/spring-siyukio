@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.siyukio.tools.api.token.Token;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.MyMcpAsyncServerExchange;
-import io.modelcontextprotocol.server.MyMcpSyncServerExchange;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -102,24 +101,6 @@ public class MyMcpServerSession extends McpServerSession implements McpSession {
     public <T> Mono<T> sendRequest(String method, Object requestParams, TypeReference<T> typeRef) {
         log.debug("sendRequest:{},{},{},{}", this.token.sid, this.token.uid, method, requestParams);
         this.lastActiveTime = System.currentTimeMillis();
-        boolean reply = true;
-        if (requestParams instanceof McpSchema.CreateMessageRequest createMessageRequest) {
-            Map<String, Object> metadata = createMessageRequest.metadata();
-            if (metadata != null) {
-                Object value = metadata.getOrDefault(MyMcpSyncServerExchange.REPLY_NAME, true);
-                reply = (boolean) value;
-                metadata.remove(MyMcpSyncServerExchange.REPLY_NAME);
-            }
-        }
-
-        if (!reply) {
-            McpSchema.JSONRPCRequest jsonrpcRequest = new McpSchema.JSONRPCRequest(McpSchema.JSONRPC_VERSION, method,
-                    "", requestParams);
-            this.transport.sendMessage(jsonrpcRequest).subscribe(v -> {
-            }, error -> {
-            });
-            return Mono.empty();
-        }
 
         String requestId = this.generateRequestId();
 
