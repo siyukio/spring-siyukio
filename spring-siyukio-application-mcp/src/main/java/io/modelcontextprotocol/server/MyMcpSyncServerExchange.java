@@ -1,9 +1,9 @@
 package io.modelcontextprotocol.server;
 
 import io.github.siyukio.tools.api.token.Token;
-import io.modelcontextprotocol.MyMcpAsyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpServerSession;
+import io.modelcontextprotocol.spec.MyMcpSchema;
 import io.modelcontextprotocol.spec.MyMcpServerSession;
 
 import java.util.HashMap;
@@ -65,6 +65,13 @@ public class MyMcpSyncServerExchange extends McpSyncServerExchange {
             }
         }
         return null;
+    }
+
+    public void progressNotification(MyMcpSchema.ProgressMessageNotification progressMessageNotification) {
+        if (this.exchange instanceof MyMcpAsyncServerExchange myMcpAsyncServerExchange) {
+            myMcpAsyncServerExchange.progressNotification(progressMessageNotification).block();
+        }
+
     }
 
 }

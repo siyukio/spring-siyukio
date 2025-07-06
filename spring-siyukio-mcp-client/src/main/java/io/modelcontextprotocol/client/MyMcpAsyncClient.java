@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -149,7 +150,8 @@ public class MyMcpAsyncClient {
      * @param features              the MCP Client supported features.
      */
     MyMcpAsyncClient(McpClientTransport transport, Duration requestTimeout, Duration initializationTimeout,
-                     McpClientFeatures.Async features) {
+                     McpClientFeatures.Async features,
+                     Consumer<MyMcpSchema.ProgressMessageNotification> progressConsumer) {
 
         Assert.notNull(transport, "Transport must not be null");
         Assert.notNull(requestTimeout, "Request timeout must not be null");
@@ -223,6 +225,10 @@ public class MyMcpAsyncClient {
         notificationHandlers.put(McpSchema.METHOD_NOTIFICATION_MESSAGE,
                 asyncLoggingNotificationHandler(loggingConsumersFinal));
 
+        if (progressConsumer != null) {
+            notificationHandlers.put(MyMcpSchema.METHOD_NOTIFICATION_PROGRESS,
+                    asyncProgressNotificationHandler(progressConsumer));
+        }
         this.mcpSession = new MyMcpClientSession(requestTimeout, transport, requestHandlers, notificationHandlers);
 
     }
@@ -766,6 +772,19 @@ public class MyMcpAsyncClient {
             return Flux.fromIterable(loggingConsumers)
                     .flatMap(consumer -> consumer.apply(loggingMessageNotification))
                     .then();
+        };
+    }
+
+    private NotificationHandler asyncProgressNotificationHandler(
+            Consumer<MyMcpSchema.ProgressMessageNotification> progressConsumer) {
+
+        return params -> {
+            MyMcpSchema.ProgressMessageNotification progressMessageNotification = transport.unmarshalFrom(params,
+                    new TypeReference<MyMcpSchema.ProgressMessageNotification>() {
+                    });
+
+            progressConsumer.accept(progressMessageNotification);
+            return Mono.empty();
         };
     }
 

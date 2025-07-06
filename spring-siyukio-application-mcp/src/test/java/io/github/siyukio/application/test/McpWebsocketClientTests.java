@@ -6,6 +6,7 @@ import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.JsonUtils;
 import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.spec.MyMcpSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -114,6 +116,28 @@ class McpWebsocketClientTests {
                 .build();
 
         JSONObject result = client.callTool("/getToken", JSONObject.class);
+
+        log.info("{}", JsonUtils.toPrettyJSONString(result));
+
+        Thread.sleep(12000);
+        client.closeGracefully();
+    }
+
+    @Test
+    void testCallToolOnProgress() throws InterruptedException {
+
+        Consumer<MyMcpSchema.ProgressMessageNotification> progressHandler = progressMessageNotification -> {
+            log.info("progressMessageNotification:{}", JsonUtils.toPrettyJSONString(progressMessageNotification));
+        };
+
+        MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
+                .setWebsocket(true)
+                .setTokenSupplier(this.tokenSupplier)
+                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
+                .setProgressHandler(progressHandler)
+                .build();
+
+        JSONObject result = client.callTool("/getTokenByProgress", JSONObject.class);
 
         log.info("{}", JsonUtils.toPrettyJSONString(result));
 

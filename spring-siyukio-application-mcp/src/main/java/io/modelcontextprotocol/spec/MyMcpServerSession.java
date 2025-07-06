@@ -2,8 +2,8 @@ package io.modelcontextprotocol.spec;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.siyukio.tools.api.token.Token;
-import io.modelcontextprotocol.MyMcpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
+import io.modelcontextprotocol.server.MyMcpAsyncServerExchange;
 import io.modelcontextprotocol.server.MyMcpSyncServerExchange;
 import lombok.Getter;
 import lombok.Setter;

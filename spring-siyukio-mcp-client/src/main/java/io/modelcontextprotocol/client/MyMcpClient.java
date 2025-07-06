@@ -7,6 +7,7 @@ package io.modelcontextprotocol.client;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema.*;
 import io.modelcontextprotocol.spec.McpTransport;
+import io.modelcontextprotocol.spec.MyMcpSchema;
 import io.modelcontextprotocol.util.Assert;
 import reactor.core.publisher.Mono;
 
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -142,6 +144,8 @@ public interface MyMcpClient {
         private ClientCapabilities capabilities;
         private Implementation clientInfo = new Implementation("Spring AI MCP Client", "0.3.1");
         private Function<CreateMessageRequest, Mono<CreateMessageResult>> samplingHandler;
+
+        private Consumer<MyMcpSchema.ProgressMessageNotification> progressConsumer;
 
         private AsyncSpec(McpClientTransport transport) {
             Assert.notNull(transport, "Transport must not be null");
@@ -337,6 +341,13 @@ public interface MyMcpClient {
             return this;
         }
 
+        public AsyncSpec progressConsumer(
+                Consumer<MyMcpSchema.ProgressMessageNotification> progressConsumer) {
+            Assert.notNull(progressConsumer, "Progress consumer must not be null");
+            this.progressConsumer = progressConsumer;
+            return this;
+        }
+
         /**
          * Create an instance of {@link McpAsyncClient} with the provided configurations
          * or sensible defaults.
@@ -347,7 +358,8 @@ public interface MyMcpClient {
             return new MyMcpAsyncClient(this.transport, this.requestTimeout, this.initializationTimeout,
                     new McpClientFeatures.Async(this.clientInfo, this.capabilities, this.roots,
                             this.toolsChangeConsumers, this.resourcesChangeConsumers, this.promptsChangeConsumers,
-                            this.loggingConsumers, this.samplingHandler));
+                            this.loggingConsumers, this.samplingHandler),
+                    this.progressConsumer);
         }
 
     }

@@ -10,6 +10,7 @@ import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.client.transport.HttpClientWebSocketClientTransport;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.spec.MyMcpSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
@@ -27,6 +28,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -53,6 +55,7 @@ public class MyMcpSyncClient {
     private final String version;
 
     private final Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler;
+    private final Consumer<MyMcpSchema.ProgressMessageNotification> progressHandler;
     private final Supplier<String> tokenSupplier;
     private MyMcpAsyncClient mcpAsyncClient = null;
     private McpSchema.InitializeResult result = null;
@@ -64,7 +67,9 @@ public class MyMcpSyncClient {
                            Supplier<String> tokenSupplier,
                            String authorization,
                            Map<String, String> headers,
-                           Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler) {
+                           Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler,
+                           Consumer<MyMcpSchema.ProgressMessageNotification> progressHandler
+    ) {
         this.baseUri = baseUri;
         this.requestTimeout = requestTimeout;
         this.name = name;
@@ -73,6 +78,7 @@ public class MyMcpSyncClient {
         this.authorization = authorization;
         this.headers.putAll(headers);
         this.samplingHandler = samplingHandler;
+        this.progressHandler = progressHandler;
         this.webSocket = webSocket;
     }
 
@@ -156,13 +162,16 @@ public class MyMcpSyncClient {
                 .requestTimeout(this.requestTimeout)
                 .initializationTimeout(Duration.ofSeconds(6));
         if (this.samplingHandler != null) {
-            Function<McpSchema.CreateMessageRequest, Mono<McpSchema.CreateMessageResult>> samplingHandler = r -> Mono
+            Function<McpSchema.CreateMessageRequest, Mono<McpSchema.CreateMessageResult>> samplingConsumer = r -> Mono
                     .fromCallable(() -> this.samplingHandler.apply(r))
                     .subscribeOn(Schedulers.boundedElastic());
             asyncSpec.capabilities(McpSchema.ClientCapabilities.builder()
                             .sampling()
                             .build())
-                    .sampling(samplingHandler);
+                    .sampling(samplingConsumer);
+        }
+        if (this.progressHandler != null) {
+            asyncSpec.progressConsumer(this.progressHandler);
         }
         MyMcpAsyncClient client = asyncSpec.build();
 
@@ -282,6 +291,7 @@ public class MyMcpSyncClient {
         private Supplier<String> tokenSupplier;
 
         private Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler = null;
+        private Consumer<MyMcpSchema.ProgressMessageNotification> progressHandler = null;
 
         private Builder(String baseUri) {
             this.baseUri = baseUri;
@@ -333,11 +343,16 @@ public class MyMcpSyncClient {
             return this;
         }
 
+        public Builder setProgressHandler(Consumer<MyMcpSchema.ProgressMessageNotification> progressHandler) {
+            this.progressHandler = progressHandler;
+            return this;
+        }
+
         public MyMcpSyncClient build() {
             return new MyMcpSyncClient(this.baseUri, this.requestTimeout, this.webSocket,
                     this.name, this.version, this.tokenSupplier,
                     this.authorization, this.headers,
-                    this.samplingHandler);
+                    this.samplingHandler, this.progressHandler);
         }
     }
 }
