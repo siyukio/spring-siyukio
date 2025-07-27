@@ -8,7 +8,7 @@
     </parent>
     <groupId>io.github.siyukio</groupId>
     <artifactId>spring-siyukio</artifactId>
-    <version>3.3.12-SNAPSHOT</version>
+    <version>3.3.12</version>
     <packaging>pom</packaging>
     <name>Siyukio Parent</name>
 
@@ -31,6 +31,31 @@
 
     <dependencyManagement>
         <dependencies>
+
+            <dependency>
+                <groupId>io.github.siyukio</groupId>
+                <artifactId>spring-siyukio-tools</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.github.siyukio</groupId>
+                <artifactId>spring-siyukio-application</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.github.siyukio</groupId>
+                <artifactId>spring-siyukio-application-mcp</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.github.siyukio</groupId>
+                <artifactId>spring-siyukio-mcp-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>com.auth0</groupId>
                 <artifactId>java-jwt</artifactId>

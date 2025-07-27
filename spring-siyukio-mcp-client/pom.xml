@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.github.siyukio</groupId>
         <artifactId>spring-siyukio</artifactId>
-        <version>3.3.12-SNAPSHOT</version>
+        <version>3.3.12</version>
     </parent>
 
     <artifactId>spring-siyukio-mcp-client</artifactId>
@@ -22,7 +22,6 @@
         <dependency>
             <groupId>io.github.siyukio</groupId>
             <artifactId>spring-siyukio-tools</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
     </dependencies>
