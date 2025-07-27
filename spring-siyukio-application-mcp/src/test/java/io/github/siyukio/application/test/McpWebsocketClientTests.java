@@ -43,8 +43,9 @@ class McpWebsocketClientTests {
     @Test
     void testListTools() {
         MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
-                .setWebsocket(true)
-                .setTokenSupplier(this.tokenSupplier)
+                .useWebsocket(true)
+//                .useInternal(true)
+                .useTokenSupplier(this.tokenSupplier)
                 .setMcpClientCommonProperties(this.mcpClientCommonProperties)
                 .build();
 
@@ -61,8 +62,8 @@ class McpWebsocketClientTests {
     void testGetOutputSchema() {
 
         MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
-                .setWebsocket(true)
-                .setTokenSupplier(this.tokenSupplier)
+                .useWebsocket(true)
+                .useTokenSupplier(this.tokenSupplier)
                 .setMcpClientCommonProperties(this.mcpClientCommonProperties)
                 .build();
 
@@ -77,8 +78,8 @@ class McpWebsocketClientTests {
     @Test
     void testCallTool() {
         MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
-                .setWebsocket(true)
-                .setTokenSupplier(this.tokenSupplier)
+                .useWebsocket(true)
+                .useTokenSupplier(this.tokenSupplier)
                 .setMcpClientCommonProperties(this.mcpClientCommonProperties)
                 .build();
 
@@ -109,8 +110,8 @@ class McpWebsocketClientTests {
         };
 
         MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
-                .setWebsocket(true)
-                .setTokenSupplier(this.tokenSupplier)
+                .useWebsocket(true)
+                .useTokenSupplier(this.tokenSupplier)
                 .setMcpClientCommonProperties(this.mcpClientCommonProperties)
                 .setSamplingHandler(samplingHandler)
                 .build();
@@ -131,8 +132,8 @@ class McpWebsocketClientTests {
         };
 
         MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
-                .setWebsocket(true)
-                .setTokenSupplier(this.tokenSupplier)
+                .useWebsocket(true)
+                .useTokenSupplier(this.tokenSupplier)
                 .setMcpClientCommonProperties(this.mcpClientCommonProperties)
                 .setProgressHandler(progressHandler)
                 .build();

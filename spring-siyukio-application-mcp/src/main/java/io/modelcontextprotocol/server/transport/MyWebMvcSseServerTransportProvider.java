@@ -38,8 +38,7 @@ import java.util.Base64;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider.ENDPOINT_EVENT_TYPE;
-import static io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider.MESSAGE_EVENT_TYPE;
+import static io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider.*;
 
 /**
  * Server-side implementation of the Model Context Protocol (MCP) transport layer using
@@ -266,6 +265,13 @@ public class MyWebMvcSseServerTransportProvider implements McpServerTransportPro
     private ServerResponse handleSseConnection(ServerRequest request) {
         if (this.isClosing) {
             return ServerResponse.status(HttpStatus.SERVICE_UNAVAILABLE).body("Server is shutting down");
+        }
+
+        //from internal
+        String from = request.headers().firstHeader(HttpHeaders.FROM);
+        if (StringUtils.hasText(from) && from.equalsIgnoreCase("internal")) {
+            return ServerResponse.status(HttpStatus.TEMPORARY_REDIRECT)
+                    .location(URI.create("http://" + ApiProfiles.IP4 + ":" + ApiProfiles.PORT + DEFAULT_SSE_ENDPOINT)).build();
         }
 
         final Token token;

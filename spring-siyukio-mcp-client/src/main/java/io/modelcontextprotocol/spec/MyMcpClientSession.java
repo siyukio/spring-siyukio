@@ -211,6 +211,10 @@ public class MyMcpClientSession implements McpSession {
     @Override
     public <T> Mono<T> sendRequest(String method, Object requestParams, TypeReference<T> typeRef) {
         String requestId = this.generateRequestId();
+        Duration timeout = this.requestTimeout;
+        if (method.equals(McpSchema.METHOD_PING)) {
+            timeout = Duration.ofSeconds(3);
+        }
 
         return Mono.<McpSchema.JSONRPCResponse>create(sink -> {
             this.pendingResponses.put(requestId, sink);
@@ -223,7 +227,7 @@ public class MyMcpClientSession implements McpSession {
                         this.pendingResponses.remove(requestId);
                         sink.error(error);
                     });
-        }).timeout(this.requestTimeout).handle((jsonRpcResponse, sink) -> {
+        }).timeout(timeout).handle((jsonRpcResponse, sink) -> {
             if (jsonRpcResponse.error() != null) {
                 sink.error(new McpError(jsonRpcResponse.error()));
             } else {

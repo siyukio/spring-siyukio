@@ -42,8 +42,9 @@ class McpSeeClientTests {
     @Test
     void testListTools() {
         MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
-                .setTokenSupplier(this.tokenSupplier)
+                .useTokenSupplier(this.tokenSupplier)
                 .setMcpClientCommonProperties(this.mcpClientCommonProperties)
+                .useInternal(true)
                 .build();
 
         McpSchema.ListToolsResult toolsList = client.listTools();
@@ -59,7 +60,7 @@ class McpSeeClientTests {
     void testGetOutputSchema() {
 
         MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
-                .setTokenSupplier(this.tokenSupplier)
+                .useTokenSupplier(this.tokenSupplier)
                 .setMcpClientCommonProperties(this.mcpClientCommonProperties)
                 .build();
 
@@ -74,7 +75,7 @@ class McpSeeClientTests {
     @Test
     void testCallTool() {
         MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
-                .setTokenSupplier(this.tokenSupplier)
+                .useTokenSupplier(this.tokenSupplier)
                 .setMcpClientCommonProperties(this.mcpClientCommonProperties)
                 .build();
 
@@ -105,7 +106,7 @@ class McpSeeClientTests {
         };
 
         MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
-                .setTokenSupplier(this.tokenSupplier)
+                .useTokenSupplier(this.tokenSupplier)
                 .setMcpClientCommonProperties(this.mcpClientCommonProperties)
                 .setSamplingHandler(samplingHandler)
                 .build();
@@ -126,8 +127,8 @@ class McpSeeClientTests {
         };
 
         MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
-                .setWebsocket(true)
-                .setTokenSupplier(this.tokenSupplier)
+                .useWebsocket(true)
+                .useTokenSupplier(this.tokenSupplier)
                 .setMcpClientCommonProperties(this.mcpClientCommonProperties)
                 .setProgressHandler(progressHandler)
                 .build();
