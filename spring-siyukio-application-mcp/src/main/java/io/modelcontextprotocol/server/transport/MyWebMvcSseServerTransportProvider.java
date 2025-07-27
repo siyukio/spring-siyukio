@@ -8,7 +8,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.api.ApiProfiles;
-import io.github.siyukio.tools.api.constants.ApiConstants;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.IdUtils;
@@ -17,6 +16,7 @@ import io.modelcontextprotocol.spec.*;
 import io.modelcontextprotocol.util.Assert;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.function.RouterFunction;
@@ -221,7 +221,7 @@ public class MyWebMvcSseServerTransportProvider implements McpServerTransportPro
 
     private Token validateToken(ServerRequest request) {
 
-        String authorization = request.headers().firstHeader(ApiConstants.AUTHORIZATION);
+        String authorization = request.headers().firstHeader(HttpHeaders.AUTHORIZATION);
         if (!StringUtils.hasText(authorization)) {
             throw new ApiException(HttpStatus.UNAUTHORIZED);
         }

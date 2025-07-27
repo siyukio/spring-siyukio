@@ -1,9 +1,9 @@
 package io.modelcontextprotocol.server.transport;
 
-import io.github.siyukio.tools.api.constants.ApiConstants;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.util.AsyncUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.socket.PingMessage;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketMessage;
@@ -85,7 +85,7 @@ public class MyWebSocketSession {
     }
 
     public Token getToken() {
-        Object value = this.session.getAttributes().get(ApiConstants.AUTHORIZATION);
+        Object value = this.session.getAttributes().get(HttpHeaders.AUTHORIZATION);
         if (value == null) {
             return null;
         }

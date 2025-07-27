@@ -10,6 +10,7 @@ import io.github.siyukio.tools.api.token.TokenProvider;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 import org.springframework.web.method.HandlerMethod;
@@ -36,9 +37,9 @@ public final class ValidateAuthorizationInterceptor implements HandlerIntercepto
     }
 
     private String getAuthorization(HttpServletRequest request) {
-        String authorization = request.getHeader(ApiConstants.AUTHORIZATION);
+        String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (authorization == null) {
-            Object attr = request.getAttribute(ApiConstants.AUTHORIZATION);
+            Object attr = request.getAttribute(HttpHeaders.AUTHORIZATION);
             if (attr != null) {
                 authorization = attr.toString();
             }

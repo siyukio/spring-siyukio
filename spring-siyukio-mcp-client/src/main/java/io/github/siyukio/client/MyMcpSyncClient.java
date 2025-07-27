@@ -1,7 +1,6 @@
 package io.github.siyukio.client;
 
 import io.github.siyukio.tools.api.ApiException;
-import io.github.siyukio.tools.api.constants.ApiConstants;
 import io.github.siyukio.tools.util.AsyncUtils;
 import io.github.siyukio.tools.util.JsonUtils;
 import io.modelcontextprotocol.client.MyMcpAsyncClient;
@@ -14,6 +13,7 @@ import io.modelcontextprotocol.spec.MyMcpSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
@@ -136,7 +136,7 @@ public class MyMcpSyncClient {
 
         Map<String, String> headerMap = new HashMap<>(this.headers);
         if (StringUtils.hasText(token)) {
-            headerMap.put(ApiConstants.AUTHORIZATION, token);
+            headerMap.put(HttpHeaders.AUTHORIZATION, token);
         }
 
         final McpClientTransport transport;

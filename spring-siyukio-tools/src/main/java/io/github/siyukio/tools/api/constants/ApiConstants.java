@@ -15,11 +15,6 @@ public interface ApiConstants {
 
     public String PROPERTY_API_SIGNATURE_SALT = "API_SIGNATURE_SALT";
 
-
-    public String AUTHORIZATION = "Authorization";
-
-    public String SEC_WEBSOCKET_PROTOCOL = "Sec-WebSocket-Protocol";
-
     public String ATTRIBUTE_TOKEN = "siyukio.token";
 
     public String ATTRIBUTE_REQUEST_BODY = "siyukio.requestBody";

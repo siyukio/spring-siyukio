@@ -1,10 +1,10 @@
 package io.modelcontextprotocol.server.transport;
 
 import io.github.siyukio.tools.api.ApiException;
-import io.github.siyukio.tools.api.constants.ApiConstants;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
@@ -16,7 +16,6 @@ import org.springframework.web.socket.server.HandshakeHandler;
 import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -44,21 +43,21 @@ public class MyWebSocketHandler extends TextWebSocketHandler implements Handshak
 
     @Override
     public boolean doHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) throws HandshakeFailureException {
-        String protocol = request.getHeaders().getFirst(ApiConstants.SEC_WEBSOCKET_PROTOCOL);
+        String protocol = request.getHeaders().getFirst(WebSocketHttpHeaders.SEC_WEBSOCKET_PROTOCOL);
         if (StringUtils.hasText(protocol)) {
-            response.getHeaders().add(ApiConstants.SEC_WEBSOCKET_PROTOCOL, protocol);
+            response.getHeaders().add(WebSocketHttpHeaders.SEC_WEBSOCKET_PROTOCOL, protocol);
         }
 
-        String authorization = request.getHeaders().getFirst(ApiConstants.AUTHORIZATION);
+        String authorization = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
         if (!StringUtils.hasText(authorization)) {
             authorization = request.getURI().getQuery();
         }
         if (!StringUtils.hasText(authorization)) {
             if (StringUtils.hasText(protocol)) {
-                if (!protocol.toLowerCase(Locale.ROOT).equals("mcp")) {
+                if (!protocol.equalsIgnoreCase("mcp")) {
                     authorization = protocol;
-                    request.getHeaders().replace(ApiConstants.SEC_WEBSOCKET_PROTOCOL, List.of(""));
+                    request.getHeaders().replace(WebSocketHttpHeaders.SEC_WEBSOCKET_PROTOCOL, List.of(""));
                 }
             }
         }
@@ -71,13 +70,13 @@ public class MyWebSocketHandler extends TextWebSocketHandler implements Handshak
         if (token == null || token.refresh || token.expired) {
             throw new ApiException(HttpStatus.UNAUTHORIZED);
         }
-        attributes.put(ApiConstants.AUTHORIZATION, token);
+        attributes.put(HttpHeaders.AUTHORIZATION, token);
         return this.handshakeHandler.doHandshake(request, response, wsHandler, attributes);
     }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        Token token = (Token) session.getAttributes().get(ApiConstants.AUTHORIZATION);
+        Token token = (Token) session.getAttributes().get(HttpHeaders.AUTHORIZATION);
         if (token == null) {
             session.close(CloseStatus.PROTOCOL_ERROR);
             return;
