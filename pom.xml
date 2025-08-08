@@ -17,6 +17,7 @@
         <module>spring-siyukio-application</module>
         <module>spring-siyukio-application-mcp</module>
         <module>spring-siyukio-mcp-client</module>
+        <module>spring-siyukio-postgres</module>
     </modules>
 
     <properties>
@@ -53,6 +54,12 @@
             <dependency>
                 <groupId>io.github.siyukio</groupId>
                 <artifactId>spring-siyukio-mcp-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.github.siyukio</groupId>
+                <artifactId>spring-siyukio-postgres</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
