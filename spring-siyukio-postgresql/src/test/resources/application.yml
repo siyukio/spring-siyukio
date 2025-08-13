@@ -1,0 +1,10 @@
+POSTGRESQL_URL: jdbc:postgresql://localhost:5432/root
+POSTGRESQL_USERNAME: root
+POSTGRESQL_PASSWORD: FYm7JqaEcptxUTgy
+
+logging:
+  level:
+    io:
+      github:
+        siyukio:
+          postgresql: DEBUG

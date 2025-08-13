@@ -1,0 +1,19 @@
+package io.github.siyukio.tools.entity.definition;
+
+import java.util.List;
+
+/**
+ * @author Bugee
+ */
+public record EntityDefinition(
+        String dataSource,
+        String schema,
+        String table,
+        String comment,
+        boolean createTableAuto,
+        boolean createIndexAuto,
+        KeyDefinition keyDefinition,
+        List<ColumnDefinition> columnDefinitions,
+        List<IndexDefinition> indexDefinitions
+) {
+}
