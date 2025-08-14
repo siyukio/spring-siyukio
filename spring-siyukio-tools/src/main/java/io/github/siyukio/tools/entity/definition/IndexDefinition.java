@@ -6,7 +6,6 @@ package io.github.siyukio.tools.entity.definition;
 
 public record IndexDefinition(
         String indexName,
-        boolean unique,
         String[] columns
 ) {
 }

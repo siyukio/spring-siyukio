@@ -9,7 +9,7 @@ public record ColumnDefinition(
         String fieldName,
         String columnName,
         ColumnType type,
-        Object defaultValue,
+        String defaultValue,
         String comment
 ) {
 }

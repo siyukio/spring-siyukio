@@ -11,6 +11,7 @@ public record EntityDefinition(
         String table,
         String comment,
         boolean createTableAuto,
+        boolean addColumnAuto,
         boolean createIndexAuto,
         KeyDefinition keyDefinition,
         List<ColumnDefinition> columnDefinitions,

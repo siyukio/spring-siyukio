@@ -17,6 +17,8 @@ public @interface PgEntity {
 
     boolean createTableAuto() default true;
 
+    boolean addColumnAuto() default true;
+
     boolean createIndexAuto() default true;
 
     String dataSource() default EntityConstants.DATASOURCE_NAME;

@@ -10,6 +10,7 @@ public record KeyDefinition(
         String fieldName,
         String columnName,
         ColumnType type,
+        boolean generated,
         String comment
 ) {
 }
