@@ -100,4 +100,11 @@ public class EntityUtils {
             throw new IllegalArgumentException(error);
         }
     }
+
+    public static void isSafe(String identifier) {
+        // Only letters, numbers, and underscores are allowed.
+        if (!identifier.matches("[a-zA-Z0-9_]+")) {
+            throw new IllegalArgumentException("Invalid entity identifier: " + identifier);
+        }
+    }
 }

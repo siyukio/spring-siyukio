@@ -120,6 +120,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         } else {
             columnName = EntityUtils.camelToSnake(fieldName);
         }
+        EntityUtils.isSafe(columnName);
         String defaultValue = pgColumn.defaultValue();
         if (defaultValue.isEmpty()) {
             defaultValue = switch (columnType) {
@@ -145,6 +146,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         } else {
             columnName = EntityUtils.camelToSnake(fieldName);
         }
+        EntityUtils.isSafe(columnName);
         return new KeyDefinition(fieldName, columnName, columnType, pgKey.generated(), pgKey.comment());
     }
 
@@ -156,6 +158,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             String indexName;
             for (PgIndex pgIndex : pgIndexes) {
                 indexName = EntityConstants.COMP_INDEX_PREFIX + String.join("_", pgIndex.columns());
+                EntityUtils.isSafe(indexName);
                 indexDefinition = new IndexDefinition(indexName, pgIndex.columns());
                 indexDefinitions.add(indexDefinition);
             }
@@ -193,12 +196,15 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         String schema = pgEntity.schema();
         if (StringUtils.hasText(schema)) {
             schema = propertySourcesPlaceholdersResolver.resolvePlaceholders(schema).toString();
+            EntityUtils.isSafe(schema);
         }
 
         String table = pgEntity.table();
         if (table.isEmpty()) {
             table = EntityUtils.getTableName(this.entityClass);
         }
+
+        EntityUtils.isSafe(table);
 
         List<IndexDefinition> indexDefinitions = this.getIndexDefinitions(pgEntity.indexes());
         return new EntityDefinition(dataSource, schema, table, pgEntity.comment(),
@@ -209,7 +215,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
     private Map<String, InformationIndex> queryIndexes(EntityDefinition entityDefinition, JdbcTemplate jdbcTemplate) {
         String schema = entityDefinition.schema();
         if (!StringUtils.hasText(schema)) {
-            schema = "public";
+            schema = PgSqlUtils.DEFAULT_SCHEMA;
         }
 
         List<InformationIndex> informationIndexes = jdbcTemplate.query(PgSqlUtils.QUERY_INDEXES_SQL, (rs, rowNum) -> {
@@ -248,7 +254,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
     private Map<String, InformationColumn> queryColumns(EntityDefinition entityDefinition, JdbcTemplate jdbcTemplate) {
         String schema = entityDefinition.schema();
         if (!StringUtils.hasText(schema)) {
-            schema = "public";
+            schema = PgSqlUtils.DEFAULT_SCHEMA;
         }
 
         List<InformationColumn> informationColumns = jdbcTemplate.query(PgSqlUtils.QUERY_COLUMNS_SQL, (rs, rowNum) -> {

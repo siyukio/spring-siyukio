@@ -47,26 +47,13 @@ public abstract class PgSqlUtils {
 
     private final static String COLUMN_COMMENT_TEMPLATE = "COMMENT ON COLUMN %s IS '%s' ;";
 
-    public static String safeIdentifier(String identifier) {
-        if (identifier == null || identifier.isEmpty()) {
-            throw new IllegalArgumentException("Identifier cannot be null or empty.");
-        }
-        // Only letters, numbers, and underscores are allowed.
-        if (!identifier.matches("[a-zA-Z0-9_]+")) {
-            throw new IllegalArgumentException("Invalid identifier: " + identifier);
-        }
-        // Add double quotes to PostgreSQL identifiers to prevent case sensitivity issues and SQL injection.
-        return "\"" + identifier + "\"";
-    }
-
     public static String createSchemaIfNotExistsSql(String schemaName) {
-        String safeSchema = safeIdentifier(schemaName);
-        return "CREATE SCHEMA IF NOT EXISTS " + safeSchema;
+        return "CREATE SCHEMA IF NOT EXISTS " + schemaName;
     }
 
     private static String getKeyDefinitionSql(KeyDefinition keyDefinition) {
         List<String> partList = new ArrayList<>();
-        String name = safeIdentifier(keyDefinition.columnName());
+        String name = keyDefinition.columnName();
         partList.add(name);
         if (keyDefinition.type() == ColumnType.BIGINT || keyDefinition.type() == ColumnType.INT) {
             if (keyDefinition.type() == ColumnType.INT) {
@@ -109,7 +96,7 @@ public abstract class PgSqlUtils {
 
     private static String getColumnDefinitionSql(ColumnDefinition columnDefinition) {
         List<String> partList = new ArrayList<>();
-        String name = safeIdentifier(columnDefinition.columnName());
+        String name = columnDefinition.columnName();
         partList.add(name);
         String sqlType = getSqlType(columnDefinition);
         partList.add(sqlType);
@@ -128,8 +115,8 @@ public abstract class PgSqlUtils {
             schema = DEFAULT_SCHEMA;
 
         }
-        schema = safeIdentifier(schema);
-        String table = safeIdentifier(entityDefinition.table());
+
+        String table = entityDefinition.table();
         String columnDefinitionSql = getColumnDefinitionSql(columnDefinition);
 
         String alterSql = String.format(addColumnSqlTemplate, schema, table, columnDefinitionSql);
@@ -137,7 +124,7 @@ public abstract class PgSqlUtils {
         sqlList.add(alterSql);
 
         String commentSql = String.format(COLUMN_COMMENT_TEMPLATE,
-                schema + "." + table + "." + safeIdentifier(columnDefinition.columnName()),
+                schema + "." + table + "." + columnDefinition.columnName(),
                 columnDefinition.comment());
         sqlList.add(commentSql);
         return sqlList;
@@ -149,9 +136,9 @@ public abstract class PgSqlUtils {
         if (!StringUtils.hasText(schema)) {
             schema = DEFAULT_SCHEMA;
         }
-        schema = safeIdentifier(schema);
-        String table = safeIdentifier(entityDefinition.table());
-        String columnName = safeIdentifier(columnDefinition.columnName());
+
+        String table = entityDefinition.table();
+        String columnName = columnDefinition.columnName();
         String defaultValue = getSqlDefault(columnDefinition);
         return String.format(alterColumnDefaultSqlTemplate, schema, table, columnName, defaultValue);
     }
@@ -162,9 +149,9 @@ public abstract class PgSqlUtils {
         if (!StringUtils.hasText(schema)) {
             schema = DEFAULT_SCHEMA;
         }
-        schema = safeIdentifier(schema);
-        String table = safeIdentifier(entityDefinition.table());
-        String columnName = safeIdentifier(columnDefinition.columnName());
+
+        String table = entityDefinition.table();
+        String columnName = columnDefinition.columnName();
         String sqlType = getSqlType(columnDefinition);
         return String.format(alterColumnTypeSqlTemplate, schema, table, columnName, sqlType);
     }
@@ -183,9 +170,8 @@ public abstract class PgSqlUtils {
             schema = DEFAULT_SCHEMA;
 
         }
-        schema = safeIdentifier(schema);
 
-        String table = safeIdentifier(entityDefinition.table());
+        String table = entityDefinition.table();
         List<String> columnDefinitionSqlList = new ArrayList<>();
         columnDefinitionSqlList.add(getKeyDefinitionSql(entityDefinition.keyDefinition()));
         for (ColumnDefinition columnDefinition : entityDefinition.columnDefinitions()) {
@@ -199,12 +185,12 @@ public abstract class PgSqlUtils {
         sqlList.add(String.format(TABLE_COMMENT_TEMPLATE, schema + "." + table, entityDefinition.comment()));
 
         sqlList.add(String.format(COLUMN_COMMENT_TEMPLATE,
-                schema + "." + table + "." + safeIdentifier(entityDefinition.keyDefinition().columnName()),
+                schema + "." + table + "." + entityDefinition.keyDefinition().columnName(),
                 entityDefinition.keyDefinition().comment()));
 
         for (ColumnDefinition columnDefinition : entityDefinition.columnDefinitions()) {
             sqlList.add(String.format(COLUMN_COMMENT_TEMPLATE,
-                    schema + "." + table + "." + safeIdentifier(columnDefinition.columnName()),
+                    schema + "." + table + "." + columnDefinition.columnName(),
                     columnDefinition.comment()));
         }
         return sqlList;
@@ -216,12 +202,12 @@ public abstract class PgSqlUtils {
         if (!StringUtils.hasText(schema)) {
             schema = DEFAULT_SCHEMA;
         }
-        schema = safeIdentifier(schema);
-        String table = safeIdentifier(entityDefinition.table());
-        String indexName = safeIdentifier(indexDefinition.indexName());
+
+        String table = entityDefinition.table();
+        String indexName = indexDefinition.indexName();
         List<String> columnNameList = new ArrayList<>();
         for (String column : indexDefinition.columns()) {
-            columnNameList.add(safeIdentifier(column));
+            columnNameList.add(column);
         }
         String columns = String.join(", ", columnNameList);
         return String.format(createIndexSqlTemplate, indexName, schema, table, columns);
