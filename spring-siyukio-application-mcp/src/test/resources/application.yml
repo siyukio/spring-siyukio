@@ -46,10 +46,10 @@ spring:
     mcp:
       server:
         name: siyukio-server
-        version: 3.3.13-SNAPSHOT
+        version: 3.3.13
       client:
         name: siyukio-client
-        version: 3.3.13-SNAPSHOT
+        version: 3.3.13
         requestTimeout: 60000
 
 logging:
