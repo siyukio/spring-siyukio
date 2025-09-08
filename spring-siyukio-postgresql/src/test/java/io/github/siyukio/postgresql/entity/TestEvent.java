@@ -4,6 +4,10 @@ import io.github.siyukio.tools.entity.postgresql.annotation.PgColumn;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgEntity;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgIndex;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgKey;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -16,24 +20,28 @@ import java.util.Date;
         @PgIndex(columns = {"type"}),
         @PgIndex(columns = {"error", "rating"})
 })
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@ToString
 public class TestEvent {
 
-    @PgKey(comment = "id")
+    @PgKey
     public String id;
 
-    @PgColumn(comment = "type")
+    @PgColumn
     public String type;
 
-    @PgColumn(comment = "content")
+    @PgColumn
     public String content;
 
-    @PgColumn(comment = "is error")
+    @PgColumn
     public boolean error;
 
-    @PgColumn(comment = "Rating")
+    @PgColumn
     public double rating;
 
-    @PgColumn(comment = "Total count")
+    @PgColumn
     public int total;
 
     @PgColumn(comment = "Elapsed time in milliseconds")
@@ -45,6 +53,9 @@ public class TestEvent {
     @PgColumn(comment = "Collection of messages")
     public JSONArray messages;
 
-    @PgColumn(comment = "Creation time")
+    @PgColumn
     public Date createAt;
+
+    @PgColumn
+    public long createTime;
 }

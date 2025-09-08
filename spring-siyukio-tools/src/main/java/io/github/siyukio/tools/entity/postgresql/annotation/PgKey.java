@@ -17,5 +17,5 @@ public @interface PgKey {
 
     boolean generated() default true;
 
-    String comment();
+    String comment() default "";
 }

@@ -17,5 +17,5 @@ public @interface PgColumn {
 
     String defaultValue() default "";
 
-    String comment();
+    String comment() default "";
 }

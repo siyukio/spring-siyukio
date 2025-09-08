@@ -68,7 +68,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
 
     @Override
     public PgEntityDao<?> getObject() throws Exception {
-        return null;
+        return this.repository.get();
     }
 
     @Override
@@ -373,12 +373,8 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
 
         this.checkTable(entityDefinition, jdbcTemplate);
 
-        //todo
-        return new PgEntityDao<Object>() {
-            @Override
-            public int hashCode() {
-                return super.hashCode();
-            }
-        };
+        PgEntityExecutor pgEntityExecutor = new PgEntityExecutor(entityDefinition, jdbcTemplate);
+
+        return new PgEntityDaoImpl<>(this.entityClass, pgEntityExecutor);
     }
 }
