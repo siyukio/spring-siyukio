@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.List;
 
@@ -26,5 +27,8 @@ public class ListRequest {
 
     @ApiParameter(required = false, minItems = 3, maxItems = 6)
     public JSONArray objectArray;
+
+    @ApiParameter(required = false, minItems = 3, maxItems = 6)
+    public List<JSONObject> objectList;
 
 }

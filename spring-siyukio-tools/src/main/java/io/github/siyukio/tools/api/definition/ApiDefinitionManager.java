@@ -208,8 +208,13 @@ public final class ApiDefinitionManager {
         JSONObject items = new JSONObject();
         items.put("type", ApiConstants.TYPE_OBJECT);
         requestParameter.put("items", items);
-        JSONArray subRequestParameters = this.getSubRequestParameters(method, typeClass, requestClassLinked);
-        items.put("childArray", subRequestParameters);
+        if (typeClass.equals(JSONObject.class)) {
+            items.put("childArray", new JSONArray());
+            items.put("dynamic", true);
+        } else {
+            JSONArray subRequestParameters = this.getSubRequestParameters(method, typeClass, requestClassLinked);
+            items.put("childArray", subRequestParameters);
+        }
         //
         requestParameter.put("items", items);
         return requestParameter;
