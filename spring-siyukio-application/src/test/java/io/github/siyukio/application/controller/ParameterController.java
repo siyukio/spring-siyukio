@@ -40,8 +40,8 @@ public class ParameterController {
     }
 
     @ApiMapping(path = "/testPage", authorization = false)
-    public PageResponse<ItemVo> testPage(ListRequest listRequest) {
-        log.info("{}", JsonUtils.toPrettyJSONString(listRequest));
+    public PageResponse<ItemVo> testPage(MyPageRequest myPageRequest) {
+        log.info("{}", JsonUtils.toPrettyJSONString(myPageRequest));
 
         return PageResponse.<ItemVo>builder()
                 .total(1).build();

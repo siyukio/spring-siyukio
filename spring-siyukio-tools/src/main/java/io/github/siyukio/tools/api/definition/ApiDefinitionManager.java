@@ -271,6 +271,18 @@ public final class ApiDefinitionManager {
         requestParameter.put("example", "2025-01-01 00:00:00");
     }
 
+    private JSONArray createExamples(Example[] examples) {
+        JSONArray examplesJsons = new JSONArray();
+        JSONObject exampleJson;
+        for (Example example : examples) {
+            exampleJson = new JSONObject();
+            exampleJson.put("value", example.value());
+            exampleJson.put("summary", example.summary());
+            examplesJsons.put(exampleJson);
+        }
+        return examplesJsons;
+    }
+
     private JSONObject createBasicRequestParameter(Class<?> typeClass, String name, ApiParameter apiParameter) {
         JSONObject requestParameter = new JSONObject();
         requestParameter.put("name", name);
@@ -306,16 +318,8 @@ public final class ApiDefinitionManager {
         }
 
         if (apiParameter.examples().length > 0) {
-            Example[] examples = apiParameter.examples();
-            JSONObject examplesJson = new JSONObject();
-            JSONObject exampleJson;
-            for (Example example : examples) {
-                exampleJson = new JSONObject();
-                exampleJson.put("value", example.value());
-                exampleJson.put("summary", example.summary());
-                examplesJson.put(example.value(), exampleJson);
-            }
-            requestParameter.put("examples", examplesJson);
+            JSONArray examplesJsons = this.createExamples(apiParameter.examples());
+            requestParameter.put("examples", examplesJsons);
         }
 
         return requestParameter;
@@ -346,19 +350,19 @@ public final class ApiDefinitionManager {
     }
 
     private JSONObject createJsonArrayRequestParam(String name, ApiParameter apiParameter) {
-        JSONObject requestParam = new JSONObject();
-        requestParam.put("name", name);
-        requestParam.put("type", ApiConstants.TYPE_ARRAY);
-        requestParam.put("description", apiParameter.description());
-        requestParam.put("required", apiParameter.required());
-        requestParam.put("error", apiParameter.error());
-        requestParam.put("masked", false);
+        JSONObject requestParameter = new JSONObject();
+        requestParameter.put("name", name);
+        requestParameter.put("type", ApiConstants.TYPE_ARRAY);
+        requestParameter.put("description", apiParameter.description());
+        requestParameter.put("required", apiParameter.required());
+        requestParameter.put("error", apiParameter.error());
+        requestParameter.put("masked", false);
         JSONObject items = new JSONObject();
         items.put("type", ApiConstants.TYPE_OBJECT);
         items.put("childArray", new JSONArray());
         items.put("dynamic", true);
 
-        requestParam.put("items", items);
+        requestParameter.put("items", items);
         int maxItems = apiParameter.maxItems();
         int minItems = apiParameter.minItems();
         if (minItems < 0) {
@@ -371,11 +375,16 @@ public final class ApiDefinitionManager {
         int newMinSize = Math.min(maxItems, minItems);
         maxItems = newMaxSize;
         minItems = newMinSize;
-        requestParam.put("maxItems", maxItems);
+        requestParameter.put("maxItems", maxItems);
         if (minItems > 0) {
-            requestParam.put("minItems", minItems);
+            requestParameter.put("minItems", minItems);
         }
-        return requestParam;
+
+        if (apiParameter.examples().length > 0) {
+            JSONArray examplesJsons = this.createExamples(apiParameter.examples());
+            requestParameter.put("examples", examplesJsons);
+        }
+        return requestParameter;
     }
 
     private JSONObject createCollectionRequestParameter(Method method, Class<?> typeClass, String name, ApiParameter apiParameter, LinkedList<Class<?>> requestClassLinked) {
@@ -401,22 +410,32 @@ public final class ApiDefinitionManager {
         if (minItems > 0) {
             requestParameter.put("minItems", minItems);
         }
+
+        if (apiParameter.examples().length > 0) {
+            JSONArray examplesJsons = this.createExamples(apiParameter.examples());
+            requestParameter.put("examples", examplesJsons);
+        }
         return requestParameter;
     }
 
     private JSONObject createObjectRequestParameter(String name, ApiParameter apiParameter) {
-        JSONObject requestParam = new JSONObject();
-        requestParam.put("name", name);
-        requestParam.put("type", ApiConstants.TYPE_OBJECT);
-        requestParam.put("description", apiParameter.description());
-        requestParam.put("required", apiParameter.required());
-        requestParam.put("error", apiParameter.error());
+        JSONObject requestParameter = new JSONObject();
+        requestParameter.put("name", name);
+        requestParameter.put("type", ApiConstants.TYPE_OBJECT);
+        requestParameter.put("description", apiParameter.description());
+        requestParameter.put("required", apiParameter.required());
+        requestParameter.put("error", apiParameter.error());
         //dynamic object
-        requestParam.put("dynamic", true);
+        requestParameter.put("dynamic", true);
         //
         JSONArray subRequestParameters = new JSONArray();
-        requestParam.put("childArray", subRequestParameters);
-        return requestParam;
+        requestParameter.put("childArray", subRequestParameters);
+
+        if (apiParameter.examples().length > 0) {
+            JSONArray examplesJsons = this.createExamples(apiParameter.examples());
+            requestParameter.put("examples", examplesJsons);
+        }
+        return requestParameter;
     }
 
     private JSONObject createObjectRequestParameter(Method method, Class<?> typeClass, LinkedList<Class<?>> requestClassLinked, String name, ApiParameter apiParameter) {

@@ -230,10 +230,16 @@ class ParameterControllerTests {
 
     @Test
     void testPage() {
-        JSONObject listDto = new JSONObject();
-        listDto.put("uid", "123");
-        JSONObject requestJson = this.apiMock.perform("/testPage", listDto);
-        log.info("{}", listDto);
+        JSONObject myPageRequest = new JSONObject();
+        myPageRequest.put("uid", "123");
+
+        JSONObject json = new JSONObject();
+        json.put("name", "Bugee");
+        json.put("value", "bugee");
+        myPageRequest.put("json", json);
+
+        JSONObject requestJson = this.apiMock.perform("/testPage", myPageRequest);
+        log.info("{}", myPageRequest);
         log.info("{}", requestJson);
     }
 
