@@ -188,25 +188,25 @@ public abstract class OpenApiUtils {
                         propJson.put("type", type);
                     }
                     if (childParam.has("minimum")) {
-                        propJson.put("minimum", childParam.optString("minimum"));
+                        propJson.put("minimum", childParam.opt("minimum"));
                     }
                     if (childParam.has("maximum")) {
-                        propJson.put("maximum", childParam.optString("maximum"));
+                        propJson.put("maximum", childParam.opt("maximum"));
                     }
                     if (childParam.has("format")) {
-                        propJson.put("format", childParam.optString("format"));
+                        propJson.put("format", childParam.opt("format"));
                     }
                     if (childParam.has("pattern")) {
-                        propJson.put("pattern", childParam.optString("pattern"));
+                        propJson.put("pattern", childParam.opt("pattern"));
                     }
                     if (childParam.has("maxLength")) {
-                        propJson.put("maxLength", childParam.optString("maxLength"));
+                        propJson.put("maxLength", childParam.opt("maxLength"));
                     }
                     if (childParam.has("minLength")) {
-                        propJson.put("minLength", childParam.optString("minLength"));
+                        propJson.put("minLength", childParam.opt("minLength"));
                     }
                     if (childParam.has("example")) {
-                        propJson.put("example", childParam.optString("example"));
+                        propJson.put("example", childParam.opt("example"));
                     }
                     if (childParam.has("examples")) {
                         propJson.put("examples", childParam.opt("examples"));
@@ -246,10 +246,10 @@ public abstract class OpenApiUtils {
         }
         requestParamJson.put("items", itemsJson);
         if (arrayParamJson.has("maxItems")) {
-            requestParamJson.put("maxItems", arrayParamJson.optString("maxItems"));
+            requestParamJson.put("maxItems", arrayParamJson.opt("maxItems"));
         }
         if (arrayParamJson.has("minItems")) {
-            requestParamJson.put("minItems", arrayParamJson.optString("minItems"));
+            requestParamJson.put("minItems", arrayParamJson.opt("minItems"));
         }
         return requestParamJson;
     }
