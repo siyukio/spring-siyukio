@@ -1,5 +1,6 @@
 package io.github.siyukio.application.mcp;
 
+import io.github.siyukio.tools.api.AipHandlerManager;
 import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.api.ApiHandler;
 import io.github.siyukio.tools.api.definition.ApiDefinition;
@@ -24,13 +25,25 @@ import java.util.*;
 @Slf4j
 public class MyMethodToolCallback {
 
-    private final ApiHandler apiHandler;
+    private static final List<McpServerFeatures.SyncToolSpecification> SYNC_TOOL_SPECIFICATIONS_CACHES = new ArrayList<>();
 
+    private final ApiHandler apiHandler;
     private final String name;
 
     public MyMethodToolCallback(ApiHandler apiHandler, String name) {
         this.apiHandler = apiHandler;
         this.name = name;
+    }
+
+    public static List<McpServerFeatures.SyncToolSpecification> getSyncToolSpecifications(AipHandlerManager aipHandlerManager) {
+        if (SYNC_TOOL_SPECIFICATIONS_CACHES.isEmpty()) {
+            for (Map.Entry<String, ApiHandler> entry : aipHandlerManager.getApiHandlerMap().entrySet()) {
+                if (entry.getValue().apiDefinition().mcpTool()) {
+                    SYNC_TOOL_SPECIFICATIONS_CACHES.add(MyMethodToolCallback.toSyncToolSpecification(entry.getKey(), entry.getValue()));
+                }
+            }
+        }
+        return Collections.unmodifiableList(SYNC_TOOL_SPECIFICATIONS_CACHES);
     }
 
     public static McpServerFeatures.SyncToolSpecification toSyncToolSpecification(String path, ApiHandler apiHandler) {
@@ -89,7 +102,7 @@ public class MyMethodToolCallback {
                 ApiException exception = new ApiException(HttpStatus.UNAUTHORIZED);
                 return new McpSchema.CallToolResult(List.of(), true, exception.toJson().toMap());
             }
-            
+
             //validate authorization
             if (!apiDefinition.roles().isEmpty()) {
                 // validate role

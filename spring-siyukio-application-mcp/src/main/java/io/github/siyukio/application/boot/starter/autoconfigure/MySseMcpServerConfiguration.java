@@ -3,10 +3,10 @@ package io.github.siyukio.application.boot.starter.autoconfigure;
 
 import io.github.siyukio.application.mcp.MyMethodToolCallback;
 import io.github.siyukio.tools.api.AipHandlerManager;
-import io.github.siyukio.tools.api.ApiHandler;
 import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.JsonUtils;
 import io.modelcontextprotocol.server.McpServer;
+import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.MyMcpServer;
 import io.modelcontextprotocol.server.transport.MyWebMvcSseServerTransportProvider;
@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.ServerResponse;
 
-import java.util.Map;
+import java.util.List;
 
 /**
  * @author Bugee
@@ -64,12 +64,8 @@ public class MySseMcpServerConfiguration {
                 .requestTimeout(mcpServerProperties.getRequestTimeout())
                 .capabilities(capabilities);
 
-
-        for (Map.Entry<String, ApiHandler> entry : aipHandlerManager.getApiHandlerMap().entrySet()) {
-            if (entry.getValue().apiDefinition().mcpTool()) {
-                spec.tools(MyMethodToolCallback.toSyncToolSpecification(entry.getKey(), entry.getValue()));
-            }
-        }
+        List<McpServerFeatures.SyncToolSpecification> tools = MyMethodToolCallback.getSyncToolSpecifications(aipHandlerManager);
+        spec.tools(tools);
 
         log.info("start sse {}, {}", serverName, serverVersion);
         return spec.build();
