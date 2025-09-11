@@ -6,10 +6,9 @@ package io.modelcontextprotocol.spec;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.modelcontextprotocol.util.Assert;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.StringUtils;
-import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 
@@ -18,6 +17,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
 /**
  * Default implementation of the MCP (Model Context Protocol) session that manages
@@ -78,8 +78,6 @@ public class MyMcpClientSession implements McpSession {
      */
     private final AtomicLong requestCounter = new AtomicLong(0);
 
-    private final Disposable connection;
-
     /**
      * Creates a new McpClientSession with the specified configuration and handlers.
      *
@@ -89,7 +87,8 @@ public class MyMcpClientSession implements McpSession {
      * @param notificationHandlers Map of method names to notification handlers
      */
     public MyMcpClientSession(Duration requestTimeout, McpClientTransport transport,
-                              Map<String, McpClientSession.RequestHandler<?>> requestHandlers, Map<String, McpClientSession.NotificationHandler> notificationHandlers) {
+                              Map<String, McpClientSession.RequestHandler<?>> requestHandlers, Map<String, McpClientSession.NotificationHandler> notificationHandlers,
+                              Function<? super Mono<Void>, ? extends Publisher<Void>> connectHook) {
 
         Assert.notNull(requestTimeout, "The requestTimeout can not be null");
         Assert.notNull(transport, "The transport can not be null");
@@ -101,49 +100,45 @@ public class MyMcpClientSession implements McpSession {
         this.requestHandlers.putAll(requestHandlers);
         this.notificationHandlers.putAll(notificationHandlers);
 
-        // TODO: consider mono.transformDeferredContextual where the Context contains
-        // the
-        // Observation associated with the individual message - it can be used to
-        // create child Observation and emit it together with the message to the
-        // consumer
-        this.connection = this.transport.connect(mono -> mono.doOnNext(message -> {
-            if (message instanceof McpSchema.JSONRPCResponse response) {
-                logger.debug("Received Response: {}", response);
-                var sink = pendingResponses.remove(response.id());
-                if (sink == null) {
-                    logger.warn("Unexpected response for unknown id {}", response.id());
-                } else {
-                    sink.success(response);
-                }
-            } else if (message instanceof McpSchema.JSONRPCRequest request) {
-                logger.debug("Received request: {}", request);
-                handleIncomingRequest(request).subscribe(response -> {
-                            Object id = response.id();
-                            if (StringUtils.hasText(String.valueOf(id))) {
-                                transport.sendMessage(response).subscribe();
-                            }
-                        },
-                        error -> {
-                            var errorResponse = new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, request.id(),
-                                    null, new McpSchema.JSONRPCResponse.JSONRPCError(
-                                    McpSchema.ErrorCodes.INTERNAL_ERROR, error.getMessage(), null));
-                            transport.sendMessage(errorResponse).subscribe();
-                        });
-            } else if (message instanceof McpSchema.JSONRPCNotification notification) {
-                logger.debug("Received notification: {}", notification);
-                handleIncomingNotification(notification).subscribe(null,
-                        error -> logger.error("Error handling notification: {}", error.getMessage()));
-            }
-        })).subscribe();
+        this.transport.connect(mono -> mono.doOnNext(this::handle)).transform(connectHook).subscribe();
     }
 
-    public static MethodNotFoundError getMethodNotFoundError(String method) {
-        switch (method) {
-            case McpSchema.METHOD_ROOTS_LIST:
-                return new MethodNotFoundError(method, "Roots not supported",
-                        Map.of("reason", "Client does not have roots capability"));
-            default:
-                return new MethodNotFoundError(method, "Method not found: " + method, null);
+    private void dismissPendingResponses() {
+        this.pendingResponses.forEach((id, sink) -> {
+            logger.warn("Abruptly terminating exchange for request {}", id);
+            sink.error(new RuntimeException("MCP session with server terminated"));
+        });
+        this.pendingResponses.clear();
+    }
+
+    private void handle(McpSchema.JSONRPCMessage message) {
+        if (message instanceof McpSchema.JSONRPCResponse response) {
+            logger.debug("Received Response: {}", response);
+            var sink = pendingResponses.remove(response.id());
+            if (sink == null) {
+                logger.warn("Unexpected response for unknown id {}", response.id());
+            } else {
+                sink.success(response);
+            }
+        } else if (message instanceof McpSchema.JSONRPCRequest request) {
+            logger.debug("Received request: {}", request);
+            handleIncomingRequest(request).onErrorResume(error -> {
+                var errorResponse = new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, request.id(), null,
+                        new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INTERNAL_ERROR,
+                                error.getMessage(), null));
+                return Mono.just(errorResponse);
+            }).flatMap(this.transport::sendMessage).onErrorComplete(t -> {
+                logger.warn("Issue sending response to the client, ", t);
+                return true;
+            }).subscribe();
+        } else if (message instanceof McpSchema.JSONRPCNotification notification) {
+            logger.debug("Received notification: {}", notification);
+            handleIncomingNotification(notification).onErrorComplete(t -> {
+                logger.error("Error handling notification: {}", t.getMessage());
+                return true;
+            }).subscribe();
+        } else {
+            logger.warn("Received unknown message type: {}", message);
         }
     }
 
@@ -157,19 +152,25 @@ public class MyMcpClientSession implements McpSession {
         return Mono.defer(() -> {
             var handler = this.requestHandlers.get(request.method());
             if (handler == null) {
-                MethodNotFoundError error = getMethodNotFoundError(request.method());
+                McpClientSession.MethodNotFoundError error = getMethodNotFoundError(request.method());
                 return Mono.just(new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, request.id(), null,
                         new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.METHOD_NOT_FOUND,
                                 error.message(), error.data())));
             }
 
             return handler.handle(request.params())
-                    .map(result -> new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, request.id(), result, null))
-                    .onErrorResume(error -> Mono.just(new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, request.id(),
-                            null, new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INTERNAL_ERROR,
-                            error.getMessage(), null)))); // TODO: add error message
-            // through the data field
+                    .map(result -> new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, request.id(), result, null));
         });
+    }
+
+    private McpClientSession.MethodNotFoundError getMethodNotFoundError(String method) {
+        switch (method) {
+            case McpSchema.METHOD_ROOTS_LIST:
+                return new McpClientSession.MethodNotFoundError(method, "Roots not supported",
+                        Map.of("reason", "Client does not have roots capability"));
+            default:
+                return new McpClientSession.MethodNotFoundError(method, "Method not found: " + method, null);
+        }
     }
 
     /**
@@ -182,7 +183,7 @@ public class MyMcpClientSession implements McpSession {
         return Mono.defer(() -> {
             var handler = notificationHandlers.get(notification.method());
             if (handler == null) {
-                logger.error("No handler registered for notification method: {}", notification.method());
+                logger.warn("No handler registered for notification method: {}", notification);
                 return Mono.empty();
             }
             return handler.handle(notification.params());
@@ -216,25 +217,25 @@ public class MyMcpClientSession implements McpSession {
             timeout = Duration.ofSeconds(3);
         }
 
-        return Mono.<McpSchema.JSONRPCResponse>create(sink -> {
-            this.pendingResponses.put(requestId, sink);
+        return Mono.deferContextual(ctx -> Mono.<McpSchema.JSONRPCResponse>create(pendingResponseSink -> {
+            logger.debug("Sending message for method {}", method);
+            this.pendingResponses.put(requestId, pendingResponseSink);
             McpSchema.JSONRPCRequest jsonrpcRequest = new McpSchema.JSONRPCRequest(McpSchema.JSONRPC_VERSION, method,
                     requestId, requestParams);
-            this.transport.sendMessage(jsonrpcRequest)
-                    // TODO: It's most efficient to create a dedicated Subscriber here
-                    .subscribe(v -> {
-                    }, error -> {
-                        this.pendingResponses.remove(requestId);
-                        sink.error(error);
-                    });
-        }).timeout(timeout).handle((jsonRpcResponse, sink) -> {
+            this.transport.sendMessage(jsonrpcRequest).contextWrite(ctx).subscribe(v -> {
+            }, error -> {
+                this.pendingResponses.remove(requestId);
+                pendingResponseSink.error(error);
+            });
+        })).timeout(timeout).handle((jsonRpcResponse, deliveredResponseSink) -> {
             if (jsonRpcResponse.error() != null) {
-                sink.error(new McpError(jsonRpcResponse.error()));
+                logger.error("Error handling request: {}", jsonRpcResponse.error());
+                deliveredResponseSink.error(new McpError(jsonRpcResponse.error()));
             } else {
                 if (typeRef.getType().equals(Void.class)) {
-                    sink.complete();
+                    deliveredResponseSink.complete();
                 } else {
-                    sink.next(this.transport.unmarshalFrom(jsonRpcResponse.result(), typeRef));
+                    deliveredResponseSink.next(this.transport.unmarshalFrom(jsonRpcResponse.result(), typeRef));
                 }
             }
         });
@@ -261,10 +262,7 @@ public class MyMcpClientSession implements McpSession {
      */
     @Override
     public Mono<Void> closeGracefully() {
-        return Mono.defer(() -> {
-            this.connection.dispose();
-            return transport.closeGracefully();
-        });
+        return Mono.fromRunnable(this::dismissPendingResponses);
     }
 
     /**
@@ -272,11 +270,7 @@ public class MyMcpClientSession implements McpSession {
      */
     @Override
     public void close() {
-        this.connection.dispose();
-        transport.close();
-    }
-
-    record MethodNotFoundError(String method, String message, Object data) {
+        dismissPendingResponses();
     }
 
 }

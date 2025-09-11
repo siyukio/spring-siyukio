@@ -9,7 +9,6 @@ import io.modelcontextprotocol.client.transport.HttpClientWebSocketClientTranspo
 import io.modelcontextprotocol.server.transport.HttpServletSseServerTransportProvider;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.MyMcpSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
@@ -60,7 +59,7 @@ public class MyMcpSyncClient {
     private final String version;
 
     private final Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler;
-    private final Consumer<MyMcpSchema.ProgressMessageNotification> progressHandler;
+    private final Consumer<McpSchema.ProgressNotification> progressHandler;
     private final Supplier<String> tokenSupplier;
 
     public MyMcpSyncClient(String baseUri,
@@ -70,7 +69,7 @@ public class MyMcpSyncClient {
                            String authorization,
                            Map<String, String> headers,
                            Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler,
-                           Consumer<MyMcpSchema.ProgressMessageNotification> progressHandler
+                           Consumer<McpSchema.ProgressNotification> progressHandler
     ) {
         this.baseUri = baseUri;
         this.requestTimeout = requestTimeout;
@@ -160,22 +159,23 @@ public class MyMcpSyncClient {
                     .sampling(samplingConsumer);
         }
         if (this.progressHandler != null) {
-            asyncSpec.progressConsumer(this.progressHandler);
+            Function<McpSchema.ProgressNotification, Mono<Void>> progressConsumer = r -> Mono
+                    .fromRunnable(() -> this.progressHandler.accept(r));
+            asyncSpec.progressConsumer(progressConsumer);
         }
         return asyncSpec.build();
     }
 
     private String getRedirectUri() {
         URI httpUri = URI.create(this.baseUri + HttpServletSseServerTransportProvider.DEFAULT_SSE_ENDPOINT);
-        HttpClient client = HttpClient.newBuilder()
+        HttpRequest.Builder httpRequestBuilder = HttpRequest.newBuilder().uri(httpUri);
+        httpRequestBuilder.header(HttpHeaders.FROM, "internal");
+
+        try (HttpClient client = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(Duration.ofSeconds(6))
                 .followRedirects(HttpClient.Redirect.NEVER)
-                .build();
-
-        HttpRequest.Builder httpRequestBuilder = HttpRequest.newBuilder().uri(httpUri);
-        httpRequestBuilder.header(HttpHeaders.FROM, "internal");
-        try {
+                .build()) {
             HttpResponse<Void> response = client.send(httpRequestBuilder.build(), HttpResponse.BodyHandlers.discarding());
             if (response.statusCode() == HttpStatus.TEMPORARY_REDIRECT.value()) {
                 String location = response.headers().firstValue(HttpHeaders.LOCATION).orElseThrow();
@@ -208,7 +208,7 @@ public class MyMcpSyncClient {
                 myMcpAsyncClient = this.createMcpAsyncClient(targetUri);
                 myMcpAsyncClient.initialize().block();
                 this.myMcpAsyncClientMap.put(targetUri, myMcpAsyncClient);
-                log.info("cache MyMcpAsyncClient, baseUri:{} targetUri:{}", this.baseUri, targetUri);
+                log.info("cache MyMcpAsyncClient targetUri:{} for {}", targetUri, this.baseUri);
             }
             return myMcpAsyncClient;
         } finally {
@@ -240,19 +240,6 @@ public class MyMcpSyncClient {
         return this.getMcpSyncClient().callTool(callToolRequest).block();
     }
 
-    private void throwError(String text) {
-        if (text.startsWith("{") || text.endsWith("}")) {
-            JSONObject json = JsonUtils.parseObject(text);
-            int error = json.optInt("error", HttpStatus.OK.value());
-            if (error != HttpStatus.OK.value()) {
-                String message = json.optString("message", "");
-                throw new ApiException(error, message);
-            }
-        } else {
-            throw new ApiException(text);
-        }
-    }
-
     public McpSchema.CallToolResult callTool(String toolName, Object params) {
         Map<String, Object> arguments = JsonUtils.copy(params, Map.class, String.class, Object.class);
         return this.callTool(new McpSchema.CallToolRequest(toolName, arguments));
@@ -260,12 +247,20 @@ public class MyMcpSyncClient {
 
     public <T> T callTool(String toolName, Object params, Class<T> returnType) {
         McpSchema.CallToolResult result = this.callTool(toolName, params);
-        JSONObject contentJson = JsonUtils.copy(result.content().getFirst(), JSONObject.class);
-        String text = contentJson.optString("text");
+
         if (result.isError()) {
-            this.throwError(text);
+            if (result.structuredContent() != null) {
+                JSONObject errorJson = JsonUtils.copy(result.structuredContent(), JSONObject.class);
+                int error = errorJson.optInt(ApiException.getErrorName(), HttpStatus.OK.value());
+                String errorReason = errorJson.optString(ApiException.getErrorReasonName(), "");
+                throw new ApiException(error, errorReason);
+            }
+
+            JSONObject contentJson = JsonUtils.copy(result.content().getFirst(), JSONObject.class);
+            String text = contentJson.optString("text");
+            throw new ApiException(text);
         }
-        return JsonUtils.parse(text, returnType);
+        return JsonUtils.copy(result.structuredContent(), returnType);
     }
 
     public <T> T callTool(String toolName, Class<T> returnType) {
@@ -311,7 +306,7 @@ public class MyMcpSyncClient {
         private boolean internal = false;
 
         private Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler = null;
-        private Consumer<MyMcpSchema.ProgressMessageNotification> progressHandler = null;
+        private Consumer<McpSchema.ProgressNotification> progressHandler = null;
 
         private Builder(String baseUri) {
             this.baseUri = baseUri;
@@ -368,7 +363,7 @@ public class MyMcpSyncClient {
             return this;
         }
 
-        public Builder setProgressHandler(Consumer<MyMcpSchema.ProgressMessageNotification> progressHandler) {
+        public Builder setProgressHandler(Consumer<McpSchema.ProgressNotification> progressHandler) {
             this.progressHandler = progressHandler;
             return this;
         }

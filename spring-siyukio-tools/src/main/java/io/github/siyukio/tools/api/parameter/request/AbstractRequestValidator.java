@@ -20,13 +20,13 @@ public abstract class AbstractRequestValidator implements RequestValidator {
 
     protected final boolean required;
 
-    protected final String error;
+    protected final String errorReason;
 
-    public AbstractRequestValidator(String name, boolean required, String parent, String error) {
+    public AbstractRequestValidator(String name, boolean required, String parent, String errorReason) {
         this.name = name;
         this.parent = parent;
         this.required = required;
-        this.error = error;
+        this.errorReason = errorReason;
     }
 
     @Override
@@ -58,28 +58,26 @@ public abstract class AbstractRequestValidator implements RequestValidator {
     protected final ApiException createApiException(Object value, String format) {
         ApiException apiException;
         String fullName = this.getFullName();
-        if (StringUtils.hasText(this.error)) {
-            apiException = ApiException.getInvalidApiException(this.error);
+        if (StringUtils.hasText(this.errorReason)) {
+            apiException = ApiException.getInvalidApiException(this.errorReason);
         } else {
             String errorMessage = String.format(format, this.getFullName());
             apiException = ApiException.getInvalidApiException(errorMessage);
         }
-        apiException.putData(fullName, value);
         return apiException;
     }
 
     protected final ApiException createApiException(Object value, String format, Object... values) {
         ApiException apiException;
         String fullName = this.getFullName();
-        if (StringUtils.hasText(this.error)) {
-            apiException = ApiException.getInvalidApiException(this.error);
+        if (StringUtils.hasText(this.errorReason)) {
+            apiException = ApiException.getInvalidApiException(this.errorReason);
         } else {
             List<Object> valueList = new ArrayList<>(List.of(values));
             valueList.addFirst(this.getFullName());
             String errorMessage = String.format(format, valueList.toArray());
             apiException = ApiException.getInvalidApiException(errorMessage);
         }
-        apiException.putData(fullName, value);
         return apiException;
     }
 

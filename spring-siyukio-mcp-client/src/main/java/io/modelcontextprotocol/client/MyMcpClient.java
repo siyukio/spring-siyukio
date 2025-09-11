@@ -5,9 +5,9 @@
 package io.modelcontextprotocol.client;
 
 import io.modelcontextprotocol.spec.McpClientTransport;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.*;
 import io.modelcontextprotocol.spec.McpTransport;
-import io.modelcontextprotocol.spec.MyMcpSchema;
 import io.modelcontextprotocol.util.Assert;
 import reactor.core.publisher.Mono;
 
@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -111,8 +110,8 @@ public interface MyMcpClient {
      * @return A new builder instance for configuring the client
      * @throws IllegalArgumentException if transport is null
      */
-    static AsyncSpec async(McpClientTransport transport) {
-        return new AsyncSpec(transport);
+    static MyMcpClient.AsyncSpec async(McpClientTransport transport) {
+        return new MyMcpClient.AsyncSpec(transport);
     }
 
     /**
@@ -135,17 +134,19 @@ public interface MyMcpClient {
 
         private final McpClientTransport transport;
         private final Map<String, Root> roots = new HashMap<>();
-        private final List<Function<List<Tool>, Mono<Void>>> toolsChangeConsumers = new ArrayList<>();
-        private final List<Function<List<Resource>, Mono<Void>>> resourcesChangeConsumers = new ArrayList<>();
-        private final List<Function<List<Prompt>, Mono<Void>>> promptsChangeConsumers = new ArrayList<>();
-        private final List<Function<LoggingMessageNotification, Mono<Void>>> loggingConsumers = new ArrayList<>();
+        private final List<Function<List<McpSchema.Tool>, Mono<Void>>> toolsChangeConsumers = new ArrayList<>();
+        private final List<Function<List<McpSchema.Resource>, Mono<Void>>> resourcesChangeConsumers = new ArrayList<>();
+        private final List<Function<List<McpSchema.ResourceContents>, Mono<Void>>> resourcesUpdateConsumers = new ArrayList<>();
+        private final List<Function<List<McpSchema.Prompt>, Mono<Void>>> promptsChangeConsumers = new ArrayList<>();
+        private final List<Function<McpSchema.LoggingMessageNotification, Mono<Void>>> loggingConsumers = new ArrayList<>();
+        private final List<Function<McpSchema.ProgressNotification, Mono<Void>>> progressConsumers = new ArrayList<>();
         private Duration requestTimeout = Duration.ofSeconds(20); // Default timeout
         private Duration initializationTimeout = Duration.ofSeconds(20);
         private ClientCapabilities capabilities;
         private Implementation clientInfo = new Implementation("Spring AI MCP Client", "0.3.1");
         private Function<CreateMessageRequest, Mono<CreateMessageResult>> samplingHandler;
 
-        private Consumer<MyMcpSchema.ProgressMessageNotification> progressConsumer;
+        private Function<ElicitRequest, Mono<ElicitResult>> elicitationHandler;
 
         private AsyncSpec(McpClientTransport transport) {
             Assert.notNull(transport, "Transport must not be null");
@@ -162,19 +163,19 @@ public interface MyMcpClient {
          * @return This builder instance for method chaining
          * @throws IllegalArgumentException if requestTimeout is null
          */
-        public AsyncSpec requestTimeout(Duration requestTimeout) {
+        public MyMcpClient.AsyncSpec requestTimeout(Duration requestTimeout) {
             Assert.notNull(requestTimeout, "Request timeout must not be null");
             this.requestTimeout = requestTimeout;
             return this;
         }
 
         /**
-         * @param initializationTimeout The duration to wait for the initializaiton
+         * @param initializationTimeout The duration to wait for the initialization
          *                              lifecycle step to complete.
          * @return This builder instance for method chaining
          * @throws IllegalArgumentException if initializationTimeout is null
          */
-        public AsyncSpec initializationTimeout(Duration initializationTimeout) {
+        public MyMcpClient.AsyncSpec initializationTimeout(Duration initializationTimeout) {
             Assert.notNull(initializationTimeout, "Initialization timeout must not be null");
             this.initializationTimeout = initializationTimeout;
             return this;
@@ -189,7 +190,7 @@ public interface MyMcpClient {
          * @return This builder instance for method chaining
          * @throws IllegalArgumentException if capabilities is null
          */
-        public AsyncSpec capabilities(ClientCapabilities capabilities) {
+        public MyMcpClient.AsyncSpec capabilities(ClientCapabilities capabilities) {
             Assert.notNull(capabilities, "Capabilities must not be null");
             this.capabilities = capabilities;
             return this;
@@ -205,7 +206,7 @@ public interface MyMcpClient {
          * @return This builder instance for method chaining
          * @throws IllegalArgumentException if clientInfo is null
          */
-        public AsyncSpec clientInfo(Implementation clientInfo) {
+        public MyMcpClient.AsyncSpec clientInfo(Implementation clientInfo) {
             Assert.notNull(clientInfo, "Client info must not be null");
             this.clientInfo = clientInfo;
             return this;
@@ -220,7 +221,7 @@ public interface MyMcpClient {
          * @return This builder instance for method chaining
          * @throws IllegalArgumentException if roots is null
          */
-        public AsyncSpec roots(List<Root> roots) {
+        public MyMcpClient.AsyncSpec roots(List<Root> roots) {
             Assert.notNull(roots, "Roots must not be null");
             for (Root root : roots) {
                 this.roots.put(root.uri(), root);
@@ -237,7 +238,7 @@ public interface MyMcpClient {
          * @throws IllegalArgumentException if roots is null
          * @see #roots(List)
          */
-        public AsyncSpec roots(Root... roots) {
+        public MyMcpClient.AsyncSpec roots(Root... roots) {
             Assert.notNull(roots, "Roots must not be null");
             for (Root root : roots) {
                 this.roots.put(root.uri(), root);
@@ -255,9 +256,25 @@ public interface MyMcpClient {
          * @return This builder instance for method chaining
          * @throws IllegalArgumentException if samplingHandler is null
          */
-        public AsyncSpec sampling(Function<CreateMessageRequest, Mono<CreateMessageResult>> samplingHandler) {
+        public MyMcpClient.AsyncSpec sampling(Function<CreateMessageRequest, Mono<CreateMessageResult>> samplingHandler) {
             Assert.notNull(samplingHandler, "Sampling handler must not be null");
             this.samplingHandler = samplingHandler;
+            return this;
+        }
+
+        /**
+         * Sets a custom elicitation handler for processing elicitation message requests.
+         * The elicitation handler can modify or validate messages before they are sent to
+         * the server, enabling custom processing logic.
+         *
+         * @param elicitationHandler A function that processes elicitation requests and
+         *                           returns results. Must not be null.
+         * @return This builder instance for method chaining
+         * @throws IllegalArgumentException if elicitationHandler is null
+         */
+        public MyMcpClient.AsyncSpec elicitation(Function<ElicitRequest, Mono<ElicitResult>> elicitationHandler) {
+            Assert.notNull(elicitationHandler, "Elicitation handler must not be null");
+            this.elicitationHandler = elicitationHandler;
             return this;
         }
 
@@ -271,7 +288,7 @@ public interface MyMcpClient {
          * @return This builder instance for method chaining
          * @throws IllegalArgumentException if toolsChangeConsumer is null
          */
-        public AsyncSpec toolsChangeConsumer(Function<List<Tool>, Mono<Void>> toolsChangeConsumer) {
+        public MyMcpClient.AsyncSpec toolsChangeConsumer(Function<List<McpSchema.Tool>, Mono<Void>> toolsChangeConsumer) {
             Assert.notNull(toolsChangeConsumer, "Tools change consumer must not be null");
             this.toolsChangeConsumers.add(toolsChangeConsumer);
             return this;
@@ -287,10 +304,28 @@ public interface MyMcpClient {
          * @return This builder instance for method chaining
          * @throws IllegalArgumentException if resourcesChangeConsumer is null
          */
-        public AsyncSpec resourcesChangeConsumer(
-                Function<List<Resource>, Mono<Void>> resourcesChangeConsumer) {
+        public MyMcpClient.AsyncSpec resourcesChangeConsumer(
+                Function<List<McpSchema.Resource>, Mono<Void>> resourcesChangeConsumer) {
             Assert.notNull(resourcesChangeConsumer, "Resources change consumer must not be null");
             this.resourcesChangeConsumers.add(resourcesChangeConsumer);
+            return this;
+        }
+
+        /**
+         * Adds a consumer to be notified when a specific resource is updated. This allows
+         * the client to react to changes in individual resources, such as updates to
+         * their content or metadata.
+         *
+         * @param resourcesUpdateConsumer A consumer function that processes the updated
+         *                                resource and returns a Mono indicating the completion of the processing. Must
+         *                                not be null.
+         * @return This builder instance for method chaining.
+         * @throws IllegalArgumentException If the resourcesUpdateConsumer is null.
+         */
+        public MyMcpClient.AsyncSpec resourcesUpdateConsumer(
+                Function<List<McpSchema.ResourceContents>, Mono<Void>> resourcesUpdateConsumer) {
+            Assert.notNull(resourcesUpdateConsumer, "Resources update consumer must not be null");
+            this.resourcesUpdateConsumers.add(resourcesUpdateConsumer);
             return this;
         }
 
@@ -304,7 +339,7 @@ public interface MyMcpClient {
          * @return This builder instance for method chaining
          * @throws IllegalArgumentException if promptsChangeConsumer is null
          */
-        public AsyncSpec promptsChangeConsumer(Function<List<Prompt>, Mono<Void>> promptsChangeConsumer) {
+        public MyMcpClient.AsyncSpec promptsChangeConsumer(Function<List<McpSchema.Prompt>, Mono<Void>> promptsChangeConsumer) {
             Assert.notNull(promptsChangeConsumer, "Prompts change consumer must not be null");
             this.promptsChangeConsumers.add(promptsChangeConsumer);
             return this;
@@ -319,7 +354,7 @@ public interface MyMcpClient {
          *                        null.
          * @return This builder instance for method chaining
          */
-        public AsyncSpec loggingConsumer(Function<LoggingMessageNotification, Mono<Void>> loggingConsumer) {
+        public MyMcpClient.AsyncSpec loggingConsumer(Function<McpSchema.LoggingMessageNotification, Mono<Void>> loggingConsumer) {
             Assert.notNull(loggingConsumer, "Logging consumer must not be null");
             this.loggingConsumers.add(loggingConsumer);
             return this;
@@ -334,17 +369,43 @@ public interface MyMcpClient {
          *                         not be null.
          * @return This builder instance for method chaining
          */
-        public AsyncSpec loggingConsumers(
-                List<Function<LoggingMessageNotification, Mono<Void>>> loggingConsumers) {
+        public MyMcpClient.AsyncSpec loggingConsumers(
+                List<Function<McpSchema.LoggingMessageNotification, Mono<Void>>> loggingConsumers) {
             Assert.notNull(loggingConsumers, "Logging consumers must not be null");
             this.loggingConsumers.addAll(loggingConsumers);
             return this;
         }
 
-        public AsyncSpec progressConsumer(
-                Consumer<MyMcpSchema.ProgressMessageNotification> progressConsumer) {
+        /**
+         * Adds a consumer to be notified of progress notifications from the server. This
+         * allows the client to track long-running operations and provide feedback to
+         * users.
+         *
+         * @param progressConsumer A consumer that receives progress notifications. Must
+         *                         not be null.
+         * @return This builder instance for method chaining
+         * @throws IllegalArgumentException if progressConsumer is null
+         */
+        public MyMcpClient.AsyncSpec progressConsumer(Function<McpSchema.ProgressNotification, Mono<Void>> progressConsumer) {
             Assert.notNull(progressConsumer, "Progress consumer must not be null");
-            this.progressConsumer = progressConsumer;
+            this.progressConsumers.add(progressConsumer);
+            return this;
+        }
+
+        /**
+         * Adds a multiple consumers to be notified of progress notifications from the
+         * server. This allows the client to track long-running operations and provide
+         * feedback to users.
+         *
+         * @param progressConsumers A list of consumers that receives progress
+         *                          notifications. Must not be null.
+         * @return This builder instance for method chaining
+         * @throws IllegalArgumentException if progressConsumer is null
+         */
+        public MyMcpClient.AsyncSpec progressConsumers(
+                List<Function<McpSchema.ProgressNotification, Mono<Void>>> progressConsumers) {
+            Assert.notNull(progressConsumers, "Progress consumers must not be null");
+            this.progressConsumers.addAll(progressConsumers);
             return this;
         }
 
@@ -357,9 +418,9 @@ public interface MyMcpClient {
         public MyMcpAsyncClient build() {
             return new MyMcpAsyncClient(this.transport, this.requestTimeout, this.initializationTimeout,
                     new McpClientFeatures.Async(this.clientInfo, this.capabilities, this.roots,
-                            this.toolsChangeConsumers, this.resourcesChangeConsumers, this.promptsChangeConsumers,
-                            this.loggingConsumers, this.samplingHandler),
-                    this.progressConsumer);
+                            this.toolsChangeConsumers, this.resourcesChangeConsumers, this.resourcesUpdateConsumers,
+                            this.promptsChangeConsumers, this.loggingConsumers, this.progressConsumers,
+                            this.samplingHandler, this.elicitationHandler));
         }
 
     }

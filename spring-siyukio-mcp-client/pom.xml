@@ -24,6 +24,18 @@
             <artifactId>spring-siyukio-tools</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>io.github.siyukio</groupId>
+            <artifactId>spring-siyukio-application</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
 </project>

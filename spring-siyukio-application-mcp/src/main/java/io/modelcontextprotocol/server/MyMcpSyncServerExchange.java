@@ -2,7 +2,6 @@ package io.modelcontextprotocol.server;
 
 import io.github.siyukio.tools.api.token.Token;
 import io.modelcontextprotocol.spec.McpServerSession;
-import io.modelcontextprotocol.spec.MyMcpSchema;
 import io.modelcontextprotocol.spec.MyMcpServerSession;
 
 /**
@@ -23,10 +22,6 @@ public class MyMcpSyncServerExchange extends McpSyncServerExchange {
         this.exchange = exchange;
     }
 
-    public McpAsyncServerExchange getMcpAsyncServerExchange() {
-        return this.exchange;
-    }
-
     public Token getToken() {
         if (this.exchange instanceof MyMcpAsyncServerExchange myMcpAsyncServerExchange) {
             McpServerSession mcpServerSession = myMcpAsyncServerExchange.getSession();
@@ -35,13 +30,6 @@ public class MyMcpSyncServerExchange extends McpSyncServerExchange {
             }
         }
         return null;
-    }
-
-    public void progressNotification(MyMcpSchema.ProgressMessageNotification progressMessageNotification) {
-        if (this.exchange instanceof MyMcpAsyncServerExchange myMcpAsyncServerExchange) {
-            myMcpAsyncServerExchange.progressNotification(progressMessageNotification).block();
-        }
-
     }
 
 }

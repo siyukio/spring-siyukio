@@ -40,12 +40,6 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>io.github.siyukio</groupId>
-            <artifactId>spring-siyukio-mcp-client</artifactId>
-            <scope>test</scope>
-        </dependency>
-
     </dependencies>
 
 </project>

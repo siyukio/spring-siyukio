@@ -8,6 +8,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.util.AsyncUtils;
+import io.modelcontextprotocol.server.DefaultMcpTransportContext;
+import io.modelcontextprotocol.server.McpTransportContext;
+import io.modelcontextprotocol.server.McpTransportContextExtractor;
 import io.modelcontextprotocol.spec.*;
 import io.modelcontextprotocol.util.Assert;
 import lombok.Getter;
@@ -33,17 +36,19 @@ public class MyWebSocketServerTransportProvider implements McpServerTransportPro
     @Getter
     private final String messageEndpoint;
     private final ConcurrentHashMap<String, MyMcpServerSession> sessions = new ConcurrentHashMap<>();
+    private final McpTransportContextExtractor<MyMcpServerSession> contextExtractor;
     private McpServerSession.Factory sessionFactory;
     private Consumer<Token> onConnectConsumer = null;
 
     private Consumer<Token> onCloseConsumer = null;
 
-    public MyWebSocketServerTransportProvider(ObjectMapper objectMapper, String messageEndpoint) {
+    public MyWebSocketServerTransportProvider(ObjectMapper objectMapper, String messageEndpoint, McpTransportContextExtractor<MyMcpServerSession> contextExtractor) {
         Assert.notNull(objectMapper, "ObjectMapper must not be null");
         Assert.notNull(messageEndpoint, "message endpoint must not be null");
 
         this.objectMapper = objectMapper;
         this.messageEndpoint = messageEndpoint;
+        this.contextExtractor = contextExtractor;
     }
 
     public void onConnect(Consumer<Token> consumer) {
@@ -113,17 +118,20 @@ public class MyWebSocketServerTransportProvider implements McpServerTransportPro
 
     void handleMessage(String sessionId, String text) {
 
+        MyMcpServerSession session = sessions.get(sessionId);
+        if (session == null) {
+            log.warn("handleMessage MyMcpServerSession not found:{}", sessionId);
+            return;
+        }
+
         try {
+            final McpTransportContext transportContext = this.contextExtractor.extract(session,
+                    new DefaultMcpTransportContext());
+
             McpSchema.JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(objectMapper, text);
 
-            MyMcpServerSession session = sessions.get(sessionId);
-            if (session == null) {
-                log.warn("handleMessage MyMcpServerSession not found:{}", sessionId);
-                return;
-            }
-
             // Process the message through the session's handle method
-            session.handle(message).block(); // Block for WebMVC compatibility
+            session.handle(message).contextWrite(ctx -> ctx.put(McpTransportContext.KEY, transportContext)).block(); // Block for WebMVC compatibility
 
         } catch (Exception e) {
             log.error("Error handling message: {}", e.getMessage());

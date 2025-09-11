@@ -6,6 +6,7 @@ import io.github.siyukio.tools.api.AipHandlerManager;
 import io.github.siyukio.tools.api.ApiHandler;
 import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.JsonUtils;
+import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.MyMcpServer;
 import io.modelcontextprotocol.server.transport.MyWebMvcSseServerTransportProvider;
@@ -32,8 +33,12 @@ public class MySseMcpServerConfiguration {
     @Bean
     public MyWebMvcSseServerTransportProvider webMvcSseServerTransportProvider(TokenProvider tokenProvider,
                                                                                McpServerProperties mcpServerProperties) {
-        return new MyWebMvcSseServerTransportProvider(tokenProvider, JsonUtils.getObjectMapper(),
-                mcpServerProperties.getSseMessageEndpoint(), mcpServerProperties.getSseEndpoint());
+        return MyWebMvcSseServerTransportProvider.builder()
+                .tokenProvider(tokenProvider)
+                .objectMapper(JsonUtils.getObjectMapper())
+                .messageEndpoint(mcpServerProperties.getSseMessageEndpoint())
+                .sseEndpoint(mcpServerProperties.getSseEndpoint())
+                .build();
     }
 
     @Bean
@@ -54,7 +59,7 @@ public class MySseMcpServerConfiguration {
         // Create the server with both tool and resource capabilities
         String serverName = mcpServerProperties.getName();
         String serverVersion = mcpServerProperties.getVersion();
-        MyMcpServer.SyncSpecification spec = new MyMcpServer.SyncSpecification(webMvcSseServerTransportProvider)
+        McpServer.SyncSpecification<MyMcpServer.MySingleSessionSyncSpecification> spec = MyMcpServer.sync(webMvcSseServerTransportProvider)
                 .serverInfo(serverName, serverVersion)
                 .requestTimeout(mcpServerProperties.getRequestTimeout())
                 .capabilities(capabilities);

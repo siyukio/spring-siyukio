@@ -1,5 +1,6 @@
 package io.github.siyukio.tools.api.definition;
 
+import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.api.ApiRequest;
 import io.github.siyukio.tools.api.annotation.ApiController;
 import io.github.siyukio.tools.api.annotation.ApiMapping;
@@ -136,6 +137,9 @@ public final class ApiDefinitionManager {
 
         LinkedList<Class<?>> responseClassLinkedList = new LinkedList<>();
         JSONArray responseParameters = this.getSubResponseParameters(method, returnValueType, responseClassLinkedList);
+
+        responseParameters.put(ApiException.getErrorParameter());
+        responseParameters.put(ApiException.getErrorReasonParameter());
 
         String summary = apiMapping.summary();
         if (!StringUtils.hasText(summary)) {

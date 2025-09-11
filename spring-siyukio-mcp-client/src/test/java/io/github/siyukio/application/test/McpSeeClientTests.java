@@ -6,7 +6,6 @@ import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.JsonUtils;
 import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.MyMcpSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -15,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -57,22 +55,6 @@ class McpSeeClientTests {
     }
 
     @Test
-    void testGetOutputSchema() {
-
-        MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
-                .useTokenSupplier(this.tokenSupplier)
-                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
-                .build();
-
-        JSONObject result = client.callTool("/getToken",
-                Map.of("_outputSchema", "true"), JSONObject.class);
-
-        log.info("{}", JsonUtils.toPrettyJSONString(result));
-
-        client.closeGracefully();
-    }
-
-    @Test
     void testCallTool() {
         MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
                 .useTokenSupplier(this.tokenSupplier)
@@ -98,7 +80,7 @@ class McpSeeClientTests {
         // Configure sampling handler
         Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler = request -> {
             // Sampling implementation that interfaces with LLM
-            log.info("client: {}", request);
+            log.info("sampling CreateMessageRequest: {}", request);
             return McpSchema.CreateMessageResult.builder()
                     .role(McpSchema.Role.USER)
                     .message("sse ok")
@@ -109,6 +91,7 @@ class McpSeeClientTests {
                 .useTokenSupplier(this.tokenSupplier)
                 .setMcpClientCommonProperties(this.mcpClientCommonProperties)
                 .setSamplingHandler(samplingHandler)
+                .useInternal(true)
                 .build();
 
         JSONObject result = client.callTool("/getToken", JSONObject.class);
@@ -122,8 +105,8 @@ class McpSeeClientTests {
     @Test
     void testCallToolOnProgress() throws InterruptedException {
 
-        Consumer<MyMcpSchema.ProgressMessageNotification> progressHandler = progressMessageNotification -> {
-            log.info("progressMessageNotification:{}", JsonUtils.toPrettyJSONString(progressMessageNotification));
+        Consumer<McpSchema.ProgressNotification> progressHandler = progressNotification -> {
+            log.info("progressNotification:{}", JsonUtils.toPrettyJSONString(progressNotification));
         };
 
         MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)

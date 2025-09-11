@@ -44,9 +44,10 @@ API_SIGNATURE_SALT: siyukio
 spring:
   ai:
     mcp:
-      server:
-        name: siyukio-server
+      client:
+        name: siyukio-client
         version: 3.4.9-SNAPSHOT
+        requestTimeout: 60000
 
 logging:
   level:
@@ -55,4 +56,4 @@ logging:
       github:
         siyukio: DEBUG
 server:
-  port: 8080
+  port: 8081

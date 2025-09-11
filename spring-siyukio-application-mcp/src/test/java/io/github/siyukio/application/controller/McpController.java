@@ -10,9 +10,7 @@ import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.AsyncUtils;
 import io.github.siyukio.tools.util.JsonUtils;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
-import io.modelcontextprotocol.server.MyMcpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.MyMcpSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,13 +68,12 @@ public class McpController {
             AsyncUtils.schedule(() -> {
                 JSONObject messageJson = new JSONObject();
                 messageJson.put("data", "hello");
-                MyMcpSchema.ProgressMessageNotification progressMessageNotification = new MyMcpSchema.ProgressMessageNotification(
-                        JsonUtils.toJSONString(messageJson),
-                        0, 0
+                McpSchema.ProgressNotification progressNotification = new McpSchema.ProgressNotification(
+                        "",
+                        0d, 0d,
+                        JsonUtils.toJSONString(messageJson)
                 );
-                if (exchange instanceof MyMcpSyncServerExchange myMcpSyncServerExchange) {
-                    myMcpSyncServerExchange.progressNotification(progressMessageNotification);
-                }
+                exchange.progressNotification(progressNotification);
 
             }, 6, TimeUnit.SECONDS);
         }

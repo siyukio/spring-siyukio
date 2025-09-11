@@ -6,11 +6,14 @@ import io.github.siyukio.tools.api.AipHandlerManager;
 import io.github.siyukio.tools.api.ApiHandler;
 import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.JsonUtils;
+import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpSyncServer;
+import io.modelcontextprotocol.server.McpTransportContextExtractor;
 import io.modelcontextprotocol.server.MyMcpServer;
 import io.modelcontextprotocol.server.transport.MyWebSocketHandler;
 import io.modelcontextprotocol.server.transport.MyWebSocketServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.spec.MyMcpServerSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.mcp.server.autoconfigure.McpServerProperties;
 import org.springframework.beans.BeansException;
@@ -44,7 +47,9 @@ public class MyWebSocketMcpServerConfiguration implements WebSocketConfigurer, A
 
     @Bean
     public MyWebSocketServerTransportProvider webSocketServerTransportProvider() {
-        return new MyWebSocketServerTransportProvider(JsonUtils.getObjectMapper(), "/mcp/message/ws");
+        McpTransportContextExtractor<MyMcpServerSession> contextExtractor = (myMcpServerSession, context) -> context;
+        return new MyWebSocketServerTransportProvider(JsonUtils.getObjectMapper(),
+                "/mcp/message/ws", contextExtractor);
     }
 
     @Override
@@ -75,7 +80,7 @@ public class MyWebSocketMcpServerConfiguration implements WebSocketConfigurer, A
         // Create the server with both tool and resource capabilities
         String serverName = mcpServerProperties.getName();
         String serverVersion = mcpServerProperties.getVersion();
-        MyMcpServer.SyncSpecification spec = new MyMcpServer.SyncSpecification(webSocketServerTransportProvider)
+        McpServer.SyncSpecification<MyMcpServer.MySingleSessionSyncSpecification> spec = MyMcpServer.sync(webSocketServerTransportProvider)
                 .serverInfo(serverName, serverVersion)
                 .requestTimeout(mcpServerProperties.getRequestTimeout())
                 .capabilities(capabilities);
