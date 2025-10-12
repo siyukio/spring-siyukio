@@ -83,12 +83,6 @@ public class McpClientCommonProperties {
      * Defaults to true.
      */
     private boolean rootChangeNotification = true;
-    /**
-     * Tool callback configuration.
-     * <p>
-     * This configuration is used to enable or disable tool callbacks in the MCP client.
-     */
-    private Toolcallback toolcallback = new Toolcallback();
 
     public boolean isEnabled() {
         return this.enabled;
@@ -146,14 +140,6 @@ public class McpClientCommonProperties {
         this.rootChangeNotification = rootChangeNotification;
     }
 
-    public Toolcallback getToolcallback() {
-        return this.toolcallback;
-    }
-
-    public void setToolcallback(Toolcallback toolcallback) {
-        this.toolcallback = toolcallback;
-    }
-
     /**
      * Client types supported by the MCP client.
      */
@@ -168,33 +154,6 @@ public class McpClientCommonProperties {
          * Asynchronous (McpAsyncClient) client
          */
         ASYNC
-
-    }
-
-    /**
-     * Represents a callback configuration for tools.
-     * <p>
-     * This record is used to encapsulate the configuration for enabling or disabling tool
-     * callbacks in the MCP client.
-     *
-     * @param enabled A boolean flag indicating whether the tool callback is enabled. If
-     *                true, the tool callback is active; otherwise, it is disabled.
-     */
-    public static class Toolcallback {
-
-        /**
-         * A boolean flag indicating whether the tool callback is enabled. If true, the
-         * tool callback is active; otherwise, it is disabled.
-         */
-        private boolean enabled = true;
-
-        public boolean isEnabled() {
-            return this.enabled;
-        }
-
-        public void setEnabled(boolean enabled) {
-            this.enabled = enabled;
-        }
 
     }
 

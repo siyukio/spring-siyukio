@@ -260,6 +260,7 @@ public abstract class OpenApiUtils {
             itemsJson = createObjectRequest(itemsChildArray);
         } else {
             itemsJson = arrayItemJson;
+            itemsJson.put("type", itemType);
         }
         requestParamJson.put("items", itemsJson);
         if (arrayParamJson.has("example")) {
