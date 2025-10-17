@@ -15,12 +15,12 @@ import java.util.Set;
  */
 public class ObjectRequestValidator extends AbstractRequestValidator {
 
-    private final boolean dynamic;
+    private final boolean additionalProperties;
     private final Map<String, RequestValidator> requestValidatorMap = new HashMap<>();
 
-    public ObjectRequestValidator(String name, boolean required, Map<String, RequestValidator> requestValidatorMap, boolean dynamic, String parentPath, String message) {
+    public ObjectRequestValidator(String name, boolean required, Map<String, RequestValidator> requestValidatorMap, boolean additionalProperties, String parentPath, String message) {
         super(name, required, parentPath, message);
-        this.dynamic = dynamic;
+        this.additionalProperties = additionalProperties;
         this.requestValidatorMap.putAll(requestValidatorMap);
     }
 
@@ -45,6 +45,10 @@ public class ObjectRequestValidator extends AbstractRequestValidator {
             }
         }
         if (value instanceof JSONObject data) {
+            if (this.additionalProperties) {
+                return data;
+            }
+
             Object childValue;
             RequestValidator requestValidator;
             Set<String> nameSet = new HashSet<>(data.keySet());
@@ -52,10 +56,7 @@ public class ObjectRequestValidator extends AbstractRequestValidator {
             for (String param : nameSet) {
                 requestValidator = this.requestValidatorMap.get(param);
                 if (requestValidator == null) {
-                    if (!this.dynamic) {
-                        //Discard undefined values and null values.
-                        data.remove(param);
-                    }
+                    data.remove(param);
                 } else {
                     childValue = data.opt(param);
                     if (JSONObject.NULL.equals(childValue)) {
@@ -77,7 +78,6 @@ public class ObjectRequestValidator extends AbstractRequestValidator {
             }
             result = data;
         } else {
-
             throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_REQUIRED_OBJECT_FORMAT);
         }
         return result;

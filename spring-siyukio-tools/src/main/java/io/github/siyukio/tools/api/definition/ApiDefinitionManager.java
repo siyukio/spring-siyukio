@@ -212,7 +212,7 @@ public final class ApiDefinitionManager {
         requestParameter.put("items", items);
         if (typeClass.equals(JSONObject.class)) {
             items.put("childArray", new JSONArray());
-            items.put("dynamic", true);
+            items.put("additionalProperties", true);
         } else {
             JSONArray subRequestParameters = this.getSubRequestParameters(method, typeClass, requestClassLinked);
             items.put("childArray", subRequestParameters);
@@ -361,7 +361,7 @@ public final class ApiDefinitionManager {
         JSONObject items = new JSONObject();
         items.put("type", ApiConstants.TYPE_OBJECT);
         items.put("childArray", new JSONArray());
-        items.put("dynamic", true);
+        items.put("additionalProperties", true);
 
         requestParameter.put("items", items);
         int maxItems = apiParameter.maxItems();
@@ -426,8 +426,8 @@ public final class ApiDefinitionManager {
         requestParameter.put("description", apiParameter.description());
         requestParameter.put("required", apiParameter.required());
         requestParameter.put("error", apiParameter.error());
-        //dynamic object
-        requestParameter.put("dynamic", true);
+        //additionalProperties object
+        requestParameter.put("additionalProperties", true);
         //
         JSONArray subRequestParameters = new JSONArray();
         requestParameter.put("childArray", subRequestParameters);
@@ -446,7 +446,7 @@ public final class ApiDefinitionManager {
         requestParam.put("description", apiParameter.description());
         requestParam.put("required", apiParameter.required());
         requestParam.put("error", apiParameter.error());
-        requestParam.put("dynamic", false);
+        requestParam.put("additionalProperties", false);
         //
         JSONArray subRequestParameters = this.getSubRequestParameters(method, typeClass, requestClassLinked);
         requestParam.put("childArray", subRequestParameters);
@@ -709,8 +709,8 @@ public final class ApiDefinitionManager {
             ApiParameter myApiParameter = typeClass.getAnnotation(ApiParameter.class);
             responseParameter.put("description", myApiParameter.description());
         }
-        boolean dynamic = typeClass.equals(JSONObject.class);
-        responseParameter.put("dynamic", dynamic);
+        boolean additionalProperties = typeClass.equals(JSONObject.class);
+        responseParameter.put("additionalProperties", additionalProperties);
         JSONObject items = new JSONObject();
         items.put("type", ApiConstants.TYPE_OBJECT);
         JSONArray childArray = this.getSubResponseParameters(method, typeClass, responseClassLinked);
@@ -738,7 +738,7 @@ public final class ApiDefinitionManager {
             ApiParameter myApiParameter = paramClass.getAnnotation(ApiParameter.class);
             responseParam.put("description", myApiParameter.description());
         }
-        responseParam.put("dynamic", false);
+        responseParam.put("additionalProperties", false);
         JSONArray childArray = this.getSubResponseParameters(method, paramClass, responseClassLinked);
         responseParam.put("childArray", childArray);
         return responseParam;
@@ -749,7 +749,7 @@ public final class ApiDefinitionManager {
         responseParameter.put("name", name);
         responseParameter.put("type", ApiConstants.TYPE_OBJECT);
         responseParameter.put("description", apiParameter.description());
-        responseParameter.put("dynamic", true);
+        responseParameter.put("additionalProperties", true);
         JSONArray childArray = new JSONArray();
         responseParameter.put("childArray", childArray);
         return responseParameter;

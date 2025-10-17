@@ -18,7 +18,7 @@ import java.util.Map;
 
 public interface RequestValidator {
 
-    private static RequestValidator createObjectRequestValidator(String paramName, boolean required, JSONArray requestParamArray, boolean dynamic, String parent, String error) {
+    private static RequestValidator createObjectRequestValidator(String paramName, boolean required, JSONArray requestParamArray, boolean additionalProperties, String parent, String error) {
         Map<String, RequestValidator> subRequestValidatorMap = new HashMap<>();
         //
         RequestValidator requestValidator;
@@ -37,7 +37,7 @@ public interface RequestValidator {
                     JSONArray childArray = requestParam.getJSONArray("childArray");
                     name = requestParam.getString("name");
                     requestValidator = createObjectRequestValidator(name, requestParam.optBoolean("required"), childArray,
-                            requestParam.optBoolean("dynamic"), currentPath, requestParam.optString("error", ""));
+                            requestParam.optBoolean("additionalProperties"), currentPath, requestParam.optString("error", ""));
                     break;
                 default:
                     Object defaultValue = requestParam.opt("default");
@@ -47,7 +47,7 @@ public interface RequestValidator {
             }
             subRequestValidatorMap.put(requestValidator.getName(), requestValidator);
         }
-        return new ObjectRequestValidator(paramName, required, subRequestValidatorMap, dynamic, parent, error);
+        return new ObjectRequestValidator(paramName, required, subRequestValidatorMap, additionalProperties, parent, error);
     }
 
     private static RequestValidator createCollectionRequestValidator(JSONObject requestParam, String parent) {
@@ -55,13 +55,13 @@ public interface RequestValidator {
         String name = requestParam.getString("name");
         JSONObject items = requestParam.getJSONObject("items");
         String itemType = items.getString("type");
-        boolean dynamic = items.optBoolean("dynamic", false);
+        boolean additionalProperties = items.optBoolean("additionalProperties", false);
         int maxItems = requestParam.optInt("maxItems");
         int minItems = requestParam.optInt("minItems");
         String error = requestParam.optString("error", "");
         if (itemType.equals(ApiConstants.TYPE_OBJECT)) {
             JSONArray childArray = items.getJSONArray("childArray");
-            requestValidator = createObjectRequestValidator(name, false, childArray, dynamic, parent, error);
+            requestValidator = createObjectRequestValidator(name, false, childArray, additionalProperties, parent, error);
         } else {
             RequestValidator typeRequestValidator = createArrayItemRequestValidator(name, items, requestParam, parent);
             requestValidator = new BasicRequestValidator(typeRequestValidator, null, parent, error);

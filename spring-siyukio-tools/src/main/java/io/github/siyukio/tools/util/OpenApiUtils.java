@@ -177,7 +177,7 @@ public abstract class OpenApiUtils {
         String description;
         JSONObject propJson;
         JSONArray itemsChildArray;
-        boolean dynamic;
+        boolean additionalProperties;
         for (int index = 0; index < requestParameters.length(); index++) {
             childParam = requestParameters.getJSONObject(index);
             type = childParam.optString("type");
@@ -189,8 +189,8 @@ public abstract class OpenApiUtils {
             }
             switch (type) {
                 case "object":
-                    dynamic = childParam.optBoolean("dynamic", false);
-                    if (dynamic) {
+                    additionalProperties = childParam.optBoolean("additionalProperties", false);
+                    if (additionalProperties) {
                         propJson = createDynamicObjectRequest(childParam);
                     } else {
                         itemsChildArray = childParam.optJSONArray("childArray");

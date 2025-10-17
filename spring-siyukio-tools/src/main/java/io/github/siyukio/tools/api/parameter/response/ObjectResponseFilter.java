@@ -13,12 +13,12 @@ import java.util.Set;
 public class ObjectResponseFilter implements ResponseFilter {
 
     private final String name;
-    private final boolean dynamic;
+    private final boolean additionalProperties;
     private final Map<String, ResponseFilter> responseFilterMap = new HashMap<>();
 
-    public ObjectResponseFilter(String name, boolean dynamic, Map<String, ResponseFilter> responseFilterMap) {
+    public ObjectResponseFilter(String name, boolean additionalProperties, Map<String, ResponseFilter> responseFilterMap) {
         this.name = name;
-        this.dynamic = dynamic;
+        this.additionalProperties = additionalProperties;
         this.responseFilterMap.putAll(responseFilterMap);
     }
 
@@ -31,15 +31,17 @@ public class ObjectResponseFilter implements ResponseFilter {
     public void filter(Object value) {
         if (value != null) {
             if (value instanceof JSONObject data) {
+                if (this.additionalProperties) {
+                    return;
+                }
+
                 ResponseFilter responseFilter;
                 Set<String> keySet = new HashSet<>(data.keySet());
                 Object childValue;
                 for (String param : keySet) {
                     responseFilter = this.responseFilterMap.get(param);
                     if (responseFilter == null) {
-                        if (!this.dynamic) {
-                            data.remove(param);
-                        }
+                        data.remove(param);
                     } else {
                         childValue = data.get(param);
                         responseFilter.filter(childValue);

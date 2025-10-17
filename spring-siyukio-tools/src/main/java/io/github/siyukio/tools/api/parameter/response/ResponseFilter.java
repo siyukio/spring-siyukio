@@ -13,7 +13,7 @@ import java.util.Map;
  */
 public interface ResponseFilter {
 
-    private static ResponseFilter createObjectResponseFilter(String paramName, boolean dynamic, JSONArray responseParamArray) {
+    private static ResponseFilter createObjectResponseFilter(String paramName, boolean additionalProperties, JSONArray responseParamArray) {
         Map<String, ResponseFilter> subResponseFilterMap = new HashMap<>();
         //
         ResponseFilter responseFilter;
@@ -30,7 +30,7 @@ public interface ResponseFilter {
                 case ApiConstants.TYPE_OBJECT:
                     name = responseParam.getString("name");
                     JSONArray childArray = responseParam.getJSONArray("childArray");
-                    responseFilter = createObjectResponseFilter(name, responseParam.optBoolean("dynamic", false), childArray);
+                    responseFilter = createObjectResponseFilter(name, responseParam.optBoolean("additionalProperties", false), childArray);
                     break;
                 default:
                     name = responseParam.getString("name");
@@ -39,7 +39,7 @@ public interface ResponseFilter {
             }
             subResponseFilterMap.put(responseFilter.getName(), responseFilter);
         }
-        return new ObjectResponseFilter(paramName, dynamic, subResponseFilterMap);
+        return new ObjectResponseFilter(paramName, additionalProperties, subResponseFilterMap);
     }
 
     private static ResponseFilter createCollectionResponseFilter(JSONObject responseParam) {
@@ -49,7 +49,7 @@ public interface ResponseFilter {
         String itemType = items.getString("type");
         if (itemType.equals(ApiConstants.TYPE_OBJECT)) {
             JSONArray childArray = items.getJSONArray("childArray");
-            responseFilter = createObjectResponseFilter(name, responseParam.optBoolean("dynamic", false), childArray);
+            responseFilter = createObjectResponseFilter(name, responseParam.optBoolean("additionalProperties", false), childArray);
         } else {
             responseFilter = new BasicResponseFilter(name + ".item");
         }
@@ -58,8 +58,8 @@ public interface ResponseFilter {
 
     public static ResponseFilter createResponseFilter(ApiDefinition apiDefinition) {
         JSONArray responseParameters = apiDefinition.responseParameters();
-        boolean dynamic = apiDefinition.realReturnType().isAssignableFrom(JSONObject.class);
-        return createObjectResponseFilter("ResponseBody", dynamic, responseParameters);
+        boolean additionalProperties = apiDefinition.realReturnType().isAssignableFrom(JSONObject.class);
+        return createObjectResponseFilter("ResponseBody", additionalProperties, responseParameters);
     }
 
     public String getName();
