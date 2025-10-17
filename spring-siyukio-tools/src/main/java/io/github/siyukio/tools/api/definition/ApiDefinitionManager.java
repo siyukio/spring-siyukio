@@ -186,9 +186,7 @@ public final class ApiDefinitionManager {
             items.put("minimum", apiParameter.minimum());
         } else if (typeClass == String.class) {
             itemType = ApiConstants.TYPE_STRING;
-            items.put("maxLength", apiParameter.maxLength());
-            items.put("minLength", apiParameter.minLength());
-            items.put("regex", apiParameter.regex());
+            this.defineString(items, apiParameter);
         } else if (typeClass == Date.class) {
             itemType = ApiConstants.TYPE_DATE;
         } else {
@@ -242,7 +240,10 @@ public final class ApiDefinitionManager {
     }
 
     private void defineString(JSONObject requestParameter, ApiParameter apiParameter) {
-        if (apiParameter.regex().isEmpty()) {
+        if (StringUtils.hasText(apiParameter.pattern())) {
+            String pattern = apiParameter.pattern();
+            requestParameter.put("pattern", pattern);
+        } else {
             //common String
             int maxLength = apiParameter.maxLength();
             int minLength = apiParameter.minLength();
@@ -260,10 +261,6 @@ public final class ApiDefinitionManager {
             if (minLength > 0) {
                 requestParameter.put("minLength", minLength);
             }
-        } else {
-            //regex
-            String regex = apiParameter.regex();
-            requestParameter.put("regex", regex);
         }
         if (apiParameter.password()) {
             requestParameter.put("format", "password");

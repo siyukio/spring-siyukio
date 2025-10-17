@@ -56,7 +56,7 @@ public @interface ApiParameter {
     /**
      * If the parameter is a String, validates the text content using a regular expression.
      */
-    String regex() default "";
+    String pattern() default "";
 
     /**
      * If the parameter is a String, sets the minimum length of the String.

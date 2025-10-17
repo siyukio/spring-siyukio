@@ -9,13 +9,13 @@ import java.util.regex.Pattern;
 /**
  * @author Buddy
  */
-public class RegexRequestValidator extends AbstractRequestValidator {
+public class PatternRequestValidator extends AbstractRequestValidator {
 
     private final String regex;
 
     private Pattern pattern = null;
 
-    public RegexRequestValidator(String key, boolean required, String regex, String parent, String message) {
+    public PatternRequestValidator(String key, boolean required, String regex, String parent, String message) {
         super(key, required, parent, message);
         this.regex = regex;
     }

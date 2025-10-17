@@ -39,6 +39,17 @@ class ParameterControllerTests {
     }
 
     @Test
+    void testStringPattern() {
+        StringRequest stringRequest = StringRequest.builder()
+                .required("123456")
+                .pattern("1234")
+                .build();
+        JSONObject resultJson = this.apiMock.perform("/testString", stringRequest);
+        log.info("{}", stringRequest);
+        log.info("{}", resultJson);
+    }
+
+    @Test
     void testIntNumMin() {
         JSONObject numRequest = new JSONObject();
         numRequest.put("intNum", 1);

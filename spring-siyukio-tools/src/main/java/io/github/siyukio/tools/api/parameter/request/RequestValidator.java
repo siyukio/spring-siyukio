@@ -77,7 +77,7 @@ public interface RequestValidator {
         long minimum = items.optLong("minimum", -1);
         int maxLength = items.optInt("maxLength", -1);
         int minLength = items.optInt("minLength", -1);
-        String regex = items.optString("regex", "");
+        String pattern = items.optString("pattern", "");
         String error = requestParam.optString("error", "");
         RequestValidator requestValidator;
         switch (itemType) {
@@ -94,10 +94,10 @@ public interface RequestValidator {
                 requestValidator = new DateRequestValidator(itemName, required, parent, error);
                 break;
             default:
-                if (regex.isEmpty()) {
+                if (pattern.isEmpty()) {
                     requestValidator = new StringRequestValidator(itemName, required, maxLength, minLength, parent, error);
                 } else {
-                    requestValidator = new RegexRequestValidator(itemName, required, regex, parent, error);
+                    requestValidator = new PatternRequestValidator(itemName, required, pattern, parent, error);
                 }
                 break;
         }
@@ -132,7 +132,7 @@ public interface RequestValidator {
                 if (pattern.isEmpty()) {
                     requestValidator = new StringRequestValidator(name, required, maxLength, minLength, parent, error);
                 } else {
-                    requestValidator = new RegexRequestValidator(name, required, pattern, parent, error);
+                    requestValidator = new PatternRequestValidator(name, required, pattern, parent, error);
                 }
                 break;
         }

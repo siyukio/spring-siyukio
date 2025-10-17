@@ -21,7 +21,7 @@ public class StringRequest {
     @ApiParameter(minLength = 1, maxLength = 3, required = false)
     public String length;
 
-    @ApiParameter(regex = "123|456", required = false)
-    public String regex;
+    @ApiParameter(pattern = "123|456", required = false)
+    public String pattern;
 
 }
