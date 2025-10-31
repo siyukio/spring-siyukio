@@ -5,6 +5,7 @@ import io.github.siyukio.client.MyMcpSyncClient;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.JsonUtils;
+import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
@@ -22,8 +23,6 @@ import java.util.function.Supplier;
 @SpringBootTest
 class McpWebsocketClientTests {
 
-    private final String baseUri = "http://localhost:8080";
-
     @Autowired
     private TokenProvider tokenProvider;
 
@@ -39,10 +38,22 @@ class McpWebsocketClientTests {
     private McpClientCommonProperties mcpClientCommonProperties;
 
     @Test
-    void testListTools() {
-        MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
+    void testInit() {
+        MyMcpSyncClient client = MyMcpSyncClient.builder()
                 .useWebsocket(true)
-//                .useInternal(true)
+                .useTokenSupplier(this.tokenSupplier)
+                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
+                .build();
+        McpAsyncClient mcpAsyncClient = client.getMcpSyncClient();
+        mcpAsyncClient.initialize().block();
+
+        mcpAsyncClient.close();
+    }
+
+    @Test
+    void testListTools() {
+        MyMcpSyncClient client = MyMcpSyncClient.builder()
+                .useWebsocket(true)
                 .useTokenSupplier(this.tokenSupplier)
                 .setMcpClientCommonProperties(this.mcpClientCommonProperties)
                 .build();
@@ -52,16 +63,13 @@ class McpWebsocketClientTests {
         for (McpSchema.Tool tool : toolsList.tools()) {
             log.info("{}", JsonUtils.toPrettyJSONString(tool));
         }
-
-        client.closeGracefully();
     }
 
     @Test
     void testCallTool() {
-        MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
+        MyMcpSyncClient client = MyMcpSyncClient.builder()
                 .useWebsocket(true)
                 .useTokenSupplier(this.tokenSupplier)
-                .useInternal(true)
                 .setMcpClientCommonProperties(this.mcpClientCommonProperties)
                 .build();
 
@@ -75,8 +83,6 @@ class McpWebsocketClientTests {
                 createAuthorizationRequest, JSONObject.class);
 
         log.info("{}", JsonUtils.toPrettyJSONString(result));
-
-        client.closeGracefully();
     }
 
     @Test
@@ -91,7 +97,7 @@ class McpWebsocketClientTests {
                     .build();
         };
 
-        MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
+        MyMcpSyncClient client = MyMcpSyncClient.builder()
                 .useWebsocket(true)
                 .useTokenSupplier(this.tokenSupplier)
                 .setMcpClientCommonProperties(this.mcpClientCommonProperties)
@@ -102,8 +108,9 @@ class McpWebsocketClientTests {
 
         log.info("{}", JsonUtils.toPrettyJSONString(result));
 
-        Thread.sleep(12000);
-        client.closeGracefully();
+        result = client.callTool("/getToken", JSONObject.class);
+
+        log.info("{}", JsonUtils.toPrettyJSONString(result));
     }
 
     @Test
@@ -113,7 +120,7 @@ class McpWebsocketClientTests {
             log.info("progressNotification:{}", JsonUtils.toPrettyJSONString(progressNotification));
         };
 
-        MyMcpSyncClient client = MyMcpSyncClient.builder(this.baseUri)
+        MyMcpSyncClient client = MyMcpSyncClient.builder()
                 .useWebsocket(true)
                 .useTokenSupplier(this.tokenSupplier)
                 .setMcpClientCommonProperties(this.mcpClientCommonProperties)
@@ -123,9 +130,6 @@ class McpWebsocketClientTests {
         JSONObject result = client.callTool("/getTokenByProgress", JSONObject.class);
 
         log.info("{}", JsonUtils.toPrettyJSONString(result));
-
-        Thread.sleep(12000);
-        client.closeGracefully();
     }
 
 }

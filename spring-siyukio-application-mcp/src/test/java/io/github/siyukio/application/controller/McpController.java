@@ -7,7 +7,6 @@ import io.github.siyukio.tools.api.annotation.ApiMapping;
 import io.github.siyukio.tools.api.model.TokenResponse;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
-import io.github.siyukio.tools.util.AsyncUtils;
 import io.github.siyukio.tools.util.JsonUtils;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -17,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Bugee
@@ -44,18 +42,18 @@ public class McpController {
     @ApiMapping(path = "/getToken")
     public TokenResponse getToken(Token token, McpSyncServerExchange exchange) {
         if (exchange != null) {
-            log.info("server: {}", exchange.getClientInfo());
-            AsyncUtils.schedule(() -> {
-                Map<String, Object> metadata = JsonUtils.copy(token, Map.class, String.class, Object.class);
-                McpSchema.CreateMessageRequest request = McpSchema.CreateMessageRequest.builder()
-                        .metadata(metadata)
-                        .messages(List.of())
-                        .build();
+            log.info("getToken exchange: {}", exchange.getClientInfo());
+            Map<String, Object> metadata = JsonUtils.copy(token, Map.class, String.class, Object.class);
+            McpSchema.CreateMessageRequest request = McpSchema.CreateMessageRequest.builder()
+                    .metadata(metadata)
+                    .messages(List.of())
+                    .build();
 
-                McpSchema.CreateMessageResult result = exchange.createMessage(request);
-                log.info("server CreateMessageResult: {}", JsonUtils.toPrettyJSONString(result));
-
-            }, 6, TimeUnit.SECONDS);
+            McpSchema.CreateMessageResult result = exchange.createMessage(request);
+            log.info("server CreateMessageResult: {}", JsonUtils.toPrettyJSONString(result));
+//
+//            result = exchange.createMessage(request);
+//            log.info("server CreateMessageResult: {}", JsonUtils.toPrettyJSONString(result));
         }
         return new TokenResponse();
     }
@@ -63,19 +61,17 @@ public class McpController {
     @ApiMapping(path = "/getTokenByProgress")
     public TokenResponse getTokenByProgress(Token token, McpSyncServerExchange exchange) {
         if (exchange != null) {
-            log.info("server: {}", exchange.getClientInfo());
+            log.info("getTokenByProgress exchange: {}", exchange.getClientInfo());
 
-            AsyncUtils.schedule(() -> {
-                JSONObject messageJson = new JSONObject();
-                messageJson.put("data", "hello");
-                McpSchema.ProgressNotification progressNotification = new McpSchema.ProgressNotification(
-                        "",
-                        0d, 0d,
-                        JsonUtils.toJSONString(messageJson)
-                );
-                exchange.progressNotification(progressNotification);
+            JSONObject messageJson = new JSONObject();
+            messageJson.put("data", "hello");
+            McpSchema.ProgressNotification progressNotification = new McpSchema.ProgressNotification(
+                    "",
+                    0d, 0d,
+                    JsonUtils.toJSONString(messageJson)
+            );
+            exchange.progressNotification(progressNotification);
 
-            }, 6, TimeUnit.SECONDS);
         }
         return new TokenResponse();
     }

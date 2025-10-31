@@ -9,10 +9,10 @@ import io.github.siyukio.tools.util.JsonUtils;
 import io.github.siyukio.tools.util.OpenApiUtils;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
-import io.modelcontextprotocol.server.MyMcpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 
@@ -94,7 +94,6 @@ public class MyMethodToolCallback {
     public McpSchema.CallToolResult call(McpSyncServerExchange exchange, McpSchema.CallToolRequest callToolRequest) {
         ApiDefinition apiDefinition = this.apiHandler.apiDefinition();
         JSONObject requestJson = JsonUtils.copy(callToolRequest.arguments(), JSONObject.class);
-
         Token token = this.getToken(exchange);
 
         if (apiDefinition.authorization()) {
@@ -152,9 +151,10 @@ public class MyMethodToolCallback {
         return new McpSchema.CallToolResult(List.of(), false, resultJson.toMap());
     }
 
-    private Token getToken(Object exchange) {
-        if (exchange instanceof MyMcpSyncServerExchange myMcpSyncServerExchange) {
-            return myMcpSyncServerExchange.getToken();
+    private Token getToken(McpSyncServerExchange exchange) {
+        Object obj = exchange.transportContext().get(HttpHeaders.AUTHORIZATION);
+        if (obj instanceof Token token) {
+            return token;
         }
         return null;
     }

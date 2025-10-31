@@ -36,7 +36,6 @@ import java.util.Map;
  * All properties are prefixed with {@code spring.ai.mcp.server}.
  *
  * @author Christian Tzolov
- * @see McpServerAutoConfiguration
  * @since 1.0.0
  */
 @ConfigurationProperties(McpServerProperties.CONFIG_PREFIX)
@@ -71,7 +70,7 @@ public class McpServerProperties {
      * <p>
      * This version is reported to clients and used for compatibility checks.
      */
-    private String version = "0.10.0";
+    private String version = "0.12.1";
 
     /**
      * The instructions of the MCP server instance.
@@ -107,22 +106,7 @@ public class McpServerProperties {
      */
     private boolean promptChangeNotification = true;
 
-    /**
-     *
-     */
-    private String baseUrl = "";
-
-    /**
-     *
-     */
-    private String sseEndpoint = "/sse";
-
-    /**
-     * The endpoint path for Server-Sent Events (SSE) when using web transports.
-     * <p>
-     * This property is only used when transport is set to WEBMVC or WEBFLUX.
-     */
-    private String sseMessageEndpoint = "/mcp/message";
+    private String mcpEndpoint = "/mcp";
 
     /**
      * The type of server to use for MCP server communication.
@@ -227,31 +211,13 @@ public class McpServerProperties {
         this.promptChangeNotification = promptChangeNotification;
     }
 
-    public String getBaseUrl() {
-        return this.baseUrl;
+    public String getMcpEndpoint() {
+        return this.mcpEndpoint;
     }
 
-    public void setBaseUrl(String baseUrl) {
-        Assert.notNull(baseUrl, "Base URL must not be null");
-        this.baseUrl = baseUrl;
-    }
-
-    public String getSseEndpoint() {
-        return this.sseEndpoint;
-    }
-
-    public void setSseEndpoint(String sseEndpoint) {
-        Assert.hasText(sseEndpoint, "SSE endpoint must not be empty");
-        this.sseEndpoint = sseEndpoint;
-    }
-
-    public String getSseMessageEndpoint() {
-        return this.sseMessageEndpoint;
-    }
-
-    public void setSseMessageEndpoint(String sseMessageEndpoint) {
-        Assert.hasText(sseMessageEndpoint, "SSE message endpoint must not be empty");
-        this.sseMessageEndpoint = sseMessageEndpoint;
+    public void setMcpEndpoint(String sseEndpoint) {
+        Assert.hasText(mcpEndpoint, "mcp endpoint must not be empty");
+        this.mcpEndpoint = mcpEndpoint;
     }
 
     public ServerType getType() {

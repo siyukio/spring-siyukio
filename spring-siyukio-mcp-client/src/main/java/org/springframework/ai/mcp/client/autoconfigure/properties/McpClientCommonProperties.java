@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.client.autoconfigure.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.util.Assert;
 
 import java.time.Duration;
 
@@ -52,7 +53,7 @@ public class McpClientCommonProperties {
      * <p>
      * This version is reported to clients and used for compatibility checks.
      */
-    private String version = "0.10.0";
+    private String version = "0.12.1";
 
     /**
      * Flag to indicate if the MCP client has to be initialized.
@@ -83,6 +84,28 @@ public class McpClientCommonProperties {
      * Defaults to true.
      */
     private boolean rootChangeNotification = true;
+
+    private String baseUrl = "";
+
+    private String mcpEndpoint = "/mcp";
+
+    public String getBaseUrl() {
+        return this.baseUrl;
+    }
+
+    public void setBaseUrl(String baseUrl) {
+        Assert.notNull(baseUrl, "Base URL must not be null");
+        this.baseUrl = baseUrl;
+    }
+
+    public String getMcpEndpoint() {
+        return this.mcpEndpoint;
+    }
+
+    public void setMcpEndpoint(String sseEndpoint) {
+        Assert.hasText(mcpEndpoint, "mcp endpoint must not be empty");
+        this.mcpEndpoint = mcpEndpoint;
+    }
 
     public boolean isEnabled() {
         return this.enabled;

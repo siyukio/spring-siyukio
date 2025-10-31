@@ -37,6 +37,10 @@ public final class ApiException extends RuntimeException {
         this.error = httpStatus.value();
     }
 
+    public static ApiException getApiException(HttpStatus httpStatus, String errorReason) {
+        return new ApiException(httpStatus.value(), errorReason);
+    }
+
     public static ApiException getInvalidApiException(String error) {
         return new ApiException(HttpStatus.BAD_REQUEST.value(), error);
     }
@@ -87,5 +91,4 @@ public final class ApiException extends RuntimeException {
         jsonObject.put("errorReason", this.errorReason);
         return jsonObject;
     }
-    
 }

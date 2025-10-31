@@ -48,6 +48,7 @@ spring:
         name: siyukio-client
         version: 3.4.9-SNAPSHOT
         requestTimeout: 60000
+        baseUrl: http://localhost:8080
 
 logging:
   level:
@@ -55,6 +56,9 @@ logging:
     io:
       github:
         siyukio: DEBUG
+      modelcontextprotocol:
+        client:
+          transport: DEBUG
   #      modelcontextprotocol:
   #        spec: DEBUG
   port: 8081

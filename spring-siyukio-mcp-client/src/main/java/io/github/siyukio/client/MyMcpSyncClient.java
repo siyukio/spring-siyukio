@@ -2,11 +2,10 @@ package io.github.siyukio.client;
 
 import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.util.JsonUtils;
-import io.modelcontextprotocol.client.MyMcpAsyncClient;
-import io.modelcontextprotocol.client.MyMcpClient;
-import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
-import io.modelcontextprotocol.client.transport.HttpClientWebSocketClientTransport;
-import io.modelcontextprotocol.server.transport.HttpServletSseServerTransportProvider;
+import io.modelcontextprotocol.client.McpAsyncClient;
+import io.modelcontextprotocol.client.McpClient;
+import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
+import io.modelcontextprotocol.client.transport.WebSocketClientStreamableTransport;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
@@ -18,16 +17,11 @@ import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -38,11 +32,9 @@ import java.util.function.Supplier;
 @Slf4j
 public class MyMcpSyncClient {
 
-    private final Map<String, MyMcpAsyncClient> myMcpAsyncClientMap = new ConcurrentHashMap<>();
+    private final String baseUrl;
 
-    private final ReentrantLock lock = new ReentrantLock();
-
-    private final String baseUri;
+    private final String mcpEndpoint;
 
     private final String authorization;
 
@@ -52,8 +44,6 @@ public class MyMcpSyncClient {
 
     private final boolean webSocket;
 
-    private final boolean internal;
-
     private final String name;
 
     private final String version;
@@ -62,16 +52,18 @@ public class MyMcpSyncClient {
     private final Consumer<McpSchema.ProgressNotification> progressHandler;
     private final Supplier<String> tokenSupplier;
 
-    public MyMcpSyncClient(String baseUri,
+    public MyMcpSyncClient(String baseUrl,
+                           String mcpEndpoint,
                            Duration requestTimeout,
-                           boolean internal, boolean webSocket, String name, String version,
+                           boolean webSocket, String name, String version,
                            Supplier<String> tokenSupplier,
                            String authorization,
                            Map<String, String> headers,
                            Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler,
                            Consumer<McpSchema.ProgressNotification> progressHandler
     ) {
-        this.baseUri = baseUri;
+        this.baseUrl = baseUrl;
+        this.mcpEndpoint = mcpEndpoint;
         this.requestTimeout = requestTimeout;
         this.name = name;
         this.version = version;
@@ -81,14 +73,13 @@ public class MyMcpSyncClient {
         this.samplingHandler = samplingHandler;
         this.progressHandler = progressHandler;
         this.webSocket = webSocket;
-        this.internal = internal;
     }
 
-    public static Builder builder(String baseUri) {
-        return new Builder(baseUri);
+    public static Builder builder() {
+        return new Builder();
     }
 
-    private boolean ping(MyMcpAsyncClient mcpAsyncClient) {
+    private boolean ping(McpAsyncClient mcpAsyncClient) {
         try {
             mcpAsyncClient.ping().block();
             return true;
@@ -97,8 +88,8 @@ public class MyMcpSyncClient {
         }
     }
 
-    private MyMcpAsyncClient createMcpAsyncClient(String targetUri) {
-        log.debug("use targetUri: {}", targetUri);
+    private McpAsyncClient createMcpAsyncClient(String targetUri, String targetMcpEndpoint) {
+        log.debug("use targetUri: {}, {}", targetUri, targetMcpEndpoint);
         if (this.webSocket) {
             URI uri = URI.create(targetUri);
             targetUri = "";
@@ -111,7 +102,8 @@ public class MyMcpSyncClient {
             if (uri.getPort() > 0) {
                 targetUri += ":" + uri.getPort();
             }
-            log.debug("use webSocket targetUri: {}", targetUri);
+            targetMcpEndpoint += "/ws";
+            log.debug("use webSocket targetUri: {}, {}", targetUri, targetMcpEndpoint);
         }
 
         String token = this.authorization;
@@ -129,7 +121,7 @@ public class MyMcpSyncClient {
 
         final McpClientTransport transport;
         if (this.webSocket) {
-            transport = new HttpClientWebSocketClientTransport(targetUri, headerMap, JsonUtils.getObjectMapper());
+            transport = new WebSocketClientStreamableTransport(headerMap, targetUri, targetMcpEndpoint);
         } else {
 
             HttpRequest.Builder httpRequestBuilder = HttpRequest.newBuilder();
@@ -138,17 +130,18 @@ public class MyMcpSyncClient {
             }
             httpRequestBuilder.header("Content-Type", "application/json");
 
-            transport = HttpClientSseClientTransport
+            transport = HttpClientStreamableHttpTransport
                     .builder(targetUri)
+                    .endpoint(targetMcpEndpoint)
                     .objectMapper(JsonUtils.getObjectMapper())
                     .requestBuilder(httpRequestBuilder)
                     .build();
         }
 
-        MyMcpClient.AsyncSpec asyncSpec = MyMcpClient.async(transport)
+        McpClient.AsyncSpec asyncSpec = McpClient.async(transport)
                 .clientInfo(new McpSchema.Implementation(this.name, this.version))
                 .requestTimeout(this.requestTimeout)
-                .initializationTimeout(Duration.ofSeconds(6));
+                .initializationTimeout(Duration.ofSeconds(60));
         if (this.samplingHandler != null) {
             Function<McpSchema.CreateMessageRequest, Mono<McpSchema.CreateMessageResult>> samplingConsumer = r -> Mono
                     .fromCallable(() -> this.samplingHandler.apply(r))
@@ -166,62 +159,8 @@ public class MyMcpSyncClient {
         return asyncSpec.build();
     }
 
-    private String getRedirectUri() {
-        URI httpUri = URI.create(this.baseUri + HttpServletSseServerTransportProvider.DEFAULT_SSE_ENDPOINT);
-        HttpRequest.Builder httpRequestBuilder = HttpRequest.newBuilder().uri(httpUri);
-        httpRequestBuilder.header(HttpHeaders.FROM, "internal");
-
-        try (HttpClient client = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .connectTimeout(Duration.ofSeconds(6))
-                .followRedirects(HttpClient.Redirect.NEVER)
-                .build()) {
-            HttpResponse<Void> response = client.send(httpRequestBuilder.build(), HttpResponse.BodyHandlers.discarding());
-            if (response.statusCode() == HttpStatus.TEMPORARY_REDIRECT.value()) {
-                String location = response.headers().firstValue(HttpHeaders.LOCATION).orElseThrow();
-                int index = location.lastIndexOf(HttpServletSseServerTransportProvider.DEFAULT_SSE_ENDPOINT);
-                if (index > 0) {
-                    location = location.substring(0, index);
-                }
-                log.debug("{} redirect to {}", this.baseUri, location);
-                return location;
-            }
-        } catch (IOException | InterruptedException ignored) {
-            return this.baseUri;
-        }
-        return this.baseUri;
-    }
-
-    private MyMcpAsyncClient getTargetMcpSyncClient(String targetUri) {
-        this.lock.lock();
-        try {
-            MyMcpAsyncClient myMcpAsyncClient = this.myMcpAsyncClientMap.get(targetUri);
-            if (myMcpAsyncClient != null) {
-                boolean result = this.ping(myMcpAsyncClient);
-                if (!result) {
-                    myMcpAsyncClient = null;
-                    this.myMcpAsyncClientMap.remove(targetUri);
-                }
-            }
-
-            if (myMcpAsyncClient == null) {
-                myMcpAsyncClient = this.createMcpAsyncClient(targetUri);
-                myMcpAsyncClient.initialize().block();
-                this.myMcpAsyncClientMap.put(targetUri, myMcpAsyncClient);
-                log.info("cache MyMcpAsyncClient targetUri:{} for {}", targetUri, this.baseUri);
-            }
-            return myMcpAsyncClient;
-        } finally {
-            this.lock.unlock();
-        }
-    }
-
-    private MyMcpAsyncClient getMcpSyncClient() {
-        String targetUri = this.baseUri;
-        if (this.internal) {
-            targetUri = this.getRedirectUri();
-        }
-        return this.getTargetMcpSyncClient(targetUri);
+    public McpAsyncClient getMcpSyncClient() {
+        return this.createMcpAsyncClient(this.baseUrl, this.mcpEndpoint);
     }
 
     /**
@@ -237,7 +176,10 @@ public class MyMcpSyncClient {
      * Boolean indicating if the execution failed (true) or succeeded (false/absent)
      */
     public McpSchema.CallToolResult callTool(McpSchema.CallToolRequest callToolRequest) {
-        return this.getMcpSyncClient().callTool(callToolRequest).block();
+        McpAsyncClient mcpAsyncClient = this.getMcpSyncClient();
+        McpSchema.CallToolResult result = mcpAsyncClient.callTool(callToolRequest).block();
+        mcpAsyncClient.close();
+        return result;
     }
 
     public McpSchema.CallToolResult callTool(String toolName, Object params) {
@@ -263,13 +205,13 @@ public class MyMcpSyncClient {
         return JsonUtils.copy(result.structuredContent(), returnType);
     }
 
-    public <T> T callTool(String toolName, Class<T> returnType) {
-        return this.callTool(toolName, Map.of(), returnType);
-    }
-
     // --------------------------
     // Tools
     // --------------------------
+
+    public <T> T callTool(String toolName, Class<T> returnType) {
+        return this.callTool(toolName, Map.of(), returnType);
+    }
 
     /**
      * Retrieves the list of all tools provided by the server.
@@ -279,37 +221,38 @@ public class MyMcpSyncClient {
      * pagination if more tools are available
      */
     public McpSchema.ListToolsResult listTools() {
-        return this.getMcpSyncClient().listTools().block();
-    }
-
-    public void closeGracefully() {
-        for (MyMcpAsyncClient value : this.myMcpAsyncClientMap.values()) {
-            try {
-                value.closeGracefully().block();
-            } catch (RuntimeException ignored) {
-            }
-        }
-        this.myMcpAsyncClientMap.clear();
+        McpAsyncClient mcpAsyncClient = this.getMcpSyncClient();
+        McpSchema.ListToolsResult result = mcpAsyncClient.listTools().block();
+        mcpAsyncClient.close();
+        return result;
     }
 
     public static class Builder {
 
-        private final String baseUri;
-
         private final Map<String, String> headers = new HashMap<>();
+        private String baseUrl = "http://localhost";
+        private String mcpEndpoint = "/mcp";
         private boolean webSocket = false;
         private String authorization = "";
         private Duration requestTimeout = Duration.ofSeconds(60);
         private String name = "mcp-client";
-        private String version = "0.10.0";
+        private String version = "0.12.1";
         private Supplier<String> tokenSupplier;
-        private boolean internal = false;
 
         private Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler = null;
         private Consumer<McpSchema.ProgressNotification> progressHandler = null;
 
-        private Builder(String baseUri) {
-            this.baseUri = baseUri;
+        private Builder() {
+        }
+
+        public Builder setBaseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+            return this;
+        }
+
+        public Builder setMcpEndpoint(String mcpEndpoint) {
+            this.mcpEndpoint = mcpEndpoint;
+            return this;
         }
 
         public Builder setAuthorization(String authorization) {
@@ -323,11 +266,6 @@ public class MyMcpSyncClient {
 
         public Builder useWebsocket(boolean webSocket) {
             this.webSocket = webSocket;
-            return this;
-        }
-
-        public Builder useInternal(boolean internal) {
-            this.internal = internal;
             return this;
         }
 
@@ -352,6 +290,8 @@ public class MyMcpSyncClient {
         }
 
         public Builder setMcpClientCommonProperties(McpClientCommonProperties mcpClientCommonProperties) {
+            this.baseUrl = mcpClientCommonProperties.getBaseUrl();
+            this.mcpEndpoint = mcpClientCommonProperties.getMcpEndpoint();
             this.name = mcpClientCommonProperties.getName();
             this.version = mcpClientCommonProperties.getVersion();
             this.requestTimeout = mcpClientCommonProperties.getRequestTimeout();
@@ -369,7 +309,7 @@ public class MyMcpSyncClient {
         }
 
         public MyMcpSyncClient build() {
-            return new MyMcpSyncClient(this.baseUri, this.requestTimeout, this.internal, this.webSocket,
+            return new MyMcpSyncClient(this.baseUrl, this.mcpEndpoint, this.requestTimeout, this.webSocket,
                     this.name, this.version, this.tokenSupplier,
                     this.authorization, this.headers,
                     this.samplingHandler, this.progressHandler);

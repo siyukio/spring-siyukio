@@ -14,6 +14,8 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import org.springframework.web.socket.server.HandshakeFailureException;
 import org.springframework.web.socket.server.HandshakeHandler;
 import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 import java.util.Map;
@@ -32,12 +34,12 @@ public class MyWebSocketHandler extends TextWebSocketHandler implements Handshak
 
     private final ReentrantLock lock = new ReentrantLock();
 
-    private final MyWebSocketServerTransportProvider myWebSocketServerTransportProvider;
+    private final MyWebSocketStreamableServerTransportProvider myWebSocketStreamableServerTransportProvider;
 
     private final TokenProvider tokenProvider;
 
-    public MyWebSocketHandler(MyWebSocketServerTransportProvider myWebSocketServerTransportProvider, TokenProvider tokenProvider) {
-        this.myWebSocketServerTransportProvider = myWebSocketServerTransportProvider;
+    public MyWebSocketHandler(MyWebSocketStreamableServerTransportProvider myWebSocketStreamableServerTransportProvider, TokenProvider tokenProvider) {
+        this.myWebSocketStreamableServerTransportProvider = myWebSocketStreamableServerTransportProvider;
         this.tokenProvider = tokenProvider;
     }
 
@@ -79,30 +81,27 @@ public class MyWebSocketHandler extends TextWebSocketHandler implements Handshak
         Token token = (Token) session.getAttributes().get(HttpHeaders.AUTHORIZATION);
         if (token == null) {
             session.close(CloseStatus.PROTOCOL_ERROR);
-            return;
         }
-        token.sid = session.getId();
-        MyWebSocketSession myWebSocketSession = new MyWebSocketSession(session);
-        this.myWebSocketServerTransportProvider.handleConnection(myWebSocketSession);
-        myWebSocketSession.start();
     }
 
     @Override
-    public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
+    public void handleTransportError(WebSocketSession session, Throwable exception) {
         // 处理连接异常
         log.error("mcp WebSocket error:{}, {}", session.getId(), exception.getMessage());
     }
 
     @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         // 连接关闭后触发
-        log.info("WebSocket closed: {}, {}", status.toString(), session.getId());
+        log.debug("WebSocket closed: {}, {}", status.toString(), session.getId());
         this.dataBufferMap.remove(session.getId());
-        this.myWebSocketServerTransportProvider.handleClose(session.getId());
+
+        MyWebSocketStreamableSession myWebSocketSession = new MyWebSocketStreamableSession(session);
+        this.myWebSocketStreamableServerTransportProvider.handleDelete(myWebSocketSession);
     }
 
     @Override
-    protected void handleTextMessage(WebSocketSession session, TextMessage textMessage) throws Exception {
+    protected void handleTextMessage(WebSocketSession session, TextMessage textMessage) {
         String text = textMessage.getPayload();
         this.lock.lock();
         try {
@@ -124,13 +123,17 @@ public class MyWebSocketHandler extends TextWebSocketHandler implements Handshak
             this.lock.unlock();
         }
 
-        log.debug("handleTextMessage: {}", text.length());
-        this.myWebSocketServerTransportProvider.handleMessage(session.getId(), text);
+        log.debug("handleTextMessage: {}", text);
+        String message = text;
+        Mono.fromRunnable(() -> {
+            MyWebSocketStreamableSession myWebSocketSession = new MyWebSocketStreamableSession(session);
+            this.myWebSocketStreamableServerTransportProvider.handlePost(myWebSocketSession, message);
+        }).subscribeOn(Schedulers.boundedElastic()).subscribe();
     }
 
     @Override
-    protected void handlePongMessage(WebSocketSession session, PongMessage message) throws Exception {
-        log.debug("handlePongMessage: {}, {}", session.getId(), message.getPayload().toString());
+    protected void handlePongMessage(WebSocketSession session, PongMessage message) {
+        log.debug("handlePongMessage: {}, {}", session.getId(), message.getPayload());
     }
 
     @Override

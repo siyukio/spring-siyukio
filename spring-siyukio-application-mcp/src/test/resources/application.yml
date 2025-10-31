@@ -54,5 +54,8 @@ logging:
     io:
       github:
         siyukio: DEBUG
+      modelcontextprotocol:
+        server:
+          transport: DEBUG
 server:
   port: 8080
