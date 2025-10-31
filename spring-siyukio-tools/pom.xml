@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.github.siyukio</groupId>
         <artifactId>spring-siyukio</artifactId>
-        <version>3.4.9</version>
+        <version>3.4.10-SNAPSHOT</version>
     </parent>
 
     <artifactId>spring-siyukio-tools</artifactId>
