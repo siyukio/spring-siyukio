@@ -46,7 +46,7 @@ spring:
     mcp:
       client:
         name: siyukio-client
-        version: 3.4.9-SNAPSHOT
+        version: 3.4.9
         requestTimeout: 60000
         baseUrl: http://localhost:8080
 

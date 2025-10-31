@@ -8,7 +8,7 @@
     </parent>
     <groupId>io.github.siyukio</groupId>
     <artifactId>spring-siyukio</artifactId>
-    <version>3.4.9-SNAPSHOT</version>
+    <version>3.4.9</version>
     <packaging>pom</packaging>
     <name>Siyukio Parent</name>
 
