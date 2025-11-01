@@ -1,6 +1,7 @@
 package io.github.siyukio.postgresql;
 
 import io.github.siyukio.postgresql.entity.TestEvent;
+import io.github.siyukio.postgresql.service.TransactionService;
 import io.github.siyukio.tools.entity.page.Page;
 import io.github.siyukio.tools.entity.postgresql.PgEntityDao;
 import io.github.siyukio.tools.entity.query.QueryBuilder;
@@ -30,8 +31,12 @@ import java.util.List;
 public class PostgresqlTests {
 
     private final String id = "test";
+
     @Autowired
     private PgEntityDao<TestEvent> testEventPgEntityDao;
+
+    @Autowired
+    private TransactionService transactionService;
 
     private TestEvent createRandom() {
         JSONObject metadataJson = new JSONObject();
@@ -188,6 +193,16 @@ public class PostgresqlTests {
         SortBuilder sortBuilder = SortBuilders.fieldSort("createTime").order(SortOrder.DESC);
         Page<TestEvent> page = this.testEventPgEntityDao.queryPage(queryBuilder, sortBuilder, 1, 1);
         log.info("{}", JsonUtils.toPrettyJSONString(page));
+    }
+
+    @Test
+    public void testTransaction() {
+        this.transactionService.insertWithTransaction();
+    }
+
+    @Test
+    public void testRollback() {
+        this.transactionService.insertWithRollback();
     }
 
 }

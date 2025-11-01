@@ -121,6 +121,12 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
     }
 
     @Override
+    public boolean existById(Object id) {
+        JSONObject entityJson = this.entityExecutor.queryById(id);
+        return entityJson != null;
+    }
+
+    @Override
     public T queryById(Object id) {
         JSONObject entityJson = this.entityExecutor.queryById(id);
         if (entityJson == null) {

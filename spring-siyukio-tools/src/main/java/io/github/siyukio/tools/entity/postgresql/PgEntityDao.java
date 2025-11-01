@@ -26,6 +26,8 @@ public interface PgEntityDao<T> {
 
     int deleteByQuery(QueryBuilder queryBuilder);
 
+    boolean existById(Object id);
+
     T queryById(Object id);
 
     List<T> query(QueryBuilder queryBuilder, SortBuilder sort, int from, int size);
