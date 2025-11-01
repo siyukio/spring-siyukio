@@ -12,6 +12,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author Bugee
@@ -53,9 +54,27 @@ public class TestEvent {
     @PgColumn(comment = "Collection of messages")
     public JSONArray messages;
 
+    @PgColumn(comment = "item")
+    public Item item;
+
+    @PgColumn(comment = "items")
+    public List<Item> items;
+
     @PgColumn
     public Date createAt;
 
     @PgColumn
     public long createTime;
+
+
+    @ToString
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class Item {
+
+        public String type;
+
+        public long costTime;
+    }
 }

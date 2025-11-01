@@ -179,7 +179,7 @@ public class PgEntityExecutor implements EntityExecutor {
         }
         for (ColumnDefinition columnDefinition : this.entityDefinition.columnDefinitions()) {
             if (columnDefinition.type() == ColumnType.JSON_ARRAY || columnDefinition.type() == ColumnType.JSON_OBJECT) {
-                PgSqlUtils.row2FieldValue(entityJson, columnDefinition);
+                PgSqlUtils.jsonRow2FieldValue(entityJson, columnDefinition);
             }
         }
         return entityJson;

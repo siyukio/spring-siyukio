@@ -127,7 +127,6 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
                 case ColumnType.INT, ColumnType.BIGINT, ColumnType.DOUBLE -> "0";
                 case ColumnType.DATETIME -> DateUtils.format(new Date(0));
                 case ColumnType.BOOLEAN -> "false";
-                case ColumnType.JSON_OBJECT -> "{}";
                 case ColumnType.JSON_ARRAY -> "[]";
                 default -> "";
             };
@@ -298,14 +297,18 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             }
 
             String columnDefault = informationColumn.columnDefault();
-            int index = columnDefault.indexOf("::");
-            if (index > 0) {
-                columnDefault = columnDefault.substring(0, index);
-            }
-            columnDefault = columnDefault.replaceAll("'", "");
-            String defaultValue = columnDefinition.defaultValue();
-            if (!columnDefault.equals(defaultValue)) {
-                sqlList.add(PgSqlUtils.alterColumnDefaultSql(entityDefinition, columnDefinition));
+            if (columnDefault != null) {
+                if (StringUtils.hasText(columnDefault)) {
+                    int index = columnDefault.indexOf("::");
+                    if (index > 0) {
+                        columnDefault = columnDefault.substring(0, index);
+                    }
+                    columnDefault = columnDefault.replaceAll("'", "");
+                }
+                String defaultValue = columnDefinition.defaultValue();
+                if (!columnDefault.equals(defaultValue)) {
+                    sqlList.add(PgSqlUtils.alterColumnDefaultSql(entityDefinition, columnDefinition));
+                }
             }
         }
         return sqlList;

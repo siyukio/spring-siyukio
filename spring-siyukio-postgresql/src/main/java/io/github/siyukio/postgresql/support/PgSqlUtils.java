@@ -169,10 +169,11 @@ public abstract class PgSqlUtils {
         partList.add(name);
         String sqlType = getSqlType(columnDefinition);
         partList.add(sqlType);
-        partList.add("NOT NULL");
-        partList.add("DEFAULT");
-        String defaultValue = getSqlDefault(columnDefinition);
-        partList.add(defaultValue);
+        if (columnDefinition.type() != ColumnType.JSON_OBJECT) {
+            partList.add("DEFAULT");
+            String defaultValue = getSqlDefault(columnDefinition);
+            partList.add(defaultValue);
+        }
         return String.join(" ", partList);
     }
 
@@ -647,7 +648,11 @@ public abstract class PgSqlUtils {
             PGobject jsonObject = new PGobject();
             jsonObject.setType("json");
             try {
-                jsonObject.setValue(JsonUtils.toJSONString(value));
+                if (value == null) {
+                    jsonObject.setValue(null);
+                } else {
+                    jsonObject.setValue(JsonUtils.toJSONString(value));
+                }
             } catch (SQLException ignored) {
             }
             value = jsonObject;
@@ -655,12 +660,14 @@ public abstract class PgSqlUtils {
         return value;
     }
 
-    public static void row2FieldValue(JSONObject entityJson, ColumnDefinition columnDefinition) {
+    public static void jsonRow2FieldValue(JSONObject entityJson, ColumnDefinition columnDefinition) {
         String text = entityJson.optString(columnDefinition.fieldName());
-        if (columnDefinition.type() == ColumnType.JSON_ARRAY) {
-            entityJson.put(columnDefinition.fieldName(), JsonUtils.parseArray(text));
-        } else {
-            entityJson.put(columnDefinition.fieldName(), JsonUtils.parseObject(text));
+        if (StringUtils.hasText(text)) {
+            if (columnDefinition.type() == ColumnType.JSON_ARRAY) {
+                entityJson.put(columnDefinition.fieldName(), JsonUtils.parseArray(text));
+            } else {
+                entityJson.put(columnDefinition.fieldName(), JsonUtils.parseObject(text));
+            }
         }
     }
 }

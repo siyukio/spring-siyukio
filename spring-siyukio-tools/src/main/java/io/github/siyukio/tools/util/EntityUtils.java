@@ -6,6 +6,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.lang.reflect.Field;
+import java.util.Collection;
 import java.util.Date;
 
 /**
@@ -77,6 +78,26 @@ public class EntityUtils {
         }
     }
 
+    public static boolean isCustomClass(Class<?> type) {
+        // 1. JDK classes do not have a ClassLoader.
+        if (type.getClassLoader() == null) {
+            return false;
+        }
+
+        // 2. Filter common framework packages.
+        String name = type.getName();
+        if (name.startsWith("java.") || name.startsWith("javax.") ||
+                name.startsWith("sun.") || name.startsWith("com.sun.") ||
+                name.startsWith("org.springframework.") ||
+                name.startsWith("org.apache.") ||
+                name.startsWith("jakarta.") ||
+                name.startsWith("com.fasterxml.")) {
+            return false;
+        }
+
+        return true;
+    }
+
     public static ColumnType getColumnType(Field field) {
         Class<?> type = field.getType();
         if (boolean.class == type || Boolean.class == type) {
@@ -91,10 +112,16 @@ public class EntityUtils {
             return ColumnType.DATETIME;
         } else if (String.class == type) {
             return ColumnType.TEXT;
-        } else if (JSONObject.class == type) {
-            return ColumnType.JSON_OBJECT;
         } else if (JSONArray.class == type) {
             return ColumnType.JSON_ARRAY;
+        } else if (Collection.class.isAssignableFrom(type)) {
+            return ColumnType.JSON_ARRAY;
+        } else if (type.isArray()) {
+            return ColumnType.JSON_ARRAY;
+        } else if (JSONObject.class == type) {
+            return ColumnType.JSON_OBJECT;
+        } else if (isCustomClass(type)) {
+            return ColumnType.JSON_OBJECT;
         } else {
             String error = String.format(EntityConstants.ERROR_FILED_UNSUPPORTED_FORMAT, "Column", field.getType());
             throw new IllegalArgumentException(error);

@@ -43,6 +43,10 @@ public class PostgresqlTests {
         messageJson.put("text", "hello");
         messages.put(messageJson);
 
+        TestEvent.Item item = TestEvent.Item.builder()
+                .costTime(1000)
+                .build();
+
         return TestEvent.builder()
                 .error(false)
                 .times(1000)
@@ -51,6 +55,8 @@ public class PostgresqlTests {
                 .rating(0.3)
                 .metadata(metadataJson)
                 .messages(messages)
+                .item(item)
+                .items(List.of(item))
                 .build();
     }
 
@@ -74,6 +80,12 @@ public class PostgresqlTests {
         TestEvent testEvent = this.createRandom();
         testEvent.id = this.id;
         testEvent = this.testEventPgEntityDao.insert(testEvent);
+        log.info("{}", JsonUtils.toPrettyJSONString(testEvent));
+    }
+
+    @Test
+    public void testQueryWithId() {
+        TestEvent testEvent = this.testEventPgEntityDao.queryById(this.id);
         log.info("{}", JsonUtils.toPrettyJSONString(testEvent));
     }
 
