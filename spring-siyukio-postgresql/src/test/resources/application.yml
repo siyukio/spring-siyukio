@@ -1,6 +1,38 @@
-POSTGRESQL_URL: jdbc:postgresql://localhost:5432/root
-POSTGRESQL_USERNAME: root
-POSTGRESQL_PASSWORD: FYm7JqaEcptxUTgy
+spring:
+  datasource:
+    postgres:
+      hikari:
+        maximum-pool-size: 20
+        minimum-idle: 2
+        idle-timeout: 600000
+        max-lifetime: 1800000
+      master:
+        url: jdbc:postgresql://localhost:5432/root
+        username: root
+        password: FYm7JqaEcptxUTgy
+      slaves:
+        - url: jdbc:postgresql://localhost:5432/root
+          username: root
+          password: FYm7JqaEcptxUTgy
+#    postgres-multi:
+#      db1:
+#        master:
+#          url: jdbc:postgresql://localhost:5432/root
+#          username: root
+#          password: FYm7JqaEcptxUTgy
+#        slaves:
+#          - url: jdbc:postgresql://localhost:5432/root
+#            username: root
+#            password: FYm7JqaEcptxUTgy
+#      db2:
+#        master:
+#          url: jdbc:postgresql://localhost:5432/root
+#          username: root
+#          password: FYm7JqaEcptxUTgy
+#        slaves:
+#          - url: jdbc:postgresql://localhost:5432/root
+#            username: root
+#            password: FYm7JqaEcptxUTgy
 
 logging:
   level:

@@ -1,5 +1,6 @@
 package io.github.siyukio.tools.registrar;
 
+import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -7,6 +8,9 @@ import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanNameGenerator;
+import org.springframework.boot.context.properties.bind.BindResult;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.context.ResourceLoaderAware;
 import org.springframework.context.annotation.ConfigurationClassPostProcessor;
@@ -30,7 +34,9 @@ import java.util.Set;
 public abstract class AbstractCommonRegistrar implements ImportBeanDefinitionRegistrar, ResourceLoaderAware, EnvironmentAware {
 
     private final static Set<String> basePackageSet = new HashSet<>();
+
     private ResourceLoader resourceLoader;
+
     private Environment environment;
 
     protected abstract String getTopic();
@@ -40,6 +46,8 @@ public abstract class AbstractCommonRegistrar implements ImportBeanDefinitionReg
     protected abstract Class<?> getBeanFactoryClass();
 
     protected abstract Class<?> getBeanClass();
+
+    protected abstract HikariDataSource createDataSource();
 
     @Override
     public void setResourceLoader(ResourceLoader resourceLoader) {
@@ -104,7 +112,7 @@ public abstract class AbstractCommonRegistrar implements ImportBeanDefinitionReg
             Assert.notNull(bootPackage, topic + " @SpringBootApplication not found!");
             log.info("Bootstrapping find basePackages:{}", basePackageSet);
         }
-        
+
         //scan package
         CommonBeanDefinitionBuilder commonBeanDefinitionBuilder = new CommonBeanDefinitionBuilder(metadata, resourceLoader, this.getBeanFactoryClass(), this.getBeanClass());
         CommonComponentProvider commonComponentProvider = new CommonComponentProvider(registry, this.getAnnotationType());
@@ -114,7 +122,7 @@ public abstract class AbstractCommonRegistrar implements ImportBeanDefinitionReg
         Set<BeanDefinition> scannedDefinitionSet;
         Set<BeanDefinition> allScannedDefinitionSet = new HashSet<>();
         for (String value : basePackageSet) {
-            if (value.isEmpty() == false) {
+            if (!value.isEmpty()) {
                 scannedDefinitionSet = commonComponentProvider.findCandidateComponents(value);
                 allScannedDefinitionSet.addAll(scannedDefinitionSet);
             }
@@ -126,6 +134,18 @@ public abstract class AbstractCommonRegistrar implements ImportBeanDefinitionReg
             beanName = this.buildDefaultBeanName(scannedDefinition);
             registry.registerBeanDefinition(beanName, beanDefinition);
         }
+
+        HikariDataSource hikariDataSource = this.createDataSource();
+        if (registry.containsBeanDefinition("dataSource")) {
+            return;
+        }
+
+        BeanDefinition dataSourceBeanDefinition = BeanDefinitionBuilder
+                .genericBeanDefinition(com.zaxxer.hikari.HikariDataSource.class, () -> hikariDataSource)
+                .setPrimary(true)
+                .getBeanDefinition();
+        registry.registerBeanDefinition("dataSource", dataSourceBeanDefinition);
+        log.info("Bootstrapping set default HikariDataSource: {}", dataSourceBeanDefinition);
     }
 
     private String buildDefaultBeanName(BeanDefinition definition) {
@@ -133,6 +153,22 @@ public abstract class AbstractCommonRegistrar implements ImportBeanDefinitionReg
         Assert.state(beanClassName != null, "No bean class name set");
         String shortClassName = ClassUtils.getShortName(beanClassName);
         return Introspector.decapitalize(shortClassName);
+    }
+
+    protected final <T> T safeBind(String bindName, Bindable<T> target) {
+        T t = null;
+        try {
+            Binder binder = Binder.get(this.environment);
+            BindResult<T> result =
+                    binder.bind(bindName, target);
+
+            if (result.isBound()) {
+                t = result.get();
+                log.info("Bootstrapping find properties: {}", bindName);
+            }
+        } catch (Exception ignored) {
+        }
+        return t;
     }
 
 }

@@ -1,5 +1,6 @@
 package io.github.siyukio.postgresql.support;
 
+import io.github.siyukio.postgresql.registrar.PostgresqlEntityRegistrar;
 import io.github.siyukio.tools.entity.ColumnType;
 import io.github.siyukio.tools.entity.EntityConstants;
 import io.github.siyukio.tools.entity.definition.ColumnDefinition;
@@ -48,8 +49,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, InitializingBean, ApplicationContextAware {
 
-    private final static Map<String, JdbcTemplate> JDBC_TEMPLATE_MAP = new HashMap<>();
-
     private final static Set<String> SCHEMA_SET = new HashSet<>();
 
     private final Class<?> entityClass;
@@ -89,25 +88,6 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         this.applicationContext = applicationContext;
     }
 
-    private DataSource getDataSource(String dataSourceName) {
-        Map<String, DataSource> dataSourceMap = this.applicationContext.getBeansOfType(DataSource.class);
-        DataSource dataSource = dataSourceMap.get(dataSourceName);
-        Assert.notNull(dataSource, String.format(EntityConstants.ERROR_DATASOURCE_IS_NULL_FORMAT, dataSourceName));
-        return dataSource;
-    }
-
-    private JdbcTemplate getJdbcTemplate(String dataSourceName) {
-        JdbcTemplate jdbcTemplate = JDBC_TEMPLATE_MAP.get(dataSourceName);
-        if (jdbcTemplate == null) {
-            Map<String, DataSource> dataSourceMap = this.applicationContext.getBeansOfType(DataSource.class);
-            DataSource dataSource = dataSourceMap.get(dataSourceName);
-            Assert.notNull(dataSource, String.format(EntityConstants.ERROR_DATASOURCE_IS_NULL_FORMAT, dataSourceName));
-
-            jdbcTemplate = new JdbcTemplate(dataSource);
-            JDBC_TEMPLATE_MAP.put(dataSourceName, jdbcTemplate);
-        }
-        return jdbcTemplate;
-    }
 
     private ColumnDefinition getColumnDefinition(Field field) {
         PgColumn pgColumn = field.getAnnotation(PgColumn.class);
@@ -187,9 +167,9 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
 
         PropertySourcesPlaceholdersResolver propertySourcesPlaceholdersResolver = new PropertySourcesPlaceholdersResolver(this.applicationContext.getEnvironment());
 
-        String dataSource = pgEntity.dataSource();
-        if (StringUtils.hasText(dataSource)) {
-            dataSource = propertySourcesPlaceholdersResolver.resolvePlaceholders(dataSource).toString();
+        String dbName = pgEntity.dbName();
+        if (StringUtils.hasText(dbName)) {
+            dbName = propertySourcesPlaceholdersResolver.resolvePlaceholders(dbName).toString();
         }
 
         String schema = pgEntity.schema();
@@ -206,7 +186,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         EntityUtils.isSafe(table);
 
         List<IndexDefinition> indexDefinitions = this.getIndexDefinitions(pgEntity.indexes());
-        return new EntityDefinition(dataSource, schema, table, pgEntity.comment(),
+        return new EntityDefinition(dbName, schema, table, pgEntity.comment(),
                 pgEntity.createTableAuto(), pgEntity.addColumnAuto(), pgEntity.createIndexAuto(),
                 keyDefinition, columnDefinitions, indexDefinitions);
     }
@@ -246,7 +226,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             }
         }
         if (!sqlList.isEmpty()) {
-            this.executeSqlScript("createIndex", entityDefinition.dataSource(), sqlList);
+            this.executeSqlScript("createIndex", entityDefinition.dbName(), sqlList);
         }
     }
 
@@ -314,10 +294,12 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         return sqlList;
     }
 
-    private void executeSqlScript(String title, String dataSourceName, List<String> sqlList) {
+    private void executeSqlScript(String title, String dbName, List<String> sqlList) {
         String sql = String.join(System.lineSeparator(), sqlList);
         log.debug("{} Postgresql: {}", title, sql);
-        DataSource dataSource = this.getDataSource(dataSourceName);
+
+        MultiJdbcTemplate multiJdbcTemplate = PostgresqlEntityRegistrar.getMultiJdbcTemplate(dbName);
+        DataSource dataSource = multiJdbcTemplate.getDataSource();
 
         try (Connection conn = dataSource.getConnection()) {
             ByteArrayResource resource = new ByteArrayResource(sql.getBytes(StandardCharsets.UTF_8));
@@ -336,7 +318,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             sqlList.addAll(this.checkColumn(entityDefinition, columnDefinition, informationColumnMap));
         }
         if (!sqlList.isEmpty()) {
-            this.executeSqlScript("alterTable", entityDefinition.dataSource(), sqlList);
+            this.executeSqlScript("alterTable", entityDefinition.dbName(), sqlList);
         }
     }
 
@@ -345,7 +327,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             return;
         }
         List<String> sqlList = PgSqlUtils.createTableAndCommentSql(entityDefinition);
-        this.executeSqlScript("createTable", entityDefinition.dataSource(), sqlList);
+        this.executeSqlScript("createTable", entityDefinition.dbName(), sqlList);
     }
 
     private void checkTable(EntityDefinition entityDefinition, JdbcTemplate jdbcTemplate) {
@@ -372,11 +354,10 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
     private PgEntityDao<?> newInstance() {
         EntityDefinition entityDefinition = this.getEntityDefinition();
         log.info("PgEntity: {}", entityDefinition.table());
-        JdbcTemplate jdbcTemplate = this.getJdbcTemplate(entityDefinition.dataSource());
+        MultiJdbcTemplate multiJdbcTemplate = PostgresqlEntityRegistrar.getMultiJdbcTemplate(entityDefinition.dbName());
+        this.checkTable(entityDefinition, multiJdbcTemplate.getMaster());
 
-        this.checkTable(entityDefinition, jdbcTemplate);
-
-        PgEntityExecutor pgEntityExecutor = new PgEntityExecutor(entityDefinition, jdbcTemplate);
+        PgEntityExecutor pgEntityExecutor = new PgEntityExecutor(entityDefinition, multiJdbcTemplate);
 
         return new PgEntityDaoImpl<>(this.entityClass, pgEntityExecutor);
     }

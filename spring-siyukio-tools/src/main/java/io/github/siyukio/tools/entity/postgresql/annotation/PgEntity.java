@@ -1,7 +1,5 @@
 package io.github.siyukio.tools.entity.postgresql.annotation;
 
-import io.github.siyukio.tools.entity.EntityConstants;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -21,13 +19,11 @@ public @interface PgEntity {
 
     boolean createIndexAuto() default true;
 
-    String dataSource() default EntityConstants.DATASOURCE_NAME;
+    String dbName() default "";
 
     String schema() default "";
 
     String table() default "";
-
-    boolean synchronousCommit() default true;
 
     String comment();
 

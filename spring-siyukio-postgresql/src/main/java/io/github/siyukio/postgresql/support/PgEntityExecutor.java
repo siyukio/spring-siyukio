@@ -10,7 +10,6 @@ import io.github.siyukio.tools.entity.sort.SortBuilder;
 import io.github.siyukio.tools.util.EntityUtils;
 import org.json.JSONObject;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.StringUtils;
 
 import java.sql.ResultSet;
@@ -28,7 +27,7 @@ public class PgEntityExecutor implements EntityExecutor {
 
     private final EntityDefinition entityDefinition;
 
-    private final JdbcTemplate jdbcTemplate;
+    private final MultiJdbcTemplate multiJdbcTemplate;
 
     private final boolean generatedId;
 
@@ -46,9 +45,9 @@ public class PgEntityExecutor implements EntityExecutor {
 
     private final Map<String, String> columnToFieldMap = new HashMap<>();
 
-    public PgEntityExecutor(EntityDefinition entityDefinition, JdbcTemplate jdbcTemplate) {
+    public PgEntityExecutor(EntityDefinition entityDefinition, MultiJdbcTemplate multiJdbcTemplate) {
         this.entityDefinition = entityDefinition;
-        this.jdbcTemplate = jdbcTemplate;
+        this.multiJdbcTemplate = multiJdbcTemplate;
         KeyDefinition keyDefinition = entityDefinition.keyDefinition();
         this.generatedId = keyDefinition.generated() &&
                 (keyDefinition.type() == ColumnType.BIGINT || keyDefinition.type() == ColumnType.INT);
@@ -82,18 +81,18 @@ public class PgEntityExecutor implements EntityExecutor {
                 returnClass = Integer.class;
             }
             List<Object> values = PgSqlUtils.insertAndReturnIdValues(this.entityDefinition, entityJson);
-            Object id = jdbcTemplate.queryForObject(this.insertSql, returnClass, values.toArray());
+            Object id = this.multiJdbcTemplate.getMaster().queryForObject(this.insertSql, returnClass, values.toArray());
             entityJson.put(this.entityDefinition.keyDefinition().fieldName(), id);
         } else {
             List<Object> values = PgSqlUtils.insertValues(this.entityDefinition, entityJson);
-            this.jdbcTemplate.update(this.insertSql, values.toArray());
+            this.multiJdbcTemplate.getMaster().update(this.insertSql, values.toArray());
         }
         return entityJson;
     }
 
     @Override
     public int insertBatch(List<JSONObject> entityJsons) {
-        int[][] result = this.jdbcTemplate.batchUpdate(this.insertSql, entityJsons, entityJsons.size(),
+        int[][] result = this.multiJdbcTemplate.getMaster().batchUpdate(this.insertSql, entityJsons, entityJsons.size(),
                 (ps, entityJson) -> {
                     List<Object> values;
                     if (this.generatedId) {
@@ -111,13 +110,13 @@ public class PgEntityExecutor implements EntityExecutor {
     @Override
     public JSONObject update(JSONObject entityJson) {
         List<Object> values = PgSqlUtils.updateValues(this.entityDefinition, entityJson);
-        this.jdbcTemplate.update(this.updateByIdSql, values.toArray());
+        this.multiJdbcTemplate.getMaster().update(this.updateByIdSql, values.toArray());
         return entityJson;
     }
 
     @Override
     public int updateBatch(List<JSONObject> entityJsons) {
-        int[][] result = this.jdbcTemplate.batchUpdate(this.updateByIdSql, entityJsons, entityJsons.size(),
+        int[][] result = this.multiJdbcTemplate.getMaster().batchUpdate(this.updateByIdSql, entityJsons, entityJsons.size(),
                 (ps, entityJson) -> {
                     List<Object> values = PgSqlUtils.updateValues(this.entityDefinition, entityJson);
                     for (int i = 0; i < values.size(); i++) {
@@ -129,12 +128,12 @@ public class PgEntityExecutor implements EntityExecutor {
 
     @Override
     public int delete(Object id) {
-        return this.jdbcTemplate.update(this.deleteByIdSql, id);
+        return this.multiJdbcTemplate.getMaster().update(this.deleteByIdSql, id);
     }
 
     @Override
     public void deleteBatch(List<Object> ids) {
-        this.jdbcTemplate.batchUpdate(this.deleteByIdSql, ids, ids.size(),
+        this.multiJdbcTemplate.getMaster().batchUpdate(this.deleteByIdSql, ids, ids.size(),
                 (ps, id) -> {
                     ps.setObject(1, id);
                 });
@@ -144,12 +143,12 @@ public class PgEntityExecutor implements EntityExecutor {
     public int deleteByQuery(QueryBuilder queryBuilder) {
         String deleteByQuerySql = PgSqlUtils.deleteByQuerySql(this.entityDefinition, queryBuilder, this.fieldToColumnMap);
         List<Object> queryValues = PgSqlUtils.toQueryValues(queryBuilder);
-        return this.jdbcTemplate.update(deleteByQuerySql, queryValues.toArray());
+        return this.multiJdbcTemplate.getMaster().update(deleteByQuerySql, queryValues.toArray());
     }
 
     @Override
     public int count() {
-        Integer count = jdbcTemplate.queryForObject(this.countSql, Integer.class);
+        Integer count = this.multiJdbcTemplate.getRandomSlave().queryForObject(this.countSql, Integer.class);
         if (count == null) {
             count = 0;
         }
@@ -160,7 +159,7 @@ public class PgEntityExecutor implements EntityExecutor {
     public int countByQuery(QueryBuilder queryBuilder) {
         String countByQuerySql = PgSqlUtils.countByQuerySql(this.entityDefinition, queryBuilder, this.fieldToColumnMap);
         List<Object> queryValues = PgSqlUtils.toQueryValues(queryBuilder);
-        return jdbcTemplate.queryForObject(countByQuerySql, Integer.class, queryValues.toArray());
+        return this.multiJdbcTemplate.getRandomSlave().queryForObject(countByQuerySql, Integer.class, queryValues.toArray());
     }
 
     private JSONObject resultToEntityJson(ResultSet rs) throws SQLException {
@@ -188,7 +187,7 @@ public class PgEntityExecutor implements EntityExecutor {
     @Override
     public JSONObject queryById(Object id) {
         try {
-            return this.jdbcTemplate.queryForObject(this.queryByIdSql, (rs, rowNum) -> this.resultToEntityJson(rs), id);
+            return this.multiJdbcTemplate.getRandomSlave().queryForObject(this.queryByIdSql, (rs, rowNum) -> this.resultToEntityJson(rs), id);
         } catch (EmptyResultDataAccessException ignored) {
             return null;
         }
@@ -201,6 +200,6 @@ public class PgEntityExecutor implements EntityExecutor {
         List<Object> allValues = new ArrayList<>(queryValues);
         allValues.add(size);
         allValues.add(from);
-        return this.jdbcTemplate.query(querySql, (rs, rowNum) -> this.resultToEntityJson(rs), allValues.toArray());
+        return this.multiJdbcTemplate.getRandomSlave().query(querySql, (rs, rowNum) -> this.resultToEntityJson(rs), allValues.toArray());
     }
 }

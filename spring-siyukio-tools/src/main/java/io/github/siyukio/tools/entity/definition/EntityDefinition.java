@@ -6,7 +6,7 @@ import java.util.List;
  * @author Bugee
  */
 public record EntityDefinition(
-        String dataSource,
+        String dbName,
         String schema,
         String table,
         String comment,
