@@ -41,6 +41,14 @@ API_JWT_PRIVATE_KEY: |
 
 API_SIGNATURE_SALT: siyukio
 
+management:
+  server:
+    port: 9001
+  endpoints:
+    web:
+      exposure:
+        include: health, loggers
+
 spring:
   ai:
     mcp:
