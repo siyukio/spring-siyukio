@@ -54,7 +54,7 @@ spring:
     mcp:
       server:
         name: siyukio-server
-        version: 3.4.10
+        version: 3.4.11-SNAPSHOT
 
 logging:
   level:
