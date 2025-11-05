@@ -120,20 +120,25 @@ public class MyWebSocketClient {
 
     public CompletableFuture<Boolean> sendAsync(McpSchema.JSONRPCMessage sendMessage, FluxSink<McpSchema.JSONRPCMessage> sink) {
         return CompletableFuture.supplyAsync(() -> {
-            this.sendRequest(sendMessage).subscribe(receiveMessage -> {
-                if (receiveMessage instanceof McpSchema.JSONRPCResponse jsonrpcResponse) {
-                    String id = String.valueOf(jsonrpcResponse.id());
-                    if (id.equals("mcp-error")) {
-                        sink.next(receiveMessage);
-                        sink.error(new McpError(jsonrpcResponse.error()));
-                    } else {
-                        sink.next(receiveMessage);
-                        sink.complete();
-                    }
-                } else {
-                    sink.next(receiveMessage);
-                }
-            });
+            this.sendRequest(sendMessage)
+                    .onErrorResume(error -> {
+                        sink.error(error);
+                        return Flux.empty();
+                    })
+                    .subscribe(receiveMessage -> {
+                        if (receiveMessage instanceof McpSchema.JSONRPCResponse jsonrpcResponse) {
+                            String id = String.valueOf(jsonrpcResponse.id());
+                            if (id.equals("mcp-error")) {
+                                sink.next(receiveMessage);
+                                sink.error(new McpError(jsonrpcResponse.error()));
+                            } else {
+                                sink.next(receiveMessage);
+                                sink.complete();
+                            }
+                        } else {
+                            sink.next(receiveMessage);
+                        }
+                    });
             return true;
         });
     }
