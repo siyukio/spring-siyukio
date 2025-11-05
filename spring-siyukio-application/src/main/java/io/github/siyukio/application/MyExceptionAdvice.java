@@ -5,6 +5,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -27,9 +29,14 @@ public class MyExceptionAdvice {
     }
 
     @ExceptionHandler(value = NoHandlerFoundException.class)
-    public JSONObject errorHandler(NoHandlerFoundException ex, HttpServletRequest request) {
-        ApiException apiException = new ApiException(HttpStatus.NOT_FOUND);
-        return apiException.toJson();
+    public ResponseEntity<JSONObject> errorHandler(NoHandlerFoundException ex, HttpServletRequest request) {
+        String mcpHeader = request.getHeader("mcp-protocol-version");
+        if (StringUtils.hasText(mcpHeader)) {
+            return ResponseEntity.notFound().build();
+        } else {
+            ApiException apiException = new ApiException(HttpStatus.NOT_FOUND);
+            return ResponseEntity.ok(apiException.toJson());
+        }
     }
 
     @ExceptionHandler(value = ApiException.class)

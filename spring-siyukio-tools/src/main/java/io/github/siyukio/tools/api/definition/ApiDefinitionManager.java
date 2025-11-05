@@ -138,8 +138,7 @@ public final class ApiDefinitionManager {
         LinkedList<Class<?>> responseClassLinkedList = new LinkedList<>();
         JSONArray responseParameters = this.getSubResponseParameters(method, returnValueType, responseClassLinkedList);
 
-        responseParameters.put(ApiException.getErrorParameter());
-        responseParameters.put(ApiException.getErrorReasonParameter());
+        responseParameters.put(ApiException.getErrorSchema());
 
         String summary = apiMapping.summary();
         if (!StringUtils.hasText(summary)) {

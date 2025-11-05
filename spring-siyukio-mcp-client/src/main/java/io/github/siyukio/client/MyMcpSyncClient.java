@@ -192,10 +192,11 @@ public class MyMcpSyncClient {
 
         if (result.isError()) {
             if (result.structuredContent() != null) {
-                JSONObject errorJson = JsonUtils.copy(result.structuredContent(), JSONObject.class);
-                int error = errorJson.optInt(ApiException.getErrorName(), HttpStatus.OK.value());
-                String errorReason = errorJson.optString(ApiException.getErrorReasonName(), "");
-                throw new ApiException(error, errorReason);
+                JSONObject contentJson = JsonUtils.copy(result.structuredContent(), JSONObject.class);
+                JSONObject errorJson = contentJson.optJSONObject("error");
+                int code = errorJson.optInt("code", HttpStatus.OK.value());
+                String message = errorJson.optString("message", "");
+                throw new ApiException(code, message);
             }
 
             JSONObject contentJson = JsonUtils.copy(result.content().getFirst(), JSONObject.class);

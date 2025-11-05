@@ -1,8 +1,10 @@
 package io.github.siyukio.tools.api;
 
 import io.github.siyukio.tools.api.constants.ApiConstants;
+import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 
@@ -13,28 +15,29 @@ import org.springframework.http.HttpStatus;
  */
 @ToString
 @Slf4j
+@Getter
 public final class ApiException extends RuntimeException {
 
-    public final int error;
+    private final int code;
 
-    public final String errorReason;
+    private final String message;
 
-    public ApiException(String errorReason) {
-        super(errorReason);
-        this.errorReason = errorReason;
-        this.error = HttpStatus.UNPROCESSABLE_ENTITY.value();
+    public ApiException(String message) {
+        super(message);
+        this.message = message;
+        this.code = HttpStatus.UNPROCESSABLE_ENTITY.value();
     }
 
-    public ApiException(int error, String errorReason) {
-        super(errorReason);
-        this.errorReason = errorReason;
-        this.error = error;
+    public ApiException(int code, String message) {
+        super(message);
+        this.message = message;
+        this.code = code;
     }
 
     public ApiException(HttpStatus httpStatus) {
         super(httpStatus.getReasonPhrase());
-        this.errorReason = httpStatus.getReasonPhrase();
-        this.error = httpStatus.value();
+        this.message = httpStatus.getReasonPhrase();
+        this.code = httpStatus.value();
     }
 
     public static ApiException getApiException(HttpStatus httpStatus, String errorReason) {
@@ -61,34 +64,36 @@ public final class ApiException extends RuntimeException {
         return new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.value(), message);
     }
 
-    public static String getErrorName() {
-        return "error";
-    }
+    public static JSONObject getErrorSchema() {
+        JSONObject codeParameter = new JSONObject();
+        codeParameter.put("name", "code");
+        codeParameter.put("description", "The error type that occurred");
+        codeParameter.put("type", ApiConstants.TYPE_INTEGER);
 
-    public static JSONObject getErrorParameter() {
-        JSONObject responseParameter = new JSONObject();
-        responseParameter.put("name", "error");
-        responseParameter.put("description", "error code");
-        responseParameter.put("type", ApiConstants.TYPE_INTEGER);
-        return responseParameter;
-    }
+        JSONObject messageParameter = new JSONObject();
+        messageParameter.put("name", "message");
+        messageParameter.put("description", "A short description of the error. The message SHOULD be limited to a concise single sentence");
+        messageParameter.put("type", ApiConstants.TYPE_STRING);
 
-    public static String getErrorReasonName() {
-        return "errorReason";
-    }
+        JSONArray childArray = new JSONArray();
+        childArray.put(codeParameter);
+        childArray.put(messageParameter);
 
-    public static JSONObject getErrorReasonParameter() {
-        JSONObject responseParameter = new JSONObject();
-        responseParameter.put("name", "errorReason");
-        responseParameter.put("description", "error reason");
-        responseParameter.put("type", ApiConstants.TYPE_STRING);
-        return responseParameter;
+        JSONObject errorParameter = new JSONObject();
+        errorParameter.put("name", "error");
+        errorParameter.put("description", "Error information if the request failed");
+        errorParameter.put("type", ApiConstants.TYPE_OBJECT);
+        errorParameter.put("additionalProperties", false);
+        errorParameter.put("childArray", childArray);
+        return errorParameter;
     }
 
     public JSONObject toJson() {
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("error", this.error);
-        jsonObject.put("errorReason", this.errorReason);
-        return jsonObject;
+        JSONObject errorJson = new JSONObject();
+        errorJson.put("code", this.code);
+        errorJson.put("message", this.message);
+        JSONObject responseObject = new JSONObject();
+        responseObject.put("error", errorJson);
+        return responseObject;
     }
 }

@@ -72,7 +72,7 @@ public class MyWebSocketStreamableSession {
 
     public void sendError(ApiException apiException) {
         McpSchema.JSONRPCResponse.JSONRPCError error = new McpSchema.JSONRPCResponse.JSONRPCError(
-                apiException.error, apiException.errorReason, null);
+                apiException.getCode(), apiException.getMessage(), null);
         McpSchema.JSONRPCResponse response = new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, "mcp-error", "", error);
         String text = JsonUtils.toJSONString(response);
         try {
