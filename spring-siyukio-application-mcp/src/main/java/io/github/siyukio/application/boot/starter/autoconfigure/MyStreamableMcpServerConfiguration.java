@@ -46,7 +46,7 @@ public class MyStreamableMcpServerConfiguration implements ApplicationContextAwa
                 .objectMapper(JsonUtils.getObjectMapper())
                 .mcpEndpoint(mcpServerProperties.getMcpEndpoint())
                 .keepAliveInterval(Duration.ofSeconds(20))
-                .disallowDelete(true)
+//                .disallowDelete(true)
                 .contextExtractor((serverRequest) -> {
                     Map<String, Object> metadata = new HashMap<>();
                     String authorization = serverRequest.headers().firstHeader(HttpHeaders.AUTHORIZATION);
