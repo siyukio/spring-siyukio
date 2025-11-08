@@ -24,6 +24,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.ServerResponse;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,8 @@ public class MyStreamableMcpServerConfiguration implements ApplicationContextAwa
         return WebMvcStreamableServerTransportProvider.builder()
                 .objectMapper(JsonUtils.getObjectMapper())
                 .mcpEndpoint(mcpServerProperties.getMcpEndpoint())
+                .keepAliveInterval(Duration.ofSeconds(20))
+                .disallowDelete(true)
                 .contextExtractor((serverRequest) -> {
                     Map<String, Object> metadata = new HashMap<>();
                     String authorization = serverRequest.headers().firstHeader(HttpHeaders.AUTHORIZATION);
