@@ -163,33 +163,10 @@ public class MyMcpSyncClient {
         return this.createMcpAsyncClient(this.baseUrl, this.mcpEndpoint);
     }
 
-    /**
-     * Calls a tool provided by the server. Tools enable servers to expose executable
-     * functionality that can interact with external systems, perform computations, and
-     * take actions in the real world.
-     *
-     * @param callToolRequest The request containing: - name: The name of the tool to call
-     *                        (must match a tool name from tools/list) - arguments: Arguments that conform to the
-     *                        tool's input schema
-     * @return The tool execution result containing: - content: List of content items
-     * (text, images, or embedded resources) representing the tool's output - isError:
-     * Boolean indicating if the execution failed (true) or succeeded (false/absent)
-     */
-    public McpSchema.CallToolResult callTool(McpSchema.CallToolRequest callToolRequest) {
-        McpAsyncClient mcpAsyncClient = this.getMcpSyncClient();
-        McpSchema.CallToolResult result = mcpAsyncClient.callTool(callToolRequest).block();
-        mcpAsyncClient.close();
-        return result;
-    }
-
-    public McpSchema.CallToolResult callTool(String toolName, Object params) {
-        Map<String, Object> arguments = JsonUtils.copy(params, Map.class, String.class, Object.class);
-        return this.callTool(new McpSchema.CallToolRequest(toolName, arguments));
-    }
-
-    public <T> T callTool(String toolName, Object params, Class<T> returnType) {
-        McpSchema.CallToolResult result = this.callTool(toolName, params);
-
+    public <T> T doResult(McpSchema.CallToolResult result, Class<T> returnType) {
+        if (result == null) {
+            return null;
+        }
         if (result.isError()) {
             if (result.structuredContent() != null) {
                 JSONObject contentJson = JsonUtils.copy(result.structuredContent(), JSONObject.class);
@@ -206,12 +183,36 @@ public class MyMcpSyncClient {
         return JsonUtils.copy(result.structuredContent(), returnType);
     }
 
-    // --------------------------
-    // Tools
-    // --------------------------
+    public <T> T callTool(String toolName, Object params, Class<T> returnType) {
+        Map<String, Object> arguments = JsonUtils.copy(params, Map.class, String.class, Object.class);
+        McpAsyncClient mcpAsyncClient = this.getMcpSyncClient();
+        try {
+            McpSchema.CallToolResult result = mcpAsyncClient.callTool(new McpSchema.CallToolRequest(toolName, arguments)).block();
+            return this.doResult(result, returnType);
+        } finally {
+            mcpAsyncClient.close();
+        }
+    }
 
     public <T> T callTool(String toolName, Class<T> returnType) {
-        return this.callTool(toolName, Map.of(), returnType);
+        McpAsyncClient mcpAsyncClient = this.getMcpSyncClient();
+        try {
+            McpSchema.CallToolResult result = mcpAsyncClient.callTool(new McpSchema.CallToolRequest(toolName, Map.of())).block();
+            return this.doResult(result, returnType);
+        } finally {
+            mcpAsyncClient.close();
+        }
+    }
+
+    public <T> T callTool(McpAsyncClient mcpAsyncClient, String toolName, Object params, Class<T> returnType) {
+        Map<String, Object> arguments = JsonUtils.copy(params, Map.class, String.class, Object.class);
+        McpSchema.CallToolResult result = mcpAsyncClient.callTool(new McpSchema.CallToolRequest(toolName, arguments)).block();
+        return this.doResult(result, returnType);
+    }
+
+    public <T> T callTool(McpAsyncClient mcpAsyncClient, String toolName, Class<T> returnType) {
+        McpSchema.CallToolResult result = mcpAsyncClient.callTool(new McpSchema.CallToolRequest(toolName, Map.of())).block();
+        return this.doResult(result, returnType);
     }
 
     /**
@@ -223,9 +224,11 @@ public class MyMcpSyncClient {
      */
     public McpSchema.ListToolsResult listTools() {
         McpAsyncClient mcpAsyncClient = this.getMcpSyncClient();
-        McpSchema.ListToolsResult result = mcpAsyncClient.listTools().block();
-        mcpAsyncClient.close();
-        return result;
+        try {
+            return mcpAsyncClient.listTools().block();
+        } finally {
+            mcpAsyncClient.close();
+        }
     }
 
     public static class Builder {

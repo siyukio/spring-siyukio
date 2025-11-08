@@ -20,9 +20,9 @@ public class CreateAuthorizationRequest {
     @ApiParameter
     public String uid;
 
-    @ApiParameter
+    @ApiParameter(required = false)
     public String name;
 
-    @ApiParameter
+    @ApiParameter(required = false)
     public List<String> roles;
 }

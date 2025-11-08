@@ -38,19 +38,6 @@ class McpWebsocketClientTests {
     private McpClientCommonProperties mcpClientCommonProperties;
 
     @Test
-    void testInit() {
-        MyMcpSyncClient client = MyMcpSyncClient.builder()
-                .useWebsocket(true)
-                .useTokenSupplier(this.tokenSupplier)
-                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
-                .build();
-        McpAsyncClient mcpAsyncClient = client.getMcpSyncClient();
-        mcpAsyncClient.initialize().block();
-
-        mcpAsyncClient.close();
-    }
-
-    @Test
     void testListTools() {
         MyMcpSyncClient client = MyMcpSyncClient.builder()
                 .useWebsocket(true)
@@ -86,6 +73,32 @@ class McpWebsocketClientTests {
     }
 
     @Test
+    void testMultiCallTool() {
+        MyMcpSyncClient client = MyMcpSyncClient.builder()
+                .useWebsocket(true)
+                .useTokenSupplier(this.tokenSupplier)
+                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
+                .build();
+
+        CreateAuthorizationRequest createAuthorizationRequest = CreateAuthorizationRequest.builder()
+                .uid("123")
+                .name("Buddy")
+                .roles(List.of("user"))
+                .build();
+
+        McpAsyncClient asyncClient = client.getMcpSyncClient();
+
+        try {
+            for (int i = 0; i < 3; i++) {
+                JSONObject result = client.callTool(asyncClient, "/createAuthorization", createAuthorizationRequest, JSONObject.class);
+                log.info("callTool {} --> {}", i, JsonUtils.toPrettyJSONString(result));
+            }
+        } finally {
+            asyncClient.close();
+        }
+    }
+
+    @Test
     void testCallToolOnSampling() throws InterruptedException {
         // Configure sampling handler
         Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler = request -> {
@@ -107,10 +120,37 @@ class McpWebsocketClientTests {
         JSONObject result = client.callTool("/getToken", JSONObject.class);
 
         log.info("{}", JsonUtils.toPrettyJSONString(result));
+    }
 
-        result = client.callTool("/getToken", JSONObject.class);
+    @Test
+    void testMultiCallToolOnSampling() throws InterruptedException {
+        // Configure sampling handler
+        Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler = request -> {
+            // Sampling implementation that interfaces with LLM
+            log.info("multi sampling CreateMessageRequest: {}", request);
+            return McpSchema.CreateMessageResult.builder()
+                    .role(McpSchema.Role.USER)
+                    .message("sse ok")
+                    .build();
+        };
 
-        log.info("{}", JsonUtils.toPrettyJSONString(result));
+        MyMcpSyncClient client = MyMcpSyncClient.builder()
+                .useWebsocket(true)
+                .useTokenSupplier(this.tokenSupplier)
+                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
+                .setSamplingHandler(samplingHandler)
+                .build();
+
+        McpAsyncClient asyncClient = client.getMcpSyncClient();
+
+        try {
+            for (int i = 0; i < 3; i++) {
+                JSONObject result = client.callTool(asyncClient, "/getToken", JSONObject.class);
+                log.info("sampling callTool {} --> {}", i, JsonUtils.toPrettyJSONString(result));
+            }
+        } finally {
+            asyncClient.close();
+        }
     }
 
     @Test
@@ -130,6 +170,31 @@ class McpWebsocketClientTests {
         JSONObject result = client.callTool("/getTokenByProgress", JSONObject.class);
 
         log.info("{}", JsonUtils.toPrettyJSONString(result));
+    }
+
+    @Test
+    void testMultiCallToolOnProgress() throws InterruptedException {
+
+        Consumer<McpSchema.ProgressNotification> progressHandler = progressNotification -> {
+            log.info("multi progressNotification:{}", JsonUtils.toPrettyJSONString(progressNotification));
+        };
+
+        MyMcpSyncClient client = MyMcpSyncClient.builder()
+                .useWebsocket(true)
+                .useTokenSupplier(this.tokenSupplier)
+                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
+                .setProgressHandler(progressHandler)
+                .build();
+
+        McpAsyncClient asyncClient = client.getMcpSyncClient();
+        try {
+            for (int i = 0; i < 3; i++) {
+                JSONObject result = client.callTool(asyncClient, "/getTokenByProgress", JSONObject.class);
+                log.info("progress callTool {} --> {}", i, JsonUtils.toPrettyJSONString(result));
+            }
+        } finally {
+            asyncClient.close();
+        }
     }
 
 }

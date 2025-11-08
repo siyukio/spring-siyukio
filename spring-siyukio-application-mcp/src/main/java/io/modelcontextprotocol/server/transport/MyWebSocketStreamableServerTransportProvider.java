@@ -295,7 +295,7 @@ public class MyWebSocketStreamableServerTransportProvider implements McpStreamab
 
         @Override
         public Mono<Void> closeGracefully() {
-            return Mono.fromRunnable(this::close);
+            return Mono.fromRunnable(WebSocketStreamableMcpSessionTransport.this::close);
         }
 
         @Override
@@ -307,8 +307,6 @@ public class MyWebSocketStreamableServerTransportProvider implements McpStreamab
                 }
 
                 this.closed = true;
-
-                this.session.close();
                 log.debug("Successfully completed for websocket session {}", this.session.getId());
             } catch (Exception e) {
                 log.warn("Failed to complete for websocket  session {}: {}", this.session.getId(), e.getMessage());

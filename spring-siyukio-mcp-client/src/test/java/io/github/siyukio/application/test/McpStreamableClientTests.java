@@ -5,6 +5,7 @@ import io.github.siyukio.client.MyMcpSyncClient;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.JsonUtils;
+import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
@@ -24,6 +25,7 @@ class McpStreamableClientTests {
 
     @Autowired
     private TokenProvider tokenProvider;
+
     private final Supplier<String> tokenSupplier = () -> {
         Token token = Token.builder().uid("321")
                 .name("hello")
@@ -35,14 +37,6 @@ class McpStreamableClientTests {
     @Autowired
     private McpClientCommonProperties mcpClientCommonProperties;
 
-    @Test
-    void testInit() {
-        MyMcpSyncClient client = MyMcpSyncClient.builder()
-                .useTokenSupplier(this.tokenSupplier)
-                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
-                .build();
-        client.getMcpSyncClient().initialize().block();
-    }
 
     @Test
     void testListTools() {
@@ -78,6 +72,31 @@ class McpStreamableClientTests {
     }
 
     @Test
+    void testMultiCallTool() {
+        MyMcpSyncClient client = MyMcpSyncClient.builder()
+                .useTokenSupplier(this.tokenSupplier)
+                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
+                .build();
+
+        CreateAuthorizationRequest createAuthorizationRequest = CreateAuthorizationRequest.builder()
+                .uid("123")
+                .name("Buddy")
+                .roles(List.of("user"))
+                .build();
+
+        McpAsyncClient asyncClient = client.getMcpSyncClient();
+
+        try {
+            for (int i = 0; i < 3; i++) {
+                JSONObject result = client.callTool(asyncClient, "/createAuthorization", createAuthorizationRequest, JSONObject.class);
+                log.info("callTool {} --> {}", i, JsonUtils.toPrettyJSONString(result));
+            }
+        } finally {
+            asyncClient.close();
+        }
+    }
+
+    @Test
     void testCallToolOnSampling() throws InterruptedException {
         // Configure sampling handler
         Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler = request -> {
@@ -101,6 +120,36 @@ class McpStreamableClientTests {
     }
 
     @Test
+    void testMultiCallToolOnSampling() throws InterruptedException {
+        // Configure sampling handler
+        Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler = request -> {
+            // Sampling implementation that interfaces with LLM
+            log.info("multi sampling CreateMessageRequest: {}", request);
+            return McpSchema.CreateMessageResult.builder()
+                    .role(McpSchema.Role.USER)
+                    .message("sse ok")
+                    .build();
+        };
+
+        MyMcpSyncClient client = MyMcpSyncClient.builder()
+                .useTokenSupplier(this.tokenSupplier)
+                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
+                .setSamplingHandler(samplingHandler)
+                .build();
+
+        McpAsyncClient asyncClient = client.getMcpSyncClient();
+
+        try {
+            for (int i = 0; i < 3; i++) {
+                JSONObject result = client.callTool(asyncClient, "/getToken", JSONObject.class);
+                log.info("sampling callTool {} --> {}", i, JsonUtils.toPrettyJSONString(result));
+            }
+        } finally {
+            asyncClient.close();
+        }
+    }
+
+    @Test
     void testCallToolOnProgress() throws InterruptedException {
 
         Consumer<McpSchema.ProgressNotification> progressHandler = progressNotification -> {
@@ -116,6 +165,30 @@ class McpStreamableClientTests {
         JSONObject result = client.callTool("/getTokenByProgress", JSONObject.class);
 
         log.info("{}", JsonUtils.toPrettyJSONString(result));
+    }
+
+    @Test
+    void testMultiCallToolOnProgress() throws InterruptedException {
+
+        Consumer<McpSchema.ProgressNotification> progressHandler = progressNotification -> {
+            log.info("multi progressNotification:{}", JsonUtils.toPrettyJSONString(progressNotification));
+        };
+
+        MyMcpSyncClient client = MyMcpSyncClient.builder()
+                .useTokenSupplier(this.tokenSupplier)
+                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
+                .setProgressHandler(progressHandler)
+                .build();
+
+        McpAsyncClient asyncClient = client.getMcpSyncClient();
+        try {
+            for (int i = 0; i < 3; i++) {
+                JSONObject result = client.callTool(asyncClient, "/getTokenByProgress", JSONObject.class);
+                log.info("progress callTool {} --> {}", i, JsonUtils.toPrettyJSONString(result));
+            }
+        } finally {
+            asyncClient.close();
+        }
     }
 
 }
