@@ -132,15 +132,15 @@ public class WebSocketStreamableServerTransportProvider implements McpStreamable
         });
     }
 
-    void handlePost(WebSocketServerSession webSocketServerSession, WebSocketMessage inputMessage) {
+    void handlePost(WebSocketServerSession webSocketServerSession, WebSocketMessage sentMessage) {
         if (this.isClosing) {
-            webSocketServerSession.sendError(inputMessage.id(), ApiException.getApiException(HttpStatus.SERVICE_UNAVAILABLE, "Server is shutting down"));
+            webSocketServerSession.sendError(sentMessage.id(), ApiException.getApiException(HttpStatus.SERVICE_UNAVAILABLE, "Server is shutting down"));
         }
 
         McpTransportContext transportContext = this.contextExtractor.extract(webSocketServerSession);
 
         try {
-            McpSchema.JSONRPCMessage message = inputMessage.deserializeJsonRpcMessage();
+            McpSchema.JSONRPCMessage message = sentMessage.deserializeJsonRpcMessage();
 
             // Handle initialization request
             if (message instanceof McpSchema.JSONRPCRequest jsonrpcRequest
@@ -155,26 +155,26 @@ public class WebSocketStreamableServerTransportProvider implements McpStreamable
                 try {
                     McpSchema.InitializeResult initResult = init.initResult().block();
 
-                    webSocketServerSession.sendResponse(inputMessage.id(), init.session().getId(),
+                    webSocketServerSession.sendResponse(sentMessage.id(), init.session().getId(),
                             new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, jsonrpcRequest.id(), initResult,
                                     null));
                 } catch (Exception e) {
                     log.error("Failed to initialize websocket session: {}", e.getMessage());
-                    webSocketServerSession.sendError(inputMessage.id(), ApiException.getApiException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
+                    webSocketServerSession.sendError(sentMessage.id(), ApiException.getApiException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
                 }
                 return;
             }
 
             // Handle other messages that require a session
-            if (!StringUtils.hasText(inputMessage.mcpSessionId())) {
-                webSocketServerSession.sendError(inputMessage.id(), ApiException.getApiException(HttpStatus.INTERNAL_SERVER_ERROR, "Session ID missing"));
+            if (!StringUtils.hasText(sentMessage.mcpSessionId())) {
+                webSocketServerSession.sendError(sentMessage.id(), ApiException.getApiException(HttpStatus.INTERNAL_SERVER_ERROR, "Session ID missing"));
             }
 
-            String sessionId = inputMessage.mcpSessionId();
+            String sessionId = sentMessage.mcpSessionId();
             McpStreamableServerSession session = this.sessions.get(sessionId);
 
             if (session == null) {
-                webSocketServerSession.sendError(inputMessage.id(), ApiException.getApiException(HttpStatus.NOT_FOUND, "Session not found: " + sessionId));
+                webSocketServerSession.sendError(sentMessage.id(), ApiException.getApiException(HttpStatus.NOT_FOUND, "Session not found: " + sessionId));
                 return;
             }
 
@@ -183,17 +183,17 @@ public class WebSocketStreamableServerTransportProvider implements McpStreamable
                         .contextWrite(ctx -> ctx.put(McpTransportContext.KEY, transportContext))
                         .block();
                 log.debug("received McpSchema.JSONRPCResponse:{}", jsonrpcResponse);
-                webSocketServerSession.sendAccepted(inputMessage.id());
+                webSocketServerSession.sendAccepted(sentMessage.id());
             } else if (message instanceof McpSchema.JSONRPCNotification jsonrpcNotification) {
                 session.accept(jsonrpcNotification)
                         .contextWrite(ctx -> ctx.put(McpTransportContext.KEY, transportContext))
                         .block();
                 log.debug("received McpSchema.JSONRPCNotification:{}", jsonrpcNotification);
-                webSocketServerSession.sendAccepted(inputMessage.id());
+                webSocketServerSession.sendAccepted(sentMessage.id());
             } else if (message instanceof McpSchema.JSONRPCRequest jsonrpcRequest) {
 
                 WebSocketStreamableMcpSessionTransport sessionTransport = new WebSocketStreamableMcpSessionTransport(
-                        webSocketServerSession, inputMessage.id(), inputMessage.mcpSessionId());
+                        webSocketServerSession, sentMessage.id(), sentMessage.mcpSessionId());
 
                 try {
                     session.responseStream(jsonrpcRequest, sessionTransport)
@@ -201,29 +201,29 @@ public class WebSocketStreamableServerTransportProvider implements McpStreamable
                             .block();
                 } catch (Exception e) {
                     log.error("Failed to handle websocket request stream: {}", e.getMessage());
-                    webSocketServerSession.sendError(inputMessage.id(), ApiException.getApiException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
+                    webSocketServerSession.sendError(sentMessage.id(), ApiException.getApiException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
                 }
             } else {
-                webSocketServerSession.sendError(inputMessage.id(), ApiException.getApiException(HttpStatus.INTERNAL_SERVER_ERROR, "Unknown message type"));
+                webSocketServerSession.sendError(sentMessage.id(), ApiException.getApiException(HttpStatus.INTERNAL_SERVER_ERROR, "Unknown message type"));
             }
         } catch (IllegalArgumentException e) {
             log.error("Failed to deserialize websocket message: {}", e.getMessage());
-            webSocketServerSession.sendError(inputMessage.id(), ApiException.getApiException(HttpStatus.BAD_REQUEST, "Invalid message format"));
+            webSocketServerSession.sendError(sentMessage.id(), ApiException.getApiException(HttpStatus.BAD_REQUEST, "Invalid message format"));
         } catch (Exception e) {
             log.error("Error handling websocket message: {}", e.getMessage());
-            webSocketServerSession.sendError(inputMessage.id(), ApiException.getApiException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
+            webSocketServerSession.sendError(sentMessage.id(), ApiException.getApiException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
         }
     }
 
-    public void handleDelete(WebSocketServerSession webSocketServerSession, WebSocketMessage inputMessage) {
+    public void handleDelete(WebSocketServerSession webSocketServerSession, WebSocketMessage sendMessage) {
 
         if (this.isClosing) {
-            webSocketServerSession.sendError(inputMessage.id(), ApiException.getApiException(HttpStatus.SERVICE_UNAVAILABLE, "Server is shutting down"));
+            webSocketServerSession.sendError(sendMessage.id(), ApiException.getApiException(HttpStatus.SERVICE_UNAVAILABLE, "Server is shutting down"));
         }
 
         McpTransportContext transportContext = this.contextExtractor.extract(webSocketServerSession);
 
-        String sessionId = inputMessage.mcpSessionId();
+        String sessionId = sendMessage.mcpSessionId();
         McpStreamableServerSession session = this.sessions.remove(sessionId);
 
         if (session == null) {
@@ -233,7 +233,7 @@ public class WebSocketStreamableServerTransportProvider implements McpStreamable
         this.webSocketAndSessionMap.remove(webSocketServerSession.getId());
         try {
             session.delete().contextWrite(ctx -> ctx.put(McpTransportContext.KEY, transportContext)).block();
-            webSocketServerSession.sendAccepted(inputMessage.id());
+            webSocketServerSession.sendAccepted(sendMessage.id());
         } catch (Exception e) {
             log.error("Failed to delete websocket session {}: {}", sessionId, e.getMessage());
         }

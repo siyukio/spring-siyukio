@@ -117,8 +117,8 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
             final McpTransportSession<Disposable> transportSession = this.activeSession.get();
 
             Disposable connection = this.webSocketClient.receiveAsync()
-                    .flatMap(outputMessage -> {
-                        McpSchema.JSONRPCMessage jsonrpcMessage = outputMessage.deserializeJsonRpcMessage();
+                    .flatMap(responseMessage -> {
+                        McpSchema.JSONRPCMessage jsonrpcMessage = responseMessage.deserializeJsonRpcMessage();
                         if (jsonrpcMessage instanceof McpSchema.JSONRPCRequest ||
                                 jsonrpcMessage instanceof McpSchema.JSONRPCNotification
                         ) {
@@ -180,16 +180,16 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
                                     responseSink.complete();
                                 })).onErrorMap(CompletionException.class, t -> t.getCause()).onErrorComplete().subscribe();
                     }))
-                    .flatMap(outputMessage -> {
-                        if (transportSession.sessionId().isEmpty() && StringUtils.hasText(outputMessage.mcpSessionId())) {
-                            transportSession.markInitialized(outputMessage.mcpSessionId());
+                    .flatMap(responseMessage -> {
+                        if (transportSession.sessionId().isEmpty() && StringUtils.hasText(responseMessage.mcpSessionId())) {
+                            transportSession.markInitialized(responseMessage.mcpSessionId());
                             // Once we have a session, we try to open an async stream for
                             // the server to send notifications and requests out-of-band.
                             this.reconnect().contextWrite(deliveredSink.contextView()).subscribe();
                         }
 
                         String sessionRepresentation = sessionIdOrPlaceholder(transportSession);
-                        if (outputMessage.body() == null || outputMessage.body().isEmpty()) {
+                        if (responseMessage.body() == null || responseMessage.body().isEmpty()) {
                             logger.debug("No content type returned for websocket request in session {}", sessionRepresentation);
                             // No content type means no response body, so we can just
                             // return
@@ -197,7 +197,7 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
                             deliveredSink.success();
                             return Flux.empty();
                         } else {
-                            McpSchema.JSONRPCMessage jsonrpcMessage = outputMessage.deserializeJsonRpcMessage();
+                            McpSchema.JSONRPCMessage jsonrpcMessage = responseMessage.deserializeJsonRpcMessage();
                             if (jsonrpcMessage instanceof McpSchema.JSONRPCResponse jsonrpcResponse) {
                                 deliveredSink.success();
                                 if (jsonrpcResponse.error() != null) {
