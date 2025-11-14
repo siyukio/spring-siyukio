@@ -1,15 +1,12 @@
 package io.modelcontextprotocol.client.transport;
 
 import io.github.siyukio.tools.util.JsonUtils;
-import io.modelcontextprotocol.spec.McpError;
-import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpTransportException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Schedulers;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -19,6 +16,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -30,13 +28,16 @@ public class MyWebSocketClient {
 
     private final AtomicReference<WebSocket> webSocketRef = new AtomicReference<>();
     private final ReentrantLock lock = new ReentrantLock();
-    private final Sinks.Many<McpSchema.JSONRPCMessage> incomingSink = Sinks.many().multicast().onBackpressureBuffer();
+    private final Map<String, CompletableFuture<MyWebSocketMessage>> pendingMap = new ConcurrentHashMap<>();
+    private final Sinks.Many<MyWebSocketMessage> incomingSink = Sinks.many().multicast().onBackpressureBuffer();
 
     public void close() {
         WebSocket webSocket = this.webSocketRef.get();
         if (webSocket != null) {
             webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "");
         }
+        this.pendingMap.clear();
+        this.incomingSink.tryEmitComplete();
     }
 
     public Mono<Void> connect(Map<String, String> headerMap, URI uri) {
@@ -109,85 +110,52 @@ public class MyWebSocketClient {
     }
 
     private void handleText(String text) {
-        log.debug("handleText: {}", text);
+        Mono.fromRunnable(() -> {
+            log.debug("handleText: {}", text);
+            MyWebSocketMessage myWebsocketMessage = JsonUtils.parse(text, MyWebSocketMessage.class);
+            CompletableFuture<MyWebSocketMessage> future = this.pendingMap.remove(myWebsocketMessage.id());
+            if (future == null) {
+                this.incomingSink.tryEmitNext(myWebsocketMessage);
+            } else {
+                future.complete(myWebsocketMessage);
+            }
+        }).subscribeOn(Schedulers.boundedElastic()).subscribe();
+    }
+
+    private boolean sendTextMessage(String text) {
+        WebSocket webSocket = this.webSocketRef.get();
+        if (webSocket == null) {
+            return false;
+        }
+
+        lock.lock();
         try {
-            McpSchema.JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(JsonUtils.getObjectMapper(), text);
-            this.incomingSink.tryEmitNext(message);
-        } catch (Exception e) {
-            log.error("websocket handleText error ", e);
-        }
-    }
-
-    public CompletableFuture<Boolean> sendAsync(McpSchema.JSONRPCMessage sendMessage, FluxSink<McpSchema.JSONRPCMessage> sink) {
-        return CompletableFuture.supplyAsync(() -> {
-            this.sendRequest(sendMessage)
-                    .onErrorResume(error -> {
-                        sink.error(error);
-                        return Flux.empty();
-                    })
-                    .subscribe(receiveMessage -> {
-                        if (receiveMessage instanceof McpSchema.JSONRPCResponse jsonrpcResponse) {
-                            String id = String.valueOf(jsonrpcResponse.id());
-                            if (id.equals("mcp-error")) {
-                                sink.next(receiveMessage);
-                                sink.error(new McpError(jsonrpcResponse.error()));
-                            } else {
-                                sink.next(receiveMessage);
-                                sink.complete();
-                            }
-                        } else {
-                            sink.next(receiveMessage);
-                        }
-                    });
+            webSocket.sendText(text, true).join();
             return true;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+
+    public CompletableFuture<MyWebSocketMessage> sendAsync(MyWebSocketMessage requestMessage) {
+        return CompletableFuture.supplyAsync(() -> {
+            CompletableFuture<MyWebSocketMessage> future = new CompletableFuture<>();
+            this.pendingMap.put(requestMessage.id(), future);
+
+            String text = JsonUtils.toJSONString(requestMessage);
+            boolean ok = this.sendTextMessage(text);
+            if (!ok) {
+                this.pendingMap.remove(requestMessage.id());
+                future.completeExceptionally(new RuntimeException("WebSocket send failed"));
+            }
+            return future.join();
         });
     }
 
-    public Mono<Void> sendResponse(McpSchema.JSONRPCResponse message) {
-        WebSocket webSocket = this.webSocketRef.get();
 
-        if (webSocket == null) {
-            return Mono.error(new McpTransportException("websocket is null"));
-        }
-
-        return Mono.defer(() -> {
-            lock.lock();
-            try {
-                String json = JsonUtils.toJSONString(message);
-                log.debug("sendResponseText: {}", json);
-                webSocket.sendText(json, true).join();
-                return Mono.empty();
-            } catch (Exception e) {
-                return Mono.error(e);
-            } finally {
-                lock.unlock();
-            }
-        });
-    }
-
-    public Flux<McpSchema.JSONRPCMessage> sendRequest(McpSchema.JSONRPCMessage sendMessage) {
-
-        WebSocket webSocket = this.webSocketRef.get();
-
-        if (webSocket == null) {
-            return Flux.error(new McpTransportException("websocket is null"));
-        }
-
-        Mono<Void> sendMono = Mono.defer(() -> {
-            lock.lock();
-            try {
-                String json = JsonUtils.toJSONString(sendMessage);
-                log.debug("sendRequestText: {}", json);
-                webSocket.sendText(json, true).join();
-                return Mono.empty();
-            } catch (Exception e) {
-                return Mono.error(e);
-            } finally {
-                lock.unlock();
-            }
-        });
-
-        Flux<McpSchema.JSONRPCMessage> responseFlux = this.incomingSink.asFlux().share().cache(0);
-        return sendMono.thenMany(responseFlux);
+    public Flux<MyWebSocketMessage> receiveAsync() {
+        log.debug("start receiveAsync...");
+        return this.incomingSink.asFlux().share().cache(0);
     }
 }

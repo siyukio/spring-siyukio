@@ -12,8 +12,9 @@ import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.McpTransportContextExtractor;
 import io.modelcontextprotocol.server.transport.MyWebSocketHandler;
+import io.modelcontextprotocol.server.transport.MyWebSocketServerSession;
 import io.modelcontextprotocol.server.transport.MyWebSocketStreamableServerTransportProvider;
-import io.modelcontextprotocol.server.transport.MyWebSocketStreamableSession;
+import io.modelcontextprotocol.server.transport.MyWebsocketStreamableContext;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.mcp.server.autoconfigure.McpServerProperties;
@@ -51,25 +52,33 @@ public class MyWebSocketStreamableMcpServerConfiguration implements WebSocketCon
     private ApplicationContext applicationContext;
 
     @Bean
+    public MyWebsocketStreamableContext myWebsocketStreamableContext() {
+        return new MyWebsocketStreamableContext();
+    }
+
+    @Bean
     public MyWebSocketStreamableServerTransportProvider myWebSocketStreamableServerTransportProvider(McpServerProperties mcpServerProperties) {
-        McpTransportContextExtractor<MyWebSocketStreamableSession> contextExtractor = (myWebSocketStreamableSession) ->
+        MyWebsocketStreamableContext myWebsocketStreamableContext = this.applicationContext.getBean(MyWebsocketStreamableContext.class);
+
+        McpTransportContextExtractor<MyWebSocketServerSession> contextExtractor = (myWebSocketServerSession) ->
         {
             Map<String, Object> metadata = new HashMap<>();
-            Token token = myWebSocketStreamableSession.getToken();
+            Token token = myWebSocketServerSession.getToken();
             if (token != null && !token.refresh && !token.expired) {
                 metadata.put(HttpHeaders.AUTHORIZATION, token);
             }
             return McpTransportContext.create(metadata);
         };
-        return new MyWebSocketStreamableServerTransportProvider(JsonUtils.getObjectMapper(),
+        return new MyWebSocketStreamableServerTransportProvider(JsonUtils.getObjectMapper(), myWebsocketStreamableContext,
                 mcpServerProperties.getMcpEndpoint() + "/ws", contextExtractor, Duration.ofSeconds(20));
     }
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+        MyWebsocketStreamableContext myWebsocketStreamableContext = this.applicationContext.getBean(MyWebsocketStreamableContext.class);
         MyWebSocketStreamableServerTransportProvider myWebSocketServerTransportProvider = this.applicationContext.getBean(MyWebSocketStreamableServerTransportProvider.class);
         TokenProvider tokenProvider = this.applicationContext.getBean(TokenProvider.class);
-        MyWebSocketHandler myWebSocketHandler = new MyWebSocketHandler(myWebSocketServerTransportProvider, tokenProvider);
+        MyWebSocketHandler myWebSocketHandler = new MyWebSocketHandler(myWebsocketStreamableContext, tokenProvider);
         registry.addHandler(myWebSocketHandler, myWebSocketServerTransportProvider.getMcpEndpoint())
                 .setHandshakeHandler(myWebSocketHandler)
                 .setAllowedOrigins("*");

@@ -2,11 +2,13 @@ package io.modelcontextprotocol.client.transport;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.siyukio.tools.util.JsonUtils;
+import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.spec.*;
 import io.modelcontextprotocol.util.Utils;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -69,8 +71,12 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
     }
 
     private Publisher<Void> createDelete(String sessionId) {
-        this.myWebSocketClient.close();
-        return Mono.empty();
+        return Mono.from(MyWebSocketMessageCustomizer.NOOP.customize("delete", sessionId, null, null))
+                .doOnNext(myWebSocketMessage -> {
+                    this.myWebSocketClient.sendAsync(myWebSocketMessage).whenComplete((response, throwable) -> {
+                        this.myWebSocketClient.close();
+                    });
+                }).then();
     }
 
     @Override
@@ -104,12 +110,47 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
         });
     }
 
+    private Mono<Disposable> reconnect() {
+
+        return Mono.deferContextual(ctx -> {
+            final AtomicReference<Disposable> disposableRef = new AtomicReference<>();
+            final McpTransportSession<Disposable> transportSession = this.activeSession.get();
+
+            Disposable connection = this.myWebSocketClient.receiveAsync()
+                    .flatMap(outputMessage -> {
+                        McpSchema.JSONRPCMessage jsonrpcMessage = outputMessage.deserializeJsonRpcMessage();
+                        if (jsonrpcMessage instanceof McpSchema.JSONRPCRequest ||
+                                jsonrpcMessage instanceof McpSchema.JSONRPCNotification
+                        ) {
+                            return Mono.just(jsonrpcMessage);
+                        } else {
+                            return Flux.<McpSchema.JSONRPCMessage>error(
+                                    new RuntimeException("Unknown received message type"));
+                        }
+                    })
+                    .flatMap(jsonRpcMessage -> this.handler.get().apply(Mono.just(jsonRpcMessage)))
+                    .onErrorMap(CompletionException.class, t -> t.getCause())
+                    .onErrorComplete(t -> {
+                        this.handleException(t);
+                        return true;
+                    })
+                    .doFinally(s -> {
+                        Disposable ref = disposableRef.getAndSet(null);
+                        if (ref != null) {
+                            transportSession.removeConnection(ref);
+                        }
+                    })
+                    .subscribe();
+
+            disposableRef.set(connection);
+            transportSession.addConnection(connection);
+            return Mono.just(connection);
+        });
+
+    }
+
     @Override
     public Mono<Void> sendMessage(McpSchema.JSONRPCMessage sentMessage) {
-
-        if (sentMessage instanceof McpSchema.JSONRPCResponse jsonrpcResponse) {
-            return this.myWebSocketClient.sendResponse(jsonrpcResponse);
-        }
 
         return Mono.create(deliveredSink -> {
             logger.debug("Sending message {}", sentMessage);
@@ -117,33 +158,60 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
             final AtomicReference<Disposable> disposableRef = new AtomicReference<>();
             final McpTransportSession<Disposable> transportSession = this.activeSession.get();
 
-            Disposable connection = Mono.just(this.myWebSocketClient)
-                    .flatMapMany(webSocketClient -> Flux.<McpSchema.JSONRPCMessage>create(responseSink -> {
-                        Mono.fromFuture(webSocketClient
-                                .sendAsync(sentMessage, responseSink)
+            Disposable connection = Mono.deferContextual(connectionCtx -> {
+
+                        String mcpSessionId = null;
+                        if (transportSession != null && transportSession.sessionId().isPresent()) {
+                            mcpSessionId = transportSession.sessionId().get();
+                        }
+
+                        var transportContext = connectionCtx.getOrDefault(McpTransportContext.KEY, McpTransportContext.EMPTY);
+                        return Mono.from(MyWebSocketMessageCustomizer.NOOP.customize(null, mcpSessionId, sentMessage, transportContext));
+                    })
+                    .flatMapMany(requestMessage -> Flux.<MyWebSocketMessage>create(responseSink -> {
+                        Mono.fromFuture(this.myWebSocketClient
+                                .sendAsync(requestMessage)
                                 .whenComplete((response, throwable) -> {
                                     if (throwable != null) {
                                         responseSink.error(throwable);
+                                    } else {
+                                        responseSink.next(response);
                                     }
+                                    responseSink.complete();
                                 })).onErrorMap(CompletionException.class, t -> t.getCause()).onErrorComplete().subscribe();
                     }))
-                    .flatMap(jsonRpcMessage -> {
-                        if (jsonRpcMessage instanceof McpSchema.JSONRPCResponse jsonrpcResponse) {
-                            String responseId = String.valueOf(jsonrpcResponse.id());
-                            if (responseId.equals("mcp-session-id")) {
-                                transportSession.markInitialized(String.valueOf(jsonrpcResponse.result()));
+                    .flatMap(outputMessage -> {
+                        if (transportSession.sessionId().isEmpty() && StringUtils.hasText(outputMessage.mcpSessionId())) {
+                            transportSession.markInitialized(outputMessage.mcpSessionId());
+                            // Once we have a session, we try to open an async stream for
+                            // the server to send notifications and requests out-of-band.
+                            this.reconnect().contextWrite(deliveredSink.contextView()).subscribe();
+                        }
+
+                        String sessionRepresentation = sessionIdOrPlaceholder(transportSession);
+                        if (outputMessage.body() == null || outputMessage.body().isEmpty()) {
+                            logger.debug("No content type returned for websocket request in session {}", sessionRepresentation);
+                            // No content type means no response body, so we can just
+                            // return
+                            // an empty stream
+                            deliveredSink.success();
+                            return Flux.empty();
+                        } else {
+                            McpSchema.JSONRPCMessage jsonrpcMessage = outputMessage.deserializeJsonRpcMessage();
+                            if (jsonrpcMessage instanceof McpSchema.JSONRPCResponse jsonrpcResponse) {
                                 deliveredSink.success();
-                                return Flux.empty();
-                            } else if (responseId.equals("mcp-error")) {
-                                McpSchema.JSONRPCResponse.JSONRPCError error = jsonrpcResponse.error();
-                                if (error != null) {
-                                    deliveredSink.error(new McpError(error));
-                                    return Flux.empty();
+                                if (jsonrpcResponse.error() != null) {
+                                    return Flux.<McpSchema.JSONRPCMessage>error(new McpError(jsonrpcResponse.error()));
+                                } else {
+                                    return Mono.just(jsonrpcMessage);
                                 }
+                            } else {
+                                return Flux.<McpSchema.JSONRPCMessage>error(
+                                        new RuntimeException("Unknown returned message type"));
                             }
                         }
-                        return this.handler.get().apply(Mono.just(jsonRpcMessage));
                     })
+                    .flatMap(jsonRpcMessage -> this.handler.get().apply(Mono.just(jsonRpcMessage)))
                     .onErrorMap(CompletionException.class, t -> t.getCause())
                     .onErrorComplete(t -> {
                         // handle the error first

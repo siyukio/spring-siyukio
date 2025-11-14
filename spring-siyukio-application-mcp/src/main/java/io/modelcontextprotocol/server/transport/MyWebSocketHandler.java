@@ -3,6 +3,7 @@ package io.modelcontextprotocol.server.transport;
 import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
+import io.github.siyukio.tools.util.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -17,8 +18,11 @@ import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -32,15 +36,18 @@ public class MyWebSocketHandler extends TextWebSocketHandler implements Handshak
 
     private final ConcurrentHashMap<String, StringBuilder> dataBufferMap = new ConcurrentHashMap<>();
 
+    private final ConcurrentHashMap<String, MyWebSocketServerSession> myWebSocketSessionMap = new ConcurrentHashMap<>();
+
     private final ReentrantLock lock = new ReentrantLock();
 
-    private final MyWebSocketStreamableServerTransportProvider myWebSocketStreamableServerTransportProvider;
+    private final MyWebsocketStreamableContext myWebsocketStreamableContext;
 
     private final TokenProvider tokenProvider;
 
-    public MyWebSocketHandler(MyWebSocketStreamableServerTransportProvider myWebSocketStreamableServerTransportProvider, TokenProvider tokenProvider) {
-        this.myWebSocketStreamableServerTransportProvider = myWebSocketStreamableServerTransportProvider;
+    public MyWebSocketHandler(MyWebsocketStreamableContext myWebsocketStreamableContext, TokenProvider tokenProvider) {
+        this.myWebsocketStreamableContext = myWebsocketStreamableContext;
         this.tokenProvider = tokenProvider;
+        this.myWebsocketStreamableContext.setMyWebSocketHandler(this);
     }
 
     @Override
@@ -78,26 +85,26 @@ public class MyWebSocketHandler extends TextWebSocketHandler implements Handshak
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        Token token = (Token) session.getAttributes().get(HttpHeaders.AUTHORIZATION);
-        if (token == null) {
+        Object value = session.getAttributes().get(HttpHeaders.AUTHORIZATION);
+        if (value instanceof Token token) {
+            MyWebSocketServerSession myWebSocketServerSession = new MyWebSocketServerSession(session, token);
+            this.myWebSocketSessionMap.put(myWebSocketServerSession.getId(), myWebSocketServerSession);
+        } else {
             session.close(CloseStatus.PROTOCOL_ERROR);
         }
     }
 
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) {
-        // 处理连接异常
         log.error("mcp WebSocket error:{}, {}", session.getId(), exception.getMessage());
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        // 连接关闭后触发
+        this.myWebSocketSessionMap.remove(session.getId());
+
         log.debug("WebSocket closed: {}, {}", status.toString(), session.getId());
         this.dataBufferMap.remove(session.getId());
-
-        MyWebSocketStreamableSession myWebSocketSession = new MyWebSocketStreamableSession(session);
-        this.myWebSocketStreamableServerTransportProvider.handleDelete(myWebSocketSession);
     }
 
     @Override
@@ -123,11 +130,23 @@ public class MyWebSocketHandler extends TextWebSocketHandler implements Handshak
             this.lock.unlock();
         }
 
+        MyWebSocketServerSession myWebSocketServerSession = this.myWebSocketSessionMap.get(session.getId());
+        if (myWebSocketServerSession == null) {
+            log.error("MyWebSocketServerSession is not found: {}", session.getId());
+            return;
+        }
+
         log.debug("handleTextMessage: {}", text);
-        String message = text;
+        MyWebSocketMessage myWebsocketMessage = JsonUtils.parse(text, MyWebSocketMessage.class);
         Mono.fromRunnable(() -> {
-            MyWebSocketStreamableSession myWebSocketSession = new MyWebSocketStreamableSession(session);
-            this.myWebSocketStreamableServerTransportProvider.handlePost(myWebSocketSession, message);
+            MyWebSocketStreamableServerTransportProvider myWebSocketStreamableServerTransportProvider = this.myWebsocketStreamableContext.getMyWebSocketStreamableServerTransportProvider();
+            if (myWebSocketStreamableServerTransportProvider != null) {
+                if (myWebsocketMessage.toDelete()) {
+                    myWebSocketStreamableServerTransportProvider.handleDelete(myWebSocketServerSession, myWebsocketMessage);
+                } else {
+                    myWebSocketStreamableServerTransportProvider.handlePost(myWebSocketServerSession, myWebsocketMessage);
+                }
+            }
         }).subscribeOn(Schedulers.boundedElastic()).subscribe();
     }
 
@@ -139,6 +158,31 @@ public class MyWebSocketHandler extends TextWebSocketHandler implements Handshak
     @Override
     public boolean supportsPartialMessages() {
         return true;
+    }
+
+    public void keepAlive() {
+        if (this.myWebSocketSessionMap.isEmpty()) {
+            return;
+        }
+        log.debug("websocket keepAliveScheduler execute...");
+        Set<String> exceptionIdSet = new HashSet<>();
+        for (MyWebSocketServerSession webSocketSession : this.myWebSocketSessionMap.values()) {
+            try {
+                webSocketSession.sendPing();
+            } catch (Exception ex) {
+                exceptionIdSet.add(webSocketSession.getId());
+            }
+        }
+        MyWebSocketServerSession errorMyWebSocketServerSession;
+        MyWebSocketStreamableServerTransportProvider myWebSocketStreamableServerTransportProvider = this.myWebsocketStreamableContext.getMyWebSocketStreamableServerTransportProvider();
+        for (String exceptionId : exceptionIdSet) {
+            errorMyWebSocketServerSession = this.myWebSocketSessionMap.remove(exceptionId);
+            try {
+                errorMyWebSocketServerSession.close();
+                myWebSocketStreamableServerTransportProvider.onCloseWhenKeepAlive(errorMyWebSocketServerSession);
+            } catch (IOException ignored) {
+            }
+        }
     }
 
 }

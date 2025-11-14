@@ -79,15 +79,6 @@ public class MyMcpSyncClient {
         return new Builder();
     }
 
-    private boolean ping(McpAsyncClient mcpAsyncClient) {
-        try {
-            mcpAsyncClient.ping().block();
-            return true;
-        } catch (Exception ignored) {
-            return false;
-        }
-    }
-
     private McpAsyncClient createMcpAsyncClient(String targetUri, String targetMcpEndpoint) {
         log.debug("use targetUri: {}, {}", targetUri, targetMcpEndpoint);
         if (this.webSocket) {
