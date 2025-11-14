@@ -1,2 +1,2 @@
-io.github.siyukio.application.boot.starter.autoconfigure.MyWebMvcConfiguration
-io.github.siyukio.application.boot.starter.autoconfigure.MyApplicationConfiguration
+io.github.siyukio.application.boot.starter.autoconfigure.SiyukioWebMvcAutoConfiguration
+io.github.siyukio.application.boot.starter.autoconfigure.SiyukioApplicationAutoConfiguration

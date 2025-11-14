@@ -41,13 +41,13 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
 
     private final AtomicReference<Consumer<Throwable>> exceptionHandler = new AtomicReference<>();
 
-    private final MyWebSocketClient myWebSocketClient;
+    private final WebSocketClient webSocketClient;
 
     public WebSocketClientStreamableTransport(Map<String, String> headerMap, String baseUri, String endpoint) {
         this.headerMap = headerMap;
         this.baseUri = URI.create(baseUri);
         this.endpoint = endpoint;
-        this.myWebSocketClient = new MyWebSocketClient();
+        this.webSocketClient = new WebSocketClient();
         this.activeSession.set(createTransportSession());
     }
 
@@ -60,7 +60,7 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
         return Mono.deferContextual(ctx -> {
             this.handler.set(handler);
             URI uri = Utils.resolveUri(this.baseUri, this.endpoint);
-            return this.myWebSocketClient.connect(this.headerMap, uri);
+            return this.webSocketClient.connect(this.headerMap, uri);
         });
     }
 
@@ -71,10 +71,10 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
     }
 
     private Publisher<Void> createDelete(String sessionId) {
-        return Mono.from(MyWebSocketMessageCustomizer.NOOP.customize("delete", sessionId, null, null))
-                .doOnNext(myWebSocketMessage -> {
-                    this.myWebSocketClient.sendAsync(myWebSocketMessage).whenComplete((response, throwable) -> {
-                        this.myWebSocketClient.close();
+        return Mono.from(WebSocketMessageCustomizer.NOOP.customize("delete", sessionId, null, null))
+                .doOnNext(webSocketMessage -> {
+                    this.webSocketClient.sendAsync(webSocketMessage).whenComplete((response, throwable) -> {
+                        this.webSocketClient.close();
                     });
                 }).then();
     }
@@ -116,7 +116,7 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
             final AtomicReference<Disposable> disposableRef = new AtomicReference<>();
             final McpTransportSession<Disposable> transportSession = this.activeSession.get();
 
-            Disposable connection = this.myWebSocketClient.receiveAsync()
+            Disposable connection = this.webSocketClient.receiveAsync()
                     .flatMap(outputMessage -> {
                         McpSchema.JSONRPCMessage jsonrpcMessage = outputMessage.deserializeJsonRpcMessage();
                         if (jsonrpcMessage instanceof McpSchema.JSONRPCRequest ||
@@ -166,10 +166,10 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
                         }
 
                         var transportContext = connectionCtx.getOrDefault(McpTransportContext.KEY, McpTransportContext.EMPTY);
-                        return Mono.from(MyWebSocketMessageCustomizer.NOOP.customize(null, mcpSessionId, sentMessage, transportContext));
+                        return Mono.from(WebSocketMessageCustomizer.NOOP.customize(null, mcpSessionId, sentMessage, transportContext));
                     })
-                    .flatMapMany(requestMessage -> Flux.<MyWebSocketMessage>create(responseSink -> {
-                        Mono.fromFuture(this.myWebSocketClient
+                    .flatMapMany(requestMessage -> Flux.<WebSocketMessage>create(responseSink -> {
+                        Mono.fromFuture(this.webSocketClient
                                 .sendAsync(requestMessage)
                                 .whenComplete((response, throwable) -> {
                                     if (throwable != null) {

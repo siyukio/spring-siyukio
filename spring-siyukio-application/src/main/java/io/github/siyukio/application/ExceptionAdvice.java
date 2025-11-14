@@ -20,7 +20,7 @@ import java.lang.reflect.UndeclaredThrowableException;
  */
 @Slf4j
 @RestControllerAdvice
-public class MyExceptionAdvice {
+public class ExceptionAdvice {
 
     @ExceptionHandler(value = HttpRequestMethodNotSupportedException.class)
     public JSONObject errorHandler(HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {

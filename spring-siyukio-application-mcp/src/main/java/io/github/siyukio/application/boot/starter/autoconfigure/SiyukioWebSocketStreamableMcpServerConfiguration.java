@@ -1,7 +1,7 @@
 package io.github.siyukio.application.boot.starter.autoconfigure;
 
 
-import io.github.siyukio.application.mcp.MyMethodToolCallback;
+import io.github.siyukio.application.mcp.MethodToolCallback;
 import io.github.siyukio.tools.api.AipHandlerManager;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
@@ -11,13 +11,12 @@ import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.McpTransportContextExtractor;
-import io.modelcontextprotocol.server.transport.MyWebSocketHandler;
-import io.modelcontextprotocol.server.transport.MyWebSocketServerSession;
-import io.modelcontextprotocol.server.transport.MyWebSocketStreamableServerTransportProvider;
-import io.modelcontextprotocol.server.transport.MyWebsocketStreamableContext;
+import io.modelcontextprotocol.server.transport.WebSocketHandler;
+import io.modelcontextprotocol.server.transport.WebSocketServerSession;
+import io.modelcontextprotocol.server.transport.WebSocketStreamableContext;
+import io.modelcontextprotocol.server.transport.WebSocketStreamableServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.mcp.server.autoconfigure.McpServerProperties;
 import org.springframework.beans.BeansException;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.data.rest.RepositoryRestMvcAutoConfiguration;
@@ -43,44 +42,44 @@ import java.util.Map;
  * @author Bugee
  */
 @Import(DelegatingWebSocketConfiguration.class)
-@EnableConfigurationProperties(McpServerProperties.class)
+@EnableConfigurationProperties(SiyukioMcpServerProperties.class)
 @AutoConfigureAfter({WebMvcAutoConfiguration.class, JacksonAutoConfiguration.class,
         HttpMessageConvertersAutoConfiguration.class, RepositoryRestMvcAutoConfiguration.class})
 @Slf4j
-public class MyWebSocketStreamableMcpServerConfiguration implements WebSocketConfigurer, ApplicationContextAware {
+public class SiyukioWebSocketStreamableMcpServerConfiguration implements WebSocketConfigurer, ApplicationContextAware {
 
     private ApplicationContext applicationContext;
 
     @Bean
-    public MyWebsocketStreamableContext myWebsocketStreamableContext() {
-        return new MyWebsocketStreamableContext();
+    public WebSocketStreamableContext myWebsocketStreamableContext() {
+        return new WebSocketStreamableContext();
     }
 
     @Bean
-    public MyWebSocketStreamableServerTransportProvider myWebSocketStreamableServerTransportProvider(McpServerProperties mcpServerProperties) {
-        MyWebsocketStreamableContext myWebsocketStreamableContext = this.applicationContext.getBean(MyWebsocketStreamableContext.class);
+    public WebSocketStreamableServerTransportProvider myWebSocketStreamableServerTransportProvider(SiyukioMcpServerProperties siyukioMcpServerProperties) {
+        WebSocketStreamableContext webSocketStreamableContext = this.applicationContext.getBean(WebSocketStreamableContext.class);
 
-        McpTransportContextExtractor<MyWebSocketServerSession> contextExtractor = (myWebSocketServerSession) ->
+        McpTransportContextExtractor<WebSocketServerSession> contextExtractor = (webSocketServerSession) ->
         {
             Map<String, Object> metadata = new HashMap<>();
-            Token token = myWebSocketServerSession.getToken();
+            Token token = webSocketServerSession.getToken();
             if (token != null && !token.refresh && !token.expired) {
                 metadata.put(HttpHeaders.AUTHORIZATION, token);
             }
             return McpTransportContext.create(metadata);
         };
-        return new MyWebSocketStreamableServerTransportProvider(JsonUtils.getObjectMapper(), myWebsocketStreamableContext,
-                mcpServerProperties.getMcpEndpoint() + "/ws", contextExtractor, Duration.ofSeconds(20));
+        return new WebSocketStreamableServerTransportProvider(JsonUtils.getObjectMapper(), webSocketStreamableContext,
+                siyukioMcpServerProperties.getMcpEndpoint() + "/ws", contextExtractor, Duration.ofSeconds(20));
     }
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        MyWebsocketStreamableContext myWebsocketStreamableContext = this.applicationContext.getBean(MyWebsocketStreamableContext.class);
-        MyWebSocketStreamableServerTransportProvider myWebSocketServerTransportProvider = this.applicationContext.getBean(MyWebSocketStreamableServerTransportProvider.class);
+        WebSocketStreamableContext webSocketStreamableContext = this.applicationContext.getBean(WebSocketStreamableContext.class);
+        WebSocketStreamableServerTransportProvider myWebSocketServerTransportProvider = this.applicationContext.getBean(WebSocketStreamableServerTransportProvider.class);
         TokenProvider tokenProvider = this.applicationContext.getBean(TokenProvider.class);
-        MyWebSocketHandler myWebSocketHandler = new MyWebSocketHandler(myWebsocketStreamableContext, tokenProvider);
-        registry.addHandler(myWebSocketHandler, myWebSocketServerTransportProvider.getMcpEndpoint())
-                .setHandshakeHandler(myWebSocketHandler)
+        WebSocketHandler webSocketHandler = new WebSocketHandler(webSocketStreamableContext, tokenProvider);
+        registry.addHandler(webSocketHandler, myWebSocketServerTransportProvider.getMcpEndpoint())
+                .setHandshakeHandler(webSocketHandler)
                 .setAllowedOrigins("*");
     }
 
@@ -90,8 +89,8 @@ public class MyWebSocketStreamableMcpServerConfiguration implements WebSocketCon
     }
 
     @Bean
-    public McpSyncServer websocketMcpServer(MyWebSocketStreamableServerTransportProvider myWebSocketStreamableServerTransportProvider,
-                                            McpServerProperties mcpServerProperties,
+    public McpSyncServer websocketMcpServer(WebSocketStreamableServerTransportProvider webSocketStreamableServerTransportProvider,
+                                            SiyukioMcpServerProperties siyukioMcpServerProperties,
                                             AipHandlerManager aipHandlerManager) {
         // Configure server capabilities with resource support
         McpSchema.ServerCapabilities capabilities = McpSchema.ServerCapabilities.builder()
@@ -100,15 +99,15 @@ public class MyWebSocketStreamableMcpServerConfiguration implements WebSocketCon
                 .build();
 
         // Create the server with both tool and resource capabilities
-        String serverName = mcpServerProperties.getName();
-        String serverVersion = mcpServerProperties.getVersion();
+        String serverName = siyukioMcpServerProperties.getName();
+        String serverVersion = siyukioMcpServerProperties.getVersion();
 
-        McpServer.SyncSpecification<McpServer.StreamableSyncSpecification> spec = McpServer.sync(myWebSocketStreamableServerTransportProvider)
+        McpServer.SyncSpecification<McpServer.StreamableSyncSpecification> spec = McpServer.sync(webSocketStreamableServerTransportProvider)
                 .serverInfo(serverName, serverVersion)
-                .requestTimeout(mcpServerProperties.getRequestTimeout())
+                .requestTimeout(siyukioMcpServerProperties.getRequestTimeout())
                 .capabilities(capabilities);
 
-        List<McpServerFeatures.SyncToolSpecification> tools = MyMethodToolCallback.getSyncToolSpecifications(aipHandlerManager);
+        List<McpServerFeatures.SyncToolSpecification> tools = MethodToolCallback.getSyncToolSpecifications(aipHandlerManager);
         spec.tools(tools);
 
         log.info("start websocket streamable mcp server {},{}", serverName, serverVersion);

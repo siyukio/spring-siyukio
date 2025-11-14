@@ -1,7 +1,8 @@
 package io.github.siyukio.application.test;
 
 import io.github.siyukio.application.model.authorization.CreateAuthorizationRequest;
-import io.github.siyukio.client.MyMcpSyncClient;
+import io.github.siyukio.client.McpSyncClient;
+import io.github.siyukio.client.boot.starter.autoconfigure.SiyukioMcpClientCommonProperties;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.JsonUtils;
@@ -10,7 +11,6 @@ import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -35,14 +35,14 @@ class McpStreamableClientTests {
     };
 
     @Autowired
-    private McpClientCommonProperties mcpClientCommonProperties;
+    private SiyukioMcpClientCommonProperties siyukioMcpClientCommonProperties;
 
 
     @Test
     void testListTools() {
-        MyMcpSyncClient client = MyMcpSyncClient.builder()
+        McpSyncClient client = McpSyncClient.builder()
                 .useTokenSupplier(this.tokenSupplier)
-                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
+                .setMcpClientCommonProperties(this.siyukioMcpClientCommonProperties)
                 .build();
 
         McpSchema.ListToolsResult toolsList = client.listTools();
@@ -54,9 +54,9 @@ class McpStreamableClientTests {
 
     @Test
     void testCallTool() {
-        MyMcpSyncClient client = MyMcpSyncClient.builder()
+        McpSyncClient client = McpSyncClient.builder()
                 .useTokenSupplier(this.tokenSupplier)
-                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
+                .setMcpClientCommonProperties(this.siyukioMcpClientCommonProperties)
                 .build();
 
         CreateAuthorizationRequest createAuthorizationRequest = CreateAuthorizationRequest.builder()
@@ -73,9 +73,9 @@ class McpStreamableClientTests {
 
     @Test
     void testMultiCallTool() {
-        MyMcpSyncClient client = MyMcpSyncClient.builder()
+        McpSyncClient client = McpSyncClient.builder()
                 .useTokenSupplier(this.tokenSupplier)
-                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
+                .setMcpClientCommonProperties(this.siyukioMcpClientCommonProperties)
                 .build();
 
         CreateAuthorizationRequest createAuthorizationRequest = CreateAuthorizationRequest.builder()
@@ -108,9 +108,9 @@ class McpStreamableClientTests {
                     .build();
         };
 
-        MyMcpSyncClient client = MyMcpSyncClient.builder()
+        McpSyncClient client = McpSyncClient.builder()
                 .useTokenSupplier(this.tokenSupplier)
-                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
+                .setMcpClientCommonProperties(this.siyukioMcpClientCommonProperties)
                 .setSamplingHandler(samplingHandler)
                 .build();
 
@@ -131,9 +131,9 @@ class McpStreamableClientTests {
                     .build();
         };
 
-        MyMcpSyncClient client = MyMcpSyncClient.builder()
+        McpSyncClient client = McpSyncClient.builder()
                 .useTokenSupplier(this.tokenSupplier)
-                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
+                .setMcpClientCommonProperties(this.siyukioMcpClientCommonProperties)
                 .setSamplingHandler(samplingHandler)
                 .build();
 
@@ -156,9 +156,9 @@ class McpStreamableClientTests {
             log.info("progressNotification:{}", JsonUtils.toPrettyJSONString(progressNotification));
         };
 
-        MyMcpSyncClient client = MyMcpSyncClient.builder()
+        McpSyncClient client = McpSyncClient.builder()
                 .useTokenSupplier(this.tokenSupplier)
-                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
+                .setMcpClientCommonProperties(this.siyukioMcpClientCommonProperties)
                 .setProgressHandler(progressHandler)
                 .build();
 
@@ -174,9 +174,9 @@ class McpStreamableClientTests {
             log.info("multi progressNotification:{}", JsonUtils.toPrettyJSONString(progressNotification));
         };
 
-        MyMcpSyncClient client = MyMcpSyncClient.builder()
+        McpSyncClient client = McpSyncClient.builder()
                 .useTokenSupplier(this.tokenSupplier)
-                .setMcpClientCommonProperties(this.mcpClientCommonProperties)
+                .setMcpClientCommonProperties(this.siyukioMcpClientCommonProperties)
                 .setProgressHandler(progressHandler)
                 .build();
 

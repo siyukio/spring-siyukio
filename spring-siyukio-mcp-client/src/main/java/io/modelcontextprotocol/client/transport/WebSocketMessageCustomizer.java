@@ -12,25 +12,25 @@ import reactor.util.annotation.Nullable;
 /**
  * @author Bugee
  */
-public interface MyWebSocketMessageCustomizer {
+public interface WebSocketMessageCustomizer {
 
     Noop NOOP = new Noop();
 
-    Publisher<MyWebSocketMessage> customize(String method, String mcpSessionId,
-                                            @Nullable McpSchema.JSONRPCMessage sentMessage, McpTransportContext context);
+    Publisher<WebSocketMessage> customize(String method, String mcpSessionId,
+                                          @Nullable McpSchema.JSONRPCMessage sentMessage, McpTransportContext context);
 
-    class Noop implements MyWebSocketMessageCustomizer {
+    class Noop implements WebSocketMessageCustomizer {
 
         @Override
-        public Publisher<MyWebSocketMessage> customize(String method, String mcpSessionId, McpSchema.JSONRPCMessage sentMessage, McpTransportContext context) {
+        public Publisher<WebSocketMessage> customize(String method, String mcpSessionId, McpSchema.JSONRPCMessage sentMessage, McpTransportContext context) {
             String id = IdUtils.getUniqueId();
 
             JSONObject body = null;
             if (sentMessage != null) {
                 body = JsonUtils.copy(sentMessage, JSONObject.class);
             }
-            MyWebSocketMessage myWebSocketMessage = new MyWebSocketMessage(id, mcpSessionId, method, body);
-            return Mono.just(myWebSocketMessage);
+            WebSocketMessage webSocketMessage = new WebSocketMessage(id, mcpSessionId, method, body);
+            return Mono.just(webSocketMessage);
         }
     }
 }

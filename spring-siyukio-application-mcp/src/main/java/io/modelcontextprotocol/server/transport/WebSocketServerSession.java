@@ -23,7 +23,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bugee
  */
 @Slf4j
-public class MyWebSocketServerSession {
+public class WebSocketServerSession {
 
     private final WebSocketSession webSocketSession;
 
@@ -32,7 +32,7 @@ public class MyWebSocketServerSession {
     @Getter
     private final Token token;
 
-    public MyWebSocketServerSession(WebSocketSession webSocketSession, Token token) {
+    public WebSocketServerSession(WebSocketSession webSocketSession, Token token) {
         this.webSocketSession = webSocketSession;
         this.token = token;
     }
@@ -70,8 +70,8 @@ public class MyWebSocketServerSession {
                 apiException.getCode(), apiException.getMessage(), null);
         McpSchema.JSONRPCResponse response = new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, "", "", error);
         JSONObject body = JsonUtils.copy(response, JSONObject.class);
-        MyWebSocketMessage myWebSocketMessage = new MyWebSocketMessage(id, body);
-        String text = JsonUtils.toJSONString(myWebSocketMessage);
+        WebSocketMessage webSocketMessage = new WebSocketMessage(id, body);
+        String text = JsonUtils.toJSONString(webSocketMessage);
         try {
             this.sendTextMessage(text);
         } catch (IOException ignored) {
@@ -84,8 +84,8 @@ public class MyWebSocketServerSession {
 
     public void sendResponse(String id, String mcpSessionId, McpSchema.JSONRPCResponse response) {
         JSONObject body = JsonUtils.copy(response, JSONObject.class);
-        MyWebSocketMessage myWebSocketMessage = new MyWebSocketMessage(id, mcpSessionId, body);
-        String text = JsonUtils.toJSONString(myWebSocketMessage);
+        WebSocketMessage webSocketMessage = new WebSocketMessage(id, mcpSessionId, body);
+        String text = JsonUtils.toJSONString(webSocketMessage);
         try {
             this.sendTextMessage(text);
         } catch (IOException ignored) {
@@ -95,8 +95,8 @@ public class MyWebSocketServerSession {
     public void sendRequestOrNotificationMessage(McpSchema.JSONRPCMessage message) {
         String id = IdUtils.getUniqueId();
         JSONObject body = JsonUtils.copy(message, JSONObject.class);
-        MyWebSocketMessage myWebSocketMessage = new MyWebSocketMessage(id, body);
-        String text = JsonUtils.toJSONString(myWebSocketMessage);
+        WebSocketMessage webSocketMessage = new WebSocketMessage(id, body);
+        String text = JsonUtils.toJSONString(webSocketMessage);
         try {
             this.sendTextMessage(text);
         } catch (IOException ignored) {
@@ -104,8 +104,8 @@ public class MyWebSocketServerSession {
     }
 
     public void sendAccepted(String id) {
-        MyWebSocketMessage myWebSocketMessage = new MyWebSocketMessage(id);
-        String text = JsonUtils.toJSONString(myWebSocketMessage);
+        WebSocketMessage webSocketMessage = new WebSocketMessage(id);
+        String text = JsonUtils.toJSONString(webSocketMessage);
         try {
             this.sendTextMessage(text);
         } catch (IOException ignored) {

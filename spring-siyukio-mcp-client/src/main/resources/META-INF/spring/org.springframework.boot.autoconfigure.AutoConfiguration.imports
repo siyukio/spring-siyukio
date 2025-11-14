@@ -1,1 +1,1 @@
-io.github.siyukio.client.boot.starter.autoconfigure.MyMcpClientConfiguration
+io.github.siyukio.client.boot.starter.autoconfigure.SiyukioMcpClientAutoConfiguration

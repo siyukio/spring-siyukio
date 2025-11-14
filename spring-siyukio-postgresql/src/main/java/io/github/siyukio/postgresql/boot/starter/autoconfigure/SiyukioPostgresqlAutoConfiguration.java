@@ -8,6 +8,6 @@ import org.springframework.context.annotation.Import;
  */
 
 @Import({PostgresqlEntityRegistrar.class})
-public class PostgresqlAutoConfiguration {
+public class SiyukioPostgresqlAutoConfiguration {
 
 }

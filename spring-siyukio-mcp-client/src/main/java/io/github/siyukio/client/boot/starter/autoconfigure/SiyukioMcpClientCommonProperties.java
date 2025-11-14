@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.mcp.client.autoconfigure.properties;
+package io.github.siyukio.client.boot.starter.autoconfigure;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.Assert;
@@ -22,24 +22,12 @@ import org.springframework.util.Assert;
 import java.time.Duration;
 
 /**
- * Common Configuration properties for the Model Context Protocol (MCP) clients shared for
- * all transport types.
- *
- * @author Christian Tzolov
- * @author Yangki Zhang
- * @since 1.0.0
+ * @author Bugee
  */
-@ConfigurationProperties(McpClientCommonProperties.CONFIG_PREFIX)
-public class McpClientCommonProperties {
+@ConfigurationProperties(SiyukioMcpClientCommonProperties.CONFIG_PREFIX)
+public class SiyukioMcpClientCommonProperties {
 
     public static final String CONFIG_PREFIX = "spring.ai.mcp.client";
-
-    /**
-     * Enable/disable the MCP client.
-     * <p>
-     * When set to false, the MCP client and all its components will not be initialized.
-     */
-    private boolean enabled = true;
 
     /**
      * The name of the MCP client instance.
@@ -56,34 +44,11 @@ public class McpClientCommonProperties {
     private String version = "0.12.1";
 
     /**
-     * Flag to indicate if the MCP client has to be initialized.
-     */
-    private boolean initialized = true;
-
-    /**
      * The timeout duration for MCP client requests.
      * <p>
      * Defaults to 20 seconds.
      */
     private Duration requestTimeout = Duration.ofSeconds(20);
-
-    /**
-     * The type of client to use for MCP client communication.
-     * <p>
-     * Supported types are:
-     * <ul>
-     * <li>SYNC - Standard synchronous client (default)</li>
-     * <li>ASYNC - Asynchronous client</li>
-     * </ul>
-     */
-    private ClientType type = ClientType.SYNC;
-    /**
-     * Flag to enable/disable root change notifications.
-     * <p>
-     * When enabled, the client will be notified of changes to the root configuration.
-     * Defaults to true.
-     */
-    private boolean rootChangeNotification = true;
 
     private String baseUrl = "";
 
@@ -107,14 +72,6 @@ public class McpClientCommonProperties {
         this.mcpEndpoint = mcpEndpoint;
     }
 
-    public boolean isEnabled() {
-        return this.enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
     public String getName() {
         return this.name;
     }
@@ -131,53 +88,12 @@ public class McpClientCommonProperties {
         this.version = version;
     }
 
-    public boolean isInitialized() {
-        return this.initialized;
-    }
-
-    public void setInitialized(boolean initialized) {
-        this.initialized = initialized;
-    }
-
     public Duration getRequestTimeout() {
         return this.requestTimeout;
     }
 
     public void setRequestTimeout(Duration requestTimeout) {
         this.requestTimeout = requestTimeout;
-    }
-
-    public ClientType getType() {
-        return this.type;
-    }
-
-    public void setType(ClientType type) {
-        this.type = type;
-    }
-
-    public boolean isRootChangeNotification() {
-        return this.rootChangeNotification;
-    }
-
-    public void setRootChangeNotification(boolean rootChangeNotification) {
-        this.rootChangeNotification = rootChangeNotification;
-    }
-
-    /**
-     * Client types supported by the MCP client.
-     */
-    public enum ClientType {
-
-        /**
-         * Synchronous (McpSyncClient) client
-         */
-        SYNC,
-
-        /**
-         * Asynchronous (McpAsyncClient) client
-         */
-        ASYNC
-
     }
 
 }

@@ -1,2 +1,2 @@
-io.github.siyukio.application.boot.starter.autoconfigure.MyStreamableMcpServerConfiguration
-io.github.siyukio.application.boot.starter.autoconfigure.MyWebSocketStreamableMcpServerConfiguration
+io.github.siyukio.application.boot.starter.autoconfigure.SiyukioWebMvcStreamableMcpServerAutoConfiguration
+io.github.siyukio.application.boot.starter.autoconfigure.SiyukioWebSocketStreamableMcpServerConfiguration

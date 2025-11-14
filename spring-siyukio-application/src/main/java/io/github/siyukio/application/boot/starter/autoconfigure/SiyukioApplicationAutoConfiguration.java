@@ -34,7 +34,7 @@ import java.util.Map;
 @AutoConfigureAfter({WebMvcAutoConfiguration.class, JacksonAutoConfiguration.class,
         HttpMessageConvertersAutoConfiguration.class, RepositoryRestMvcAutoConfiguration.class})
 @ComponentScan("io.github.siyukio.application")
-public class MyApplicationConfiguration {
+public class SiyukioApplicationAutoConfiguration {
 
     @Autowired
     protected ApplicationContext applicationContext;

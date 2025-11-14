@@ -52,7 +52,7 @@ import java.util.List;
  */
 @Slf4j
 @AutoConfigureBefore({WebMvcAutoConfiguration.class})
-public class MyWebMvcConfiguration extends WebMvcConfigurationSupport {
+public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
 
     @Bean
     @Nullable

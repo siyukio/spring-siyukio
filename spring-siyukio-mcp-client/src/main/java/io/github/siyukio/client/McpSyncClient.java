@@ -1,5 +1,6 @@
 package io.github.siyukio.client;
 
+import io.github.siyukio.client.boot.starter.autoconfigure.SiyukioMcpClientCommonProperties;
 import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.util.JsonUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
@@ -10,7 +11,6 @@ import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
-import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
@@ -30,7 +30,7 @@ import java.util.function.Supplier;
  * @author Bugee
  */
 @Slf4j
-public class MyMcpSyncClient {
+public class McpSyncClient {
 
     private final String baseUrl;
 
@@ -52,15 +52,15 @@ public class MyMcpSyncClient {
     private final Consumer<McpSchema.ProgressNotification> progressHandler;
     private final Supplier<String> tokenSupplier;
 
-    public MyMcpSyncClient(String baseUrl,
-                           String mcpEndpoint,
-                           Duration requestTimeout,
-                           boolean webSocket, String name, String version,
-                           Supplier<String> tokenSupplier,
-                           String authorization,
-                           Map<String, String> headers,
-                           Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler,
-                           Consumer<McpSchema.ProgressNotification> progressHandler
+    public McpSyncClient(String baseUrl,
+                         String mcpEndpoint,
+                         Duration requestTimeout,
+                         boolean webSocket, String name, String version,
+                         Supplier<String> tokenSupplier,
+                         String authorization,
+                         Map<String, String> headers,
+                         Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler,
+                         Consumer<McpSchema.ProgressNotification> progressHandler
     ) {
         this.baseUrl = baseUrl;
         this.mcpEndpoint = mcpEndpoint;
@@ -284,12 +284,12 @@ public class MyMcpSyncClient {
             return this;
         }
 
-        public Builder setMcpClientCommonProperties(McpClientCommonProperties mcpClientCommonProperties) {
-            this.baseUrl = mcpClientCommonProperties.getBaseUrl();
-            this.mcpEndpoint = mcpClientCommonProperties.getMcpEndpoint();
-            this.name = mcpClientCommonProperties.getName();
-            this.version = mcpClientCommonProperties.getVersion();
-            this.requestTimeout = mcpClientCommonProperties.getRequestTimeout();
+        public Builder setMcpClientCommonProperties(SiyukioMcpClientCommonProperties siyukioMcpClientCommonProperties) {
+            this.baseUrl = siyukioMcpClientCommonProperties.getBaseUrl();
+            this.mcpEndpoint = siyukioMcpClientCommonProperties.getMcpEndpoint();
+            this.name = siyukioMcpClientCommonProperties.getName();
+            this.version = siyukioMcpClientCommonProperties.getVersion();
+            this.requestTimeout = siyukioMcpClientCommonProperties.getRequestTimeout();
             return this;
         }
 
@@ -303,8 +303,8 @@ public class MyMcpSyncClient {
             return this;
         }
 
-        public MyMcpSyncClient build() {
-            return new MyMcpSyncClient(this.baseUrl, this.mcpEndpoint, this.requestTimeout, this.webSocket,
+        public McpSyncClient build() {
+            return new McpSyncClient(this.baseUrl, this.mcpEndpoint, this.requestTimeout, this.webSocket,
                     this.name, this.version, this.tokenSupplier,
                     this.authorization, this.headers,
                     this.samplingHandler, this.progressHandler);

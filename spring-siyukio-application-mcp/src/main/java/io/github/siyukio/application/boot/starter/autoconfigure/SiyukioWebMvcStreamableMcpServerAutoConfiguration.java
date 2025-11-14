@@ -1,7 +1,7 @@
 package io.github.siyukio.application.boot.starter.autoconfigure;
 
 
-import io.github.siyukio.application.mcp.MyMethodToolCallback;
+import io.github.siyukio.application.mcp.MethodToolCallback;
 import io.github.siyukio.tools.api.AipHandlerManager;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
@@ -13,7 +13,6 @@ import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.transport.WebMvcStreamableServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.mcp.server.autoconfigure.McpServerProperties;
 import org.springframework.beans.BeansException;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -33,18 +32,18 @@ import java.util.Map;
  * @author Bugee
  */
 @Slf4j
-@EnableConfigurationProperties(McpServerProperties.class)
-@AutoConfigureAfter({MyApplicationConfiguration.class})
-public class MyStreamableMcpServerConfiguration implements ApplicationContextAware {
+@EnableConfigurationProperties(SiyukioMcpServerProperties.class)
+@AutoConfigureAfter({SiyukioApplicationAutoConfiguration.class})
+public class SiyukioWebMvcStreamableMcpServerAutoConfiguration implements ApplicationContextAware {
 
     private ApplicationContext applicationContext;
 
     @Bean
-    public WebMvcStreamableServerTransportProvider webMvcStreamableServerTransportProvider(McpServerProperties mcpServerProperties) {
+    public WebMvcStreamableServerTransportProvider webMvcStreamableServerTransportProvider(SiyukioMcpServerProperties siyukioMcpServerProperties) {
         TokenProvider tokenProvider = this.applicationContext.getBean(TokenProvider.class);
         return WebMvcStreamableServerTransportProvider.builder()
                 .objectMapper(JsonUtils.getObjectMapper())
-                .mcpEndpoint(mcpServerProperties.getMcpEndpoint())
+                .mcpEndpoint(siyukioMcpServerProperties.getMcpEndpoint())
                 .keepAliveInterval(Duration.ofSeconds(20))
 //                .disallowDelete(true)
                 .contextExtractor((serverRequest) -> {
@@ -67,7 +66,7 @@ public class MyStreamableMcpServerConfiguration implements ApplicationContextAwa
 
     @Bean
     public McpSyncServer webMvcStreamableMcpServer(WebMvcStreamableServerTransportProvider webMvcStreamableServerTransportProvider,
-                                                   McpServerProperties mcpServerProperties,
+                                                   SiyukioMcpServerProperties siyukioMcpServerProperties,
                                                    AipHandlerManager aipHandlerManager) {
         // Configure server capabilities with resource support
         McpSchema.ServerCapabilities capabilities = McpSchema.ServerCapabilities.builder()
@@ -76,14 +75,14 @@ public class MyStreamableMcpServerConfiguration implements ApplicationContextAwa
                 .build();
 
         // Create the server with both tool and resource capabilities
-        String serverName = mcpServerProperties.getName();
-        String serverVersion = mcpServerProperties.getVersion();
+        String serverName = siyukioMcpServerProperties.getName();
+        String serverVersion = siyukioMcpServerProperties.getVersion();
         McpServer.SyncSpecification<McpServer.StreamableSyncSpecification> spec = McpServer.sync(webMvcStreamableServerTransportProvider)
                 .serverInfo(serverName, serverVersion)
-                .requestTimeout(mcpServerProperties.getRequestTimeout())
+                .requestTimeout(siyukioMcpServerProperties.getRequestTimeout())
                 .capabilities(capabilities);
 
-        List<McpServerFeatures.SyncToolSpecification> tools = MyMethodToolCallback.getSyncToolSpecifications(aipHandlerManager);
+        List<McpServerFeatures.SyncToolSpecification> tools = MethodToolCallback.getSyncToolSpecifications(aipHandlerManager);
         spec.tools(tools);
 
         log.info("start http streamable mcp server {}, {}", serverName, serverVersion);

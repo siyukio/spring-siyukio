@@ -23,14 +23,14 @@ import java.util.*;
  * @author Bugee
  */
 @Slf4j
-public class MyMethodToolCallback {
+public class MethodToolCallback {
 
     private static final List<McpServerFeatures.SyncToolSpecification> SYNC_TOOL_SPECIFICATIONS_CACHES = new ArrayList<>();
 
     private final ApiHandler apiHandler;
     private final String name;
 
-    public MyMethodToolCallback(ApiHandler apiHandler, String name) {
+    public MethodToolCallback(ApiHandler apiHandler, String name) {
         this.apiHandler = apiHandler;
         this.name = name;
     }
@@ -39,7 +39,7 @@ public class MyMethodToolCallback {
         if (SYNC_TOOL_SPECIFICATIONS_CACHES.isEmpty()) {
             for (Map.Entry<String, ApiHandler> entry : aipHandlerManager.getApiHandlerMap().entrySet()) {
                 if (entry.getValue().apiDefinition().mcpTool()) {
-                    SYNC_TOOL_SPECIFICATIONS_CACHES.add(MyMethodToolCallback.toSyncToolSpecification(entry.getKey(), entry.getValue()));
+                    SYNC_TOOL_SPECIFICATIONS_CACHES.add(MethodToolCallback.toSyncToolSpecification(entry.getKey(), entry.getValue()));
                 }
             }
         }
@@ -63,7 +63,7 @@ public class MyMethodToolCallback {
         Map<String, Object> outputSchema = JsonUtils.copy(outputSchemaJson, Map.class, String.class, Object.class);
 
 
-        MyMethodToolCallback toolCallback = new MyMethodToolCallback(apiHandler, name);
+        MethodToolCallback toolCallback = new MethodToolCallback(apiHandler, name);
 
         var tool = McpSchema.Tool.builder()
                 .name(name)

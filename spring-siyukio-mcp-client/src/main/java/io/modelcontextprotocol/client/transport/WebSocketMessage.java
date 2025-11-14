@@ -1,32 +1,19 @@
-package io.modelcontextprotocol.server.transport;
+package io.modelcontextprotocol.client.transport;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.siyukio.tools.util.JsonUtils;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.json.JSONObject;
-import org.springframework.util.StringUtils;
 
 /**
  * @author Bugee
  */
-public record MyWebSocketMessage(
+public record WebSocketMessage(
         String id,
         String mcpSessionId,
         String method,
         JSONObject body
 ) {
-
-    public MyWebSocketMessage(String id, JSONObject body) {
-        this(id, null, null, body);
-    }
-
-    public MyWebSocketMessage(String id, String mcpSessionId, JSONObject body) {
-        this(id, mcpSessionId, null, body);
-    }
-
-    public MyWebSocketMessage(String id) {
-        this(id, null, null, null);
-    }
 
     public McpSchema.JSONRPCMessage deserializeJsonRpcMessage() {
         ObjectMapper objectMapper = JsonUtils.getObjectMapper();
@@ -40,9 +27,5 @@ public record MyWebSocketMessage(
         }
 
         throw new IllegalArgumentException("Cannot deserialize JSONRPCMessage: " + JsonUtils.toPrettyJSONString(this.body));
-    }
-
-    public boolean toDelete() {
-        return StringUtils.hasText(this.method) && this.method.equals("delete");
     }
 }

@@ -24,12 +24,12 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bugee
  */
 @Slf4j
-public class MyWebSocketClient {
+public class WebSocketClient {
 
     private final AtomicReference<WebSocket> webSocketRef = new AtomicReference<>();
     private final ReentrantLock lock = new ReentrantLock();
-    private final Map<String, CompletableFuture<MyWebSocketMessage>> pendingMap = new ConcurrentHashMap<>();
-    private final Sinks.Many<MyWebSocketMessage> incomingSink = Sinks.many().multicast().onBackpressureBuffer();
+    private final Map<String, CompletableFuture<WebSocketMessage>> pendingMap = new ConcurrentHashMap<>();
+    private final Sinks.Many<WebSocketMessage> incomingSink = Sinks.many().multicast().onBackpressureBuffer();
 
     public void close() {
         WebSocket webSocket = this.webSocketRef.get();
@@ -112,12 +112,12 @@ public class MyWebSocketClient {
     private void handleText(String text) {
         Mono.fromRunnable(() -> {
             log.debug("handleText: {}", text);
-            MyWebSocketMessage myWebsocketMessage = JsonUtils.parse(text, MyWebSocketMessage.class);
-            CompletableFuture<MyWebSocketMessage> future = this.pendingMap.remove(myWebsocketMessage.id());
+            WebSocketMessage websocketMessage = JsonUtils.parse(text, WebSocketMessage.class);
+            CompletableFuture<WebSocketMessage> future = this.pendingMap.remove(websocketMessage.id());
             if (future == null) {
-                this.incomingSink.tryEmitNext(myWebsocketMessage);
+                this.incomingSink.tryEmitNext(websocketMessage);
             } else {
-                future.complete(myWebsocketMessage);
+                future.complete(websocketMessage);
             }
         }).subscribeOn(Schedulers.boundedElastic()).subscribe();
     }
@@ -138,9 +138,9 @@ public class MyWebSocketClient {
     }
 
 
-    public CompletableFuture<MyWebSocketMessage> sendAsync(MyWebSocketMessage requestMessage) {
+    public CompletableFuture<WebSocketMessage> sendAsync(WebSocketMessage requestMessage) {
         return CompletableFuture.supplyAsync(() -> {
-            CompletableFuture<MyWebSocketMessage> future = new CompletableFuture<>();
+            CompletableFuture<WebSocketMessage> future = new CompletableFuture<>();
             this.pendingMap.put(requestMessage.id(), future);
 
             String text = JsonUtils.toJSONString(requestMessage);
@@ -154,7 +154,7 @@ public class MyWebSocketClient {
     }
 
 
-    public Flux<MyWebSocketMessage> receiveAsync() {
+    public Flux<WebSocketMessage> receiveAsync() {
         log.debug("start receiveAsync...");
         return this.incomingSink.asFlux().share().cache(0);
     }
