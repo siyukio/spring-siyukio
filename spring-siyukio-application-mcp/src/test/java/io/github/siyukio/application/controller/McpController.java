@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author Bugee
@@ -36,6 +37,25 @@ public class McpController {
                 .roles(createAuthorizationRequest.roles)
                 .refresh(false).build();
         createResponseResponse.authorization = this.tokenProvider.createAuthorization(token);
+        return createResponseResponse;
+    }
+
+    @ApiMapping(path = "/mockRandomResponse", authorization = false)
+    public CreateResponseResponse mockRandomResponse(CreateAuthorizationRequest createAuthorizationRequest) {
+        log.info("{},{}", createAuthorizationRequest.uid, "start");
+        CreateResponseResponse createResponseResponse = new CreateResponseResponse();
+        Token token = Token.builder().uid(createAuthorizationRequest.uid)
+                .name(createAuthorizationRequest.name)
+                .roles(createAuthorizationRequest.roles)
+                .refresh(false).build();
+        createResponseResponse.authorization = this.tokenProvider.createAuthorization(token);
+
+        long sleepTime = ThreadLocalRandom.current().nextInt(12000) + 1000;
+        try {
+            Thread.sleep(sleepTime);
+        } catch (InterruptedException ignored) {
+        }
+        log.info("{},{}", createAuthorizationRequest.uid, "finished");
         return createResponseResponse;
     }
 

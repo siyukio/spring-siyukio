@@ -53,12 +53,12 @@ spring:
 logging:
   level:
     root: INFO
-    io:
-      github:
-        siyukio: DEBUG
-      modelcontextprotocol:
-        client:
-          transport: DEBUG
+  #    io:
+  #      github:
+  #        siyukio: DEBUG
+  #      modelcontextprotocol:
+  #        client:
+  #          transport: DEBUG
   #      modelcontextprotocol:
   #        spec: DEBUG
   port: 8081

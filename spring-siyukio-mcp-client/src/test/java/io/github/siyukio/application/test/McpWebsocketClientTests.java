@@ -5,6 +5,7 @@ import io.github.siyukio.client.McpSyncClient;
 import io.github.siyukio.client.boot.starter.autoconfigure.SiyukioMcpClientCommonProperties;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
+import io.github.siyukio.tools.util.AsyncUtils;
 import io.github.siyukio.tools.util.JsonUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -53,6 +54,34 @@ class McpWebsocketClientTests {
     }
 
     @Test
+    void testMultiThreadCallTool() throws InterruptedException {
+        McpSyncClient client = McpSyncClient.builder()
+                .useWebsocket(true)
+                .useTokenSupplier(this.tokenSupplier)
+                .setMcpClientCommonProperties(this.siyukioMcpClientCommonProperties)
+                .build();
+        McpAsyncClient asyncClient = client.getMcpSyncClient();
+
+        for (int i = 0; i < 6; i++) {
+            AsyncUtils.submit(() -> {
+                String uid = Thread.currentThread().getName() + Thread.currentThread().threadId();
+                log.info("{},{}", uid, "start");
+                CreateAuthorizationRequest createAuthorizationRequest = CreateAuthorizationRequest.builder()
+                        .uid(uid)
+                        .name("Buddy")
+                        .roles(List.of("user"))
+                        .build();
+                JSONObject result = McpSyncClient.callTool(asyncClient, "/mockRandomResponse",
+                        createAuthorizationRequest, JSONObject.class);
+                log.info("{},{}", uid, "finished");
+            });
+        }
+
+        Thread.sleep(60000);
+        asyncClient.close();
+    }
+
+    @Test
     void testCallTool() {
         McpSyncClient client = McpSyncClient.builder()
                 .useWebsocket(true)
@@ -90,7 +119,7 @@ class McpWebsocketClientTests {
 
         try {
             for (int i = 0; i < 3; i++) {
-                JSONObject result = client.callTool(asyncClient, "/createAuthorization", createAuthorizationRequest, JSONObject.class);
+                JSONObject result = McpSyncClient.callTool(asyncClient, "/createAuthorization", createAuthorizationRequest, JSONObject.class);
                 log.info("callTool {} --> {}", i, JsonUtils.toPrettyJSONString(result));
             }
         } finally {
@@ -189,7 +218,7 @@ class McpWebsocketClientTests {
         McpAsyncClient asyncClient = client.getMcpSyncClient();
         try {
             for (int i = 0; i < 3; i++) {
-                JSONObject result = client.callTool(asyncClient, "/getTokenByProgress", JSONObject.class);
+                JSONObject result = McpSyncClient.callTool(asyncClient, "/getTokenByProgress", JSONObject.class);
                 log.info("progress callTool {} --> {}", i, JsonUtils.toPrettyJSONString(result));
             }
         } finally {

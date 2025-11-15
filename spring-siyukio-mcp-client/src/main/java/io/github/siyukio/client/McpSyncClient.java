@@ -79,6 +79,37 @@ public class McpSyncClient {
         return new Builder();
     }
 
+    public static <T> T callTool(McpAsyncClient mcpAsyncClient, String toolName, Object params, Class<T> returnType) {
+        Map<String, Object> arguments = JsonUtils.copy(params, Map.class, String.class, Object.class);
+        McpSchema.CallToolResult result = mcpAsyncClient.callTool(new McpSchema.CallToolRequest(toolName, arguments)).block();
+        return doResult(result, returnType);
+    }
+
+    public static <T> T doResult(McpSchema.CallToolResult result, Class<T> returnType) {
+        if (result == null) {
+            return null;
+        }
+        if (result.isError()) {
+            if (result.structuredContent() != null) {
+                JSONObject contentJson = JsonUtils.copy(result.structuredContent(), JSONObject.class);
+                JSONObject errorJson = contentJson.optJSONObject("error");
+                int code = errorJson.optInt("code", HttpStatus.OK.value());
+                String message = errorJson.optString("message", "");
+                throw new ApiException(code, message);
+            }
+
+            JSONObject contentJson = JsonUtils.copy(result.content().getFirst(), JSONObject.class);
+            String text = contentJson.optString("text");
+            throw new ApiException(text);
+        }
+        return JsonUtils.copy(result.structuredContent(), returnType);
+    }
+
+    public static <T> T callTool(McpAsyncClient mcpAsyncClient, String toolName, Class<T> returnType) {
+        McpSchema.CallToolResult result = mcpAsyncClient.callTool(new McpSchema.CallToolRequest(toolName, Map.of())).block();
+        return doResult(result, returnType);
+    }
+
     private McpAsyncClient createMcpAsyncClient(String targetUri, String targetMcpEndpoint) {
         log.debug("use targetUri: {}, {}", targetUri, targetMcpEndpoint);
         if (this.webSocket) {
@@ -154,32 +185,12 @@ public class McpSyncClient {
         return this.createMcpAsyncClient(this.baseUrl, this.mcpEndpoint);
     }
 
-    public <T> T doResult(McpSchema.CallToolResult result, Class<T> returnType) {
-        if (result == null) {
-            return null;
-        }
-        if (result.isError()) {
-            if (result.structuredContent() != null) {
-                JSONObject contentJson = JsonUtils.copy(result.structuredContent(), JSONObject.class);
-                JSONObject errorJson = contentJson.optJSONObject("error");
-                int code = errorJson.optInt("code", HttpStatus.OK.value());
-                String message = errorJson.optString("message", "");
-                throw new ApiException(code, message);
-            }
-
-            JSONObject contentJson = JsonUtils.copy(result.content().getFirst(), JSONObject.class);
-            String text = contentJson.optString("text");
-            throw new ApiException(text);
-        }
-        return JsonUtils.copy(result.structuredContent(), returnType);
-    }
-
     public <T> T callTool(String toolName, Object params, Class<T> returnType) {
         Map<String, Object> arguments = JsonUtils.copy(params, Map.class, String.class, Object.class);
         McpAsyncClient mcpAsyncClient = this.getMcpSyncClient();
         try {
             McpSchema.CallToolResult result = mcpAsyncClient.callTool(new McpSchema.CallToolRequest(toolName, arguments)).block();
-            return this.doResult(result, returnType);
+            return doResult(result, returnType);
         } finally {
             mcpAsyncClient.close();
         }
@@ -189,21 +200,10 @@ public class McpSyncClient {
         McpAsyncClient mcpAsyncClient = this.getMcpSyncClient();
         try {
             McpSchema.CallToolResult result = mcpAsyncClient.callTool(new McpSchema.CallToolRequest(toolName, Map.of())).block();
-            return this.doResult(result, returnType);
+            return doResult(result, returnType);
         } finally {
             mcpAsyncClient.close();
         }
-    }
-
-    public <T> T callTool(McpAsyncClient mcpAsyncClient, String toolName, Object params, Class<T> returnType) {
-        Map<String, Object> arguments = JsonUtils.copy(params, Map.class, String.class, Object.class);
-        McpSchema.CallToolResult result = mcpAsyncClient.callTool(new McpSchema.CallToolRequest(toolName, arguments)).block();
-        return this.doResult(result, returnType);
-    }
-
-    public <T> T callTool(McpAsyncClient mcpAsyncClient, String toolName, Class<T> returnType) {
-        McpSchema.CallToolResult result = mcpAsyncClient.callTool(new McpSchema.CallToolRequest(toolName, Map.of())).block();
-        return this.doResult(result, returnType);
     }
 
     /**
