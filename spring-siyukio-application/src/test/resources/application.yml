@@ -41,6 +41,8 @@ API_JWT_PRIVATE_KEY: |
 
 API_SIGNATURE_SALT: siyukio
 
+API_DOCS: true
+
 logging:
   level:
     root: INFO

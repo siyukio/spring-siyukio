@@ -9,8 +9,6 @@ public abstract class ApiProfiles {
 
     public static String IP4 = "";
 
-    public static String HOST = "";
-
     public static String CONTEXT_PATH = "";
 
     public static int PORT = -1;
