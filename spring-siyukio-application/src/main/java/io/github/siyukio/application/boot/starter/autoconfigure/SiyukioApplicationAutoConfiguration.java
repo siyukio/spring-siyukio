@@ -3,6 +3,7 @@ package io.github.siyukio.application.boot.starter.autoconfigure;
 import io.github.siyukio.tools.api.AipHandlerManager;
 import io.github.siyukio.tools.api.ApiProfiles;
 import io.github.siyukio.tools.api.annotation.ApiController;
+import io.github.siyukio.tools.api.constants.ApiConstants;
 import io.github.siyukio.tools.api.definition.ApiDefinition;
 import io.github.siyukio.tools.api.definition.ApiDefinitionManager;
 import jakarta.annotation.PostConstruct;
@@ -19,7 +20,7 @@ import org.springframework.boot.web.servlet.context.ServletWebServerInitializedE
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.event.EventListener;
-import org.springframework.web.servlet.DispatcherServlet;
+import org.springframework.core.env.Environment;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -40,10 +41,10 @@ public class SiyukioApplicationAutoConfiguration {
     protected ApplicationContext applicationContext;
 
     @Autowired
-    private ServletContext servletContext;
+    protected Environment env;
 
     @Autowired
-    private DispatcherServlet dispatcherServlet;
+    private ServletContext servletContext;
 
     @Autowired
     private ApiDefinitionManager apiDefinitionManager;
@@ -71,7 +72,16 @@ public class SiyukioApplicationAutoConfiguration {
         if (contextPath != null && !contextPath.equals("/")) {
             ApiProfiles.CONTEXT_PATH = contextPath;
         }
-        log.info("ApiProfiles contextPath:{}", ApiProfiles.CONTEXT_PATH);
+        log.info("ApiProfiles contextPath: {}", ApiProfiles.CONTEXT_PATH);
+
+        ApiProfiles.ACTIVE = this.env.getProperty(ApiConstants.PROPERTY_API_PROFILES_ACTIVE, "");
+        log.info("ApiProfiles active: {}", ApiProfiles.ACTIVE);
+
+        Boolean docs = this.env.getProperty(ApiConstants.PROPERTY_API_PROFILES_DOCS, Boolean.class);
+        if (docs != null) {
+            ApiProfiles.DOCS = docs;
+        }
+        log.info("ApiProfiles docs: {}", ApiProfiles.DOCS);
 
         this.initApi();
     }

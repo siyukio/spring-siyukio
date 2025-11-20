@@ -41,7 +41,9 @@ API_JWT_PRIVATE_KEY: |
 
 API_SIGNATURE_SALT: siyukio
 
-API_DOCS: true
+API_PROFILES_DOCS: true
+
+API_PROFILES_ACTIVE: development
 
 logging:
   level:

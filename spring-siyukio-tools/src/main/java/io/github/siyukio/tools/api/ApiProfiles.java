@@ -7,6 +7,10 @@ package io.github.siyukio.tools.api;
  */
 public abstract class ApiProfiles {
 
+    public static String ACTIVE = "";
+
+    public static Boolean DOCS = false;
+
     public static String IP4 = "";
 
     public static String CONTEXT_PATH = "";

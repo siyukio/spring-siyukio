@@ -15,7 +15,9 @@ public interface ApiConstants {
 
     public String PROPERTY_API_SIGNATURE_SALT = "API_SIGNATURE_SALT";
 
-    public String PROPERTY_API_DOCS = "API_DOCS";
+    public String PROPERTY_API_PROFILES_DOCS = "API_PROFILES_DOCS";
+
+    public String PROPERTY_API_PROFILES_ACTIVE = "API_PROFILES_ACTIVE";
 
     public String ATTRIBUTE_TOKEN = "siyukio.token";
 
