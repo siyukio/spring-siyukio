@@ -28,7 +28,12 @@ public class McpController {
     @Autowired
     private TokenProvider tokenProvider;
 
-    @ApiMapping(path = "/createAuthorization", authorization = false)
+    @ApiMapping(path = "/createAuthorization", authorization = false, mcpTool = true,
+            summary = "Retrieve JWT Token",
+            description = """
+                    A utility tool that authenticates with the target service and returns a valid JWT token for subsequent API requests.
+                    """
+    )
     public CreateResponseResponse createAuthorization(CreateAuthorizationRequest createAuthorizationRequest) {
         log.info("{}", JsonUtils.toPrettyJSONString(createAuthorizationRequest));
         CreateResponseResponse createResponseResponse = new CreateResponseResponse();
@@ -40,7 +45,7 @@ public class McpController {
         return createResponseResponse;
     }
 
-    @ApiMapping(path = "/mockRandomResponse", authorization = false)
+    @ApiMapping(path = "/mockRandomResponse", authorization = false, mcpTool = true)
     public CreateResponseResponse mockRandomResponse(CreateAuthorizationRequest createAuthorizationRequest) {
         log.info("{},{}", createAuthorizationRequest.uid, "start");
         CreateResponseResponse createResponseResponse = new CreateResponseResponse();
@@ -59,7 +64,7 @@ public class McpController {
         return createResponseResponse;
     }
 
-    @ApiMapping(path = "/getToken")
+    @ApiMapping(path = "/getToken", mcpTool = true)
     public TokenResponse getToken(Token token, McpSyncServerExchange exchange) {
         if (exchange != null) {
             log.info("getToken exchange: {}", exchange.getClientInfo());
@@ -78,7 +83,7 @@ public class McpController {
         return new TokenResponse();
     }
 
-    @ApiMapping(path = "/getTokenByProgress")
+    @ApiMapping(path = "/getTokenByProgress", mcpTool = true)
     public TokenResponse getTokenByProgress(Token token, McpSyncServerExchange exchange) {
         if (exchange != null) {
             log.info("getTokenByProgress exchange: {}", exchange.getClientInfo());

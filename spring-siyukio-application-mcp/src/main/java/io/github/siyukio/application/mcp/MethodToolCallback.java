@@ -48,6 +48,11 @@ public class MethodToolCallback {
 
     public static McpServerFeatures.SyncToolSpecification toSyncToolSpecification(String path, ApiHandler apiHandler) {
         String name = path;
+        if (name.startsWith("/")) {
+            name = name.substring(1);
+        }
+        
+        name = name.replaceAll("/", "_");
 
         ApiDefinition apiDefinition = apiHandler.apiDefinition();
         String title = apiDefinition.summary();

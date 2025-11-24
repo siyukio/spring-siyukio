@@ -21,6 +21,7 @@
     </modules>
 
     <properties>
+        <siyukio.version>3.4.11-SNAPSHOT</siyukio.version>
         <java.version>21</java.version>
         <spring.ai.version>1.0.3</spring.ai.version>
         <mcp.version>0.12.1</mcp.version>
@@ -36,31 +37,31 @@
             <dependency>
                 <groupId>io.github.siyukio</groupId>
                 <artifactId>spring-siyukio-tools</artifactId>
-                <version>${project.version}</version>
+                <version>${siyukio.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>io.github.siyukio</groupId>
                 <artifactId>spring-siyukio-application</artifactId>
-                <version>${project.version}</version>
+                <version>${siyukio.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>io.github.siyukio</groupId>
                 <artifactId>spring-siyukio-application-mcp</artifactId>
-                <version>${project.version}</version>
+                <version>${siyukio.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>io.github.siyukio</groupId>
                 <artifactId>spring-siyukio-mcp-client</artifactId>
-                <version>${project.version}</version>
+                <version>${siyukio.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>io.github.siyukio</groupId>
                 <artifactId>spring-siyukio-postgresql</artifactId>
-                <version>${project.version}</version>
+                <version>${siyukio.version}</version>
             </dependency>
 
             <dependency>

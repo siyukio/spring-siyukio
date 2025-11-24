@@ -71,7 +71,7 @@ class McpWebsocketClientTests {
                         .name("Buddy")
                         .roles(List.of("user"))
                         .build();
-                JSONObject result = McpSyncClient.callTool(asyncClient, "/mockRandomResponse",
+                JSONObject result = McpSyncClient.callTool(asyncClient, "mockRandomResponse",
                         createAuthorizationRequest, JSONObject.class);
                 log.info("{},{}", uid, "finished");
             });
@@ -95,7 +95,7 @@ class McpWebsocketClientTests {
                 .roles(List.of("user"))
                 .build();
 
-        JSONObject result = client.callTool("/createAuthorization",
+        JSONObject result = client.callTool("createAuthorization",
                 createAuthorizationRequest, JSONObject.class);
 
         log.info("{}", JsonUtils.toPrettyJSONString(result));
@@ -119,7 +119,7 @@ class McpWebsocketClientTests {
 
         try {
             for (int i = 0; i < 3; i++) {
-                JSONObject result = McpSyncClient.callTool(asyncClient, "/createAuthorization", createAuthorizationRequest, JSONObject.class);
+                JSONObject result = McpSyncClient.callTool(asyncClient, "createAuthorization", createAuthorizationRequest, JSONObject.class);
                 log.info("callTool {} --> {}", i, JsonUtils.toPrettyJSONString(result));
             }
         } finally {
@@ -146,7 +146,7 @@ class McpWebsocketClientTests {
                 .setSamplingHandler(samplingHandler)
                 .build();
 
-        JSONObject result = client.callTool("/getToken", JSONObject.class);
+        JSONObject result = client.callTool("getToken", JSONObject.class);
 
         log.info("{}", JsonUtils.toPrettyJSONString(result));
     }
@@ -174,7 +174,7 @@ class McpWebsocketClientTests {
 
         try {
             for (int i = 0; i < 3; i++) {
-                JSONObject result = client.callTool(asyncClient, "/getToken", JSONObject.class);
+                JSONObject result = McpSyncClient.callTool(asyncClient, "getToken", JSONObject.class);
                 log.info("sampling callTool {} --> {}", i, JsonUtils.toPrettyJSONString(result));
             }
         } finally {
@@ -196,7 +196,7 @@ class McpWebsocketClientTests {
                 .setProgressHandler(progressHandler)
                 .build();
 
-        JSONObject result = client.callTool("/getTokenByProgress", JSONObject.class);
+        JSONObject result = client.callTool("getTokenByProgress", JSONObject.class);
 
         log.info("{}", JsonUtils.toPrettyJSONString(result));
     }
@@ -218,7 +218,7 @@ class McpWebsocketClientTests {
         McpAsyncClient asyncClient = client.getMcpSyncClient();
         try {
             for (int i = 0; i < 3; i++) {
-                JSONObject result = McpSyncClient.callTool(asyncClient, "/getTokenByProgress", JSONObject.class);
+                JSONObject result = McpSyncClient.callTool(asyncClient, "getTokenByProgress", JSONObject.class);
                 log.info("progress callTool {} --> {}", i, JsonUtils.toPrettyJSONString(result));
             }
         } finally {

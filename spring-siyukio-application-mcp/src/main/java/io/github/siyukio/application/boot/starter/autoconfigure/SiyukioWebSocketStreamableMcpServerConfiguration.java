@@ -19,10 +19,6 @@ import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
-import org.springframework.boot.autoconfigure.data.rest.RepositoryRestMvcAutoConfiguration;
-import org.springframework.boot.autoconfigure.http.HttpMessageConvertersAutoConfiguration;
-import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -43,8 +39,7 @@ import java.util.Map;
  */
 @Import(DelegatingWebSocketConfiguration.class)
 @EnableConfigurationProperties(SiyukioMcpServerProperties.class)
-@AutoConfigureAfter({WebMvcAutoConfiguration.class, JacksonAutoConfiguration.class,
-        HttpMessageConvertersAutoConfiguration.class, RepositoryRestMvcAutoConfiguration.class})
+@AutoConfigureAfter({SiyukioApplicationAutoConfiguration.class})
 @Slf4j
 public class SiyukioWebSocketStreamableMcpServerConfiguration implements WebSocketConfigurer, ApplicationContextAware {
 
