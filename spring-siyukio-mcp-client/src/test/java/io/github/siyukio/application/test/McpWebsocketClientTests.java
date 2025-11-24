@@ -54,6 +54,35 @@ class McpWebsocketClientTests {
     }
 
     @Test
+    void testPing() {
+        McpSyncClient client = McpSyncClient.builder()
+                .useWebsocket(true)
+                .useTokenSupplier(this.tokenSupplier)
+                .setMcpClientCommonProperties(this.siyukioMcpClientCommonProperties)
+                .build();
+        client.ping();
+    }
+
+    @Test
+    void testMultiPing() {
+        McpSyncClient client = McpSyncClient.builder()
+                .useWebsocket(true)
+                .useTokenSupplier(this.tokenSupplier)
+                .setMcpClientCommonProperties(this.siyukioMcpClientCommonProperties)
+                .build();
+        McpAsyncClient asyncClient = client.getMcpSyncClient();
+
+        try {
+            for (int i = 0; i < 3; i++) {
+                asyncClient.ping().block();
+            }
+        } finally {
+            asyncClient.close();
+        }
+    }
+
+
+    @Test
     void testMultiThreadCallTool() throws InterruptedException {
         McpSyncClient client = McpSyncClient.builder()
                 .useWebsocket(true)

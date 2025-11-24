@@ -222,6 +222,15 @@ public class McpSyncClient {
         }
     }
 
+    public void ping() {
+        McpAsyncClient mcpAsyncClient = this.getMcpSyncClient();
+        try {
+            mcpAsyncClient.ping().block();
+        } finally {
+            mcpAsyncClient.close();
+        }
+    }
+
     public static class Builder {
 
         private final Map<String, String> headers = new HashMap<>();
