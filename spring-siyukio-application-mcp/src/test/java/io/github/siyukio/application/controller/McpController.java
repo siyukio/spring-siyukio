@@ -36,32 +36,33 @@ public class McpController {
     )
     public CreateResponseResponse createAuthorization(CreateAuthorizationRequest createAuthorizationRequest) {
         log.info("{}", JsonUtils.toPrettyJSONString(createAuthorizationRequest));
-        CreateResponseResponse createResponseResponse = new CreateResponseResponse();
-        Token token = Token.builder().uid(createAuthorizationRequest.uid)
-                .name(createAuthorizationRequest.name)
-                .roles(createAuthorizationRequest.roles)
+        Token token = Token.builder().uid(createAuthorizationRequest.uid())
+                .name(createAuthorizationRequest.name())
+                .roles(createAuthorizationRequest.roles())
                 .refresh(false).build();
-        createResponseResponse.authorization = this.tokenProvider.createAuthorization(token);
-        return createResponseResponse;
+        String authorization = this.tokenProvider.createAuthorization(token);
+        return CreateResponseResponse.builder()
+                .authorization(authorization).build();
     }
 
     @ApiMapping(path = "/mockRandomResponse", authorization = false, mcpTool = true)
     public CreateResponseResponse mockRandomResponse(CreateAuthorizationRequest createAuthorizationRequest) {
-        log.info("{},{}", createAuthorizationRequest.uid, "start");
-        CreateResponseResponse createResponseResponse = new CreateResponseResponse();
-        Token token = Token.builder().uid(createAuthorizationRequest.uid)
-                .name(createAuthorizationRequest.name)
-                .roles(createAuthorizationRequest.roles)
+        log.info("{},{}", createAuthorizationRequest.uid(), "start");
+        Token token = Token.builder().uid(createAuthorizationRequest.uid())
+                .name(createAuthorizationRequest.name())
+                .roles(createAuthorizationRequest.roles())
                 .refresh(false).build();
-        createResponseResponse.authorization = this.tokenProvider.createAuthorization(token);
+        String authorization = this.tokenProvider.createAuthorization(token);
 
         long sleepTime = ThreadLocalRandom.current().nextInt(12000) + 1000;
         try {
             Thread.sleep(sleepTime);
         } catch (InterruptedException ignored) {
         }
-        log.info("{},{}", createAuthorizationRequest.uid, "finished");
-        return createResponseResponse;
+        log.info("{},{}", createAuthorizationRequest.uid(), "finished");
+
+        return CreateResponseResponse.builder()
+                .authorization(authorization).build();
     }
 
     @ApiMapping(path = "/getToken", mcpTool = true)
@@ -80,7 +81,7 @@ public class McpController {
 //            result = exchange.createMessage(request);
 //            log.info("server CreateMessageResult: {}", JsonUtils.toPrettyJSONString(result));
         }
-        return new TokenResponse();
+        return TokenResponse.builder().build();
     }
 
     @ApiMapping(path = "/getTokenByProgress", mcpTool = true)
@@ -98,6 +99,6 @@ public class McpController {
             exchange.progressNotification(progressNotification);
 
         }
-        return new TokenResponse();
+        return TokenResponse.builder().build();
     }
 }

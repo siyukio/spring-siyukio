@@ -1,20 +1,17 @@
 package io.github.siyukio.application.model.authorization;
 
 import io.github.siyukio.tools.api.annotation.ApiParameter;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.With;
 
 /**
  * @author Buddy
  */
-@ToString
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class CreateResponseResponse {
+@With
+public record CreateResponseResponse(
 
-    @ApiParameter
-    public String authorization;
+        @ApiParameter
+        String authorization
+) {
 }

@@ -3,6 +3,7 @@ package io.github.siyukio.application.controller;
 import io.github.siyukio.application.model.parameter.*;
 import io.github.siyukio.tools.api.annotation.ApiController;
 import io.github.siyukio.tools.api.annotation.ApiMapping;
+import io.github.siyukio.tools.api.model.PageRequest;
 import io.github.siyukio.tools.api.model.PageResponse;
 import io.github.siyukio.tools.util.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -40,8 +41,8 @@ public class ParameterController {
     }
 
     @ApiMapping(path = "/testPage", authorization = false)
-    public PageResponse<ItemVo> testPage(MyPageRequest myPageRequest) {
-        log.info("{}", JsonUtils.toPrettyJSONString(myPageRequest));
+    public PageResponse<ItemVo> testPage(PageRequest<ItemDto> pageRequest) {
+        log.info("{}", JsonUtils.toPrettyJSONString(pageRequest));
 
         return PageResponse.<ItemVo>builder()
                 .total(1).build();

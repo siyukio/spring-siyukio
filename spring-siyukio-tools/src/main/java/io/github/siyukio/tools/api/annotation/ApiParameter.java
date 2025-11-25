@@ -7,14 +7,15 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.ElementType.RECORD_COMPONENT;
+import static java.lang.annotation.ElementType.TYPE;
 
 /**
  * Api request parameters.
  *
  * @author Buddy
  */
-@Target({TYPE, METHOD, FIELD, PARAMETER})
+@Target({TYPE, RECORD_COMPONENT})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @JsonIgnore

@@ -136,7 +136,12 @@ public final class ApiDefinitionManager {
         existParameterNameSet.clear();
 
         LinkedList<Class<?>> responseClassLinkedList = new LinkedList<>();
-        JSONArray responseParameters = this.getSubResponseParameters(method, returnValueType, responseClassLinkedList);
+        JSONArray responseParameters;
+        if (returnValueType == void.class || returnValueType == Void.class) {
+            responseParameters = new JSONArray();
+        } else {
+            responseParameters = this.getSubResponseParameters(method, returnValueType, responseClassLinkedList);
+        }
 
         responseParameters.put(ApiException.getErrorSchema());
 
@@ -202,20 +207,19 @@ public final class ApiDefinitionManager {
         requestParameter.put("name", name);
         requestParameter.put("type", ApiConstants.TYPE_ARRAY);
         requestParameter.put("description", apiParameter.description());
+        if (typeClass.isAnnotationPresent(ApiParameter.class)) {
+            ApiParameter myApiParameter = typeClass.getAnnotation(ApiParameter.class);
+            requestParameter.put("description", myApiParameter.description());
+        }
         requestParameter.put("required", apiParameter.required());
         requestParameter.put("error", apiParameter.error());
-        requestParameter.put("masked", false);
         //
         JSONObject items = new JSONObject();
         items.put("type", ApiConstants.TYPE_OBJECT);
-        requestParameter.put("items", items);
-        if (typeClass.equals(JSONObject.class)) {
-            items.put("childArray", new JSONArray());
-            items.put("additionalProperties", true);
-        } else {
-            JSONArray subRequestParameters = this.getSubRequestParameters(method, typeClass, requestClassLinked);
-            items.put("childArray", subRequestParameters);
-        }
+        JSONArray subRequestParameters = this.getSubRequestParameters(method, typeClass, requestClassLinked);
+        boolean additionalProperties = subRequestParameters.isEmpty();
+        items.put("additionalProperties", additionalProperties);
+        items.put("childArray", subRequestParameters);
         //
         requestParameter.put("items", items);
         return requestParameter;
@@ -349,44 +353,6 @@ public final class ApiDefinitionManager {
         return result;
     }
 
-    private JSONObject createJsonArrayRequestParam(String name, ApiParameter apiParameter) {
-        JSONObject requestParameter = new JSONObject();
-        requestParameter.put("name", name);
-        requestParameter.put("type", ApiConstants.TYPE_ARRAY);
-        requestParameter.put("description", apiParameter.description());
-        requestParameter.put("required", apiParameter.required());
-        requestParameter.put("error", apiParameter.error());
-        requestParameter.put("masked", false);
-        JSONObject items = new JSONObject();
-        items.put("type", ApiConstants.TYPE_OBJECT);
-        items.put("childArray", new JSONArray());
-        items.put("additionalProperties", true);
-
-        requestParameter.put("items", items);
-        int maxItems = apiParameter.maxItems();
-        int minItems = apiParameter.minItems();
-        if (minItems < 0) {
-            minItems = 0;
-        }
-        if (maxItems <= 0) {
-            maxItems = 255;
-        }
-        int newMaxSize = Math.max(maxItems, minItems);
-        int newMinSize = Math.min(maxItems, minItems);
-        maxItems = newMaxSize;
-        minItems = newMinSize;
-        requestParameter.put("maxItems", maxItems);
-        if (minItems > 0) {
-            requestParameter.put("minItems", minItems);
-        }
-
-        if (apiParameter.examples().length > 0) {
-            JSONArray examplesJsons = this.createExamples(apiParameter.examples());
-            requestParameter.put("examples", examplesJsons);
-        }
-        return requestParameter;
-    }
-
     private JSONObject createCollectionRequestParameter(Method method, Class<?> typeClass, String name, ApiParameter apiParameter, LinkedList<Class<?>> requestClassLinked) {
         JSONObject requestParameter;
         if (isBasicType(typeClass)) {
@@ -418,19 +384,22 @@ public final class ApiDefinitionManager {
         return requestParameter;
     }
 
-    private JSONObject createObjectRequestParameter(String name, ApiParameter apiParameter) {
+    private JSONObject createObjectRequestParameter(Method method, Class<?> typeClass, LinkedList<Class<?>> requestClassLinked, String name, ApiParameter apiParameter) {
         JSONObject requestParameter = new JSONObject();
         requestParameter.put("name", name);
         requestParameter.put("type", ApiConstants.TYPE_OBJECT);
         requestParameter.put("description", apiParameter.description());
+        if (typeClass.isAnnotationPresent(ApiParameter.class)) {
+            ApiParameter myApiParameter = typeClass.getAnnotation(ApiParameter.class);
+            requestParameter.put("description", myApiParameter.description());
+        }
         requestParameter.put("required", apiParameter.required());
         requestParameter.put("error", apiParameter.error());
-        //additionalProperties object
-        requestParameter.put("additionalProperties", true);
         //
-        JSONArray subRequestParameters = new JSONArray();
+        JSONArray subRequestParameters = this.getSubRequestParameters(method, typeClass, requestClassLinked);
+        boolean additionalProperties = subRequestParameters.isEmpty();
+        requestParameter.put("additionalProperties", additionalProperties);
         requestParameter.put("childArray", subRequestParameters);
-
         if (apiParameter.examples().length > 0) {
             JSONArray examplesJsons = this.createExamples(apiParameter.examples());
             requestParameter.put("examples", examplesJsons);
@@ -438,39 +407,8 @@ public final class ApiDefinitionManager {
         return requestParameter;
     }
 
-    private JSONObject createObjectRequestParameter(Method method, Class<?> typeClass, LinkedList<Class<?>> requestClassLinked, String name, ApiParameter apiParameter) {
-        JSONObject requestParam = new JSONObject();
-        requestParam.put("name", name);
-        requestParam.put("type", ApiConstants.TYPE_OBJECT);
-        requestParam.put("description", apiParameter.description());
-        requestParam.put("required", apiParameter.required());
-        requestParam.put("error", apiParameter.error());
-        requestParam.put("additionalProperties", false);
-        //
-        JSONArray subRequestParameters = this.getSubRequestParameters(method, typeClass, requestClassLinked);
-        requestParam.put("childArray", subRequestParameters);
-        return requestParam;
-    }
-
-    private List<Field> getClassFieldList(Class<?> parameterClass) {
-        if (parameterClass == void.class || parameterClass == Void.class) {
-            return Collections.emptyList();
-        }
-        Field[] fields = parameterClass.getDeclaredFields();
-        List<Field> fileList = new ArrayList<>(Arrays.asList(fields));
-        //super
-        Field[] parentFields;
-        Class<?> parentClass = parameterClass.getSuperclass();
-        while (parentClass != null && parentClass != Object.class) {
-            parentFields = parentClass.getDeclaredFields();
-            fileList.addAll(Arrays.asList(parentFields));
-            parentClass = parentClass.getSuperclass();
-        }
-        return fileList;
-    }
-
-    private Class<?> getRequestListActualType(Method method, Class<?> paramClass, Field field) {
-        Type generictype = field.getGenericType();
+    private Class<?> getRequestListActualType(Method method, Class<?> paramClass, RecordComponent recordComponent) {
+        Type generictype = recordComponent.getGenericType();
         if (generictype instanceof ParameterizedType parameterizedType) {
             Type[] listActualTypeArguments = parameterizedType.getActualTypeArguments();
             Type listType = listActualTypeArguments[0];
@@ -506,14 +444,13 @@ public final class ApiDefinitionManager {
             }
         }
         if (subType == null) {
-            log.error("{}.{} getRequestListActualType genericType error", paramClass.getName(), field.getName());
-            throw new RuntimeException(paramClass.getName() + "." + field.getName() + " get genericType error");
+            subType = Object.class;
         }
         return subType;
     }
 
-    private Class<?> getResponseListActualType(Method method, Class<?> paramClass, Field field) {
-        Type generictype = field.getGenericType();
+    private Class<?> getResponseListActualType(Method method, Class<?> paramClass, RecordComponent recordComponent) {
+        Type generictype = recordComponent.getGenericType();
         ParameterizedType listGenericType = (ParameterizedType) generictype;
         Type[] listActualTypeArguments = listGenericType.getActualTypeArguments();
         Type listType = listActualTypeArguments[0];
@@ -545,8 +482,7 @@ public final class ApiDefinitionManager {
             }
         }
         if (subType == null) {
-            log.error("{}.{} getResponseListActualType genericType error", paramClass.getName(), field.getName());
-            throw new RuntimeException(paramClass.getName() + "." + field.getName() + " get genericType error");
+            subType = Object.class;
         }
         return subType;
     }
@@ -562,39 +498,34 @@ public final class ApiDefinitionManager {
             String parameterName;
             Class<?> type;
             JSONObject requestParameter;
-            List<Field> fileList = this.getClassFieldList(typeClass);
+            RecordComponent[] recordComponents = typeClass.getRecordComponents();
+            if (recordComponents == null) {
+                return requestParameters;
+            }
             ApiParameter apiParameter;
-            for (Field field : fileList) {
-                if (!Modifier.isStatic(field.getModifiers()) && !Modifier.isFinal(field.getModifiers())) {
-                    if (field.isAnnotationPresent(ApiParameter.class)) {
-                        apiParameter = field.getAnnotation(ApiParameter.class);
-                        parameterName = field.getName();
-                        type = field.getType();
-                        if (isBasicType(type)) {
-                            requestParameter = this.createBasicRequestParameter(type, parameterName, apiParameter);
-                            requestParameters.put(requestParameter);
-                        } else if (Collection.class.isAssignableFrom(type)) {
-                            Class<?> subType = this.getRequestListActualType(method, typeClass, field);
-                            requestParameter = this.createCollectionRequestParameter(method, subType, parameterName, apiParameter, requestClassLinked);
-                            requestParameters.put(requestParameter);
-                        } else if (type.isArray()) {
-                            Class<?> componentType = type.getComponentType();
-                            requestParameter = this.createCollectionRequestParameter(method, componentType, parameterName, apiParameter, requestClassLinked);
-                            requestParameters.put(requestParameter);
-                        } else if (JSONArray.class == type) {
-                            requestParameter = this.createJsonArrayRequestParam(parameterName, apiParameter);
-                            requestParameters.put(requestParameter);
-                        } else if (JSONObject.class == type) {
-                            requestParameter = this.createObjectRequestParameter(parameterName, apiParameter);
-                            requestParameters.put(requestParameter);
-                        } else if (Object.class == type) {
-                            Class<?> subType = this.getRequestListActualType(method, typeClass, field);
-                            JSONObject objectRequestParamVo = this.createObjectRequestParameter(method, subType, requestClassLinked, parameterName, apiParameter);
-                            requestParameters.put(objectRequestParamVo);
-                        } else {
-                            JSONObject objectRequestParamVo = this.createObjectRequestParameter(method, type, requestClassLinked, parameterName, apiParameter);
-                            requestParameters.put(objectRequestParamVo);
-                        }
+            for (RecordComponent recordComponent : recordComponents) {
+                if (recordComponent.isAnnotationPresent(ApiParameter.class)) {
+                    apiParameter = recordComponent.getAnnotation(ApiParameter.class);
+                    parameterName = recordComponent.getName();
+                    type = recordComponent.getType();
+                    if (isBasicType(type)) {
+                        requestParameter = this.createBasicRequestParameter(type, parameterName, apiParameter);
+                        requestParameters.put(requestParameter);
+                    } else if (Iterable.class.isAssignableFrom(type)) {
+                        Class<?> subType = this.getRequestListActualType(method, typeClass, recordComponent);
+                        requestParameter = this.createCollectionRequestParameter(method, subType, parameterName, apiParameter, requestClassLinked);
+                        requestParameters.put(requestParameter);
+                    } else if (type.isArray()) {
+                        Class<?> componentType = type.getComponentType();
+                        requestParameter = this.createCollectionRequestParameter(method, componentType, parameterName, apiParameter, requestClassLinked);
+                        requestParameters.put(requestParameter);
+                    } else if (Object.class == type) {
+                        Class<?> subType = this.getRequestListActualType(method, typeClass, recordComponent);
+                        JSONObject objectRequestParamVo = this.createObjectRequestParameter(method, subType, requestClassLinked, parameterName, apiParameter);
+                        requestParameters.put(objectRequestParamVo);
+                    } else {
+                        JSONObject objectRequestParamVo = this.createObjectRequestParameter(method, type, requestClassLinked, parameterName, apiParameter);
+                        requestParameters.put(objectRequestParamVo);
                     }
                 }
             }
@@ -611,39 +542,34 @@ public final class ApiDefinitionManager {
             String parameterName;
             Class<?> type;
             JSONObject responseParameter;
-            List<Field> fieldList = this.getClassFieldList(paramClass);
+            RecordComponent[] recordComponents = paramClass.getRecordComponents();
+            if (recordComponents == null) {
+                return responseParameters;
+            }
             ApiParameter apiParameter;
-            for (Field field : fieldList) {
-                if (!Modifier.isStatic(field.getModifiers())) {
-                    if (field.isAnnotationPresent(ApiParameter.class)) {
-                        apiParameter = field.getAnnotation(ApiParameter.class);
-                        parameterName = field.getName();
-                        type = field.getType();
-                        if (isBasicType(type)) {
-                            responseParameter = this.createBasicResponseParameter(type, parameterName, apiParameter);
-                            responseParameters.put(responseParameter);
-                        } else if (Collection.class.isAssignableFrom(type)) {
-                            Class<?> subType = this.getResponseListActualType(method, paramClass, field);
-                            responseParameter = this.createCollectionResponseParameter(method, subType, parameterName, apiParameter, responseClassLinked);
-                            responseParameters.put(responseParameter);
-                        } else if (type.isArray()) {
-                            Class<?> componentType = type.getComponentType();
-                            responseParameter = this.createCollectionResponseParameter(method, componentType, parameterName, apiParameter, responseClassLinked);
-                            responseParameters.put(responseParameter);
-                        } else if (JSONArray.class == type) {
-                            responseParameter = this.createObjectResponseParameter(parameterName, apiParameter);
-                            responseParameters.put(responseParameter);
-                        } else if (JSONObject.class == type) {
-                            responseParameter = createObjectResponseParameter(parameterName, apiParameter);
-                            responseParameters.put(responseParameter);
-                        } else if (Object.class == type) {
-                            Class<?> subType = this.getRequestListActualType(method, paramClass, field);
-                            responseParameter = this.createObjectResponseParameter(method, subType, responseClassLinked, parameterName, apiParameter);
-                            responseParameters.put(responseParameter);
-                        } else {
-                            responseParameter = this.createObjectResponseParameter(method, type, responseClassLinked, parameterName, apiParameter);
-                            responseParameters.put(responseParameter);
-                        }
+            for (RecordComponent recordComponent : recordComponents) {
+                if (recordComponent.isAnnotationPresent(ApiParameter.class)) {
+                    apiParameter = recordComponent.getAnnotation(ApiParameter.class);
+                    parameterName = recordComponent.getName();
+                    type = recordComponent.getType();
+                    if (isBasicType(type)) {
+                        responseParameter = this.createBasicResponseParameter(type, parameterName, apiParameter);
+                        responseParameters.put(responseParameter);
+                    } else if (Iterable.class.isAssignableFrom(type)) {
+                        Class<?> subType = this.getResponseListActualType(method, paramClass, recordComponent);
+                        responseParameter = this.createCollectionResponseParameter(method, subType, parameterName, apiParameter, responseClassLinked);
+                        responseParameters.put(responseParameter);
+                    } else if (type.isArray()) {
+                        Class<?> componentType = type.getComponentType();
+                        responseParameter = this.createCollectionResponseParameter(method, componentType, parameterName, apiParameter, responseClassLinked);
+                        responseParameters.put(responseParameter);
+                    } else if (Object.class == type) {
+                        Class<?> subType = this.getResponseListActualType(method, paramClass, recordComponent);
+                        responseParameter = this.createObjectResponseParameter(method, subType, responseClassLinked, parameterName, apiParameter);
+                        responseParameters.put(responseParameter);
+                    } else {
+                        responseParameter = this.createObjectResponseParameter(method, type, responseClassLinked, parameterName, apiParameter);
+                        responseParameters.put(responseParameter);
                     }
                 }
             }
@@ -708,11 +634,12 @@ public final class ApiDefinitionManager {
             ApiParameter myApiParameter = typeClass.getAnnotation(ApiParameter.class);
             responseParameter.put("description", myApiParameter.description());
         }
-        boolean additionalProperties = typeClass.equals(JSONObject.class);
-        responseParameter.put("additionalProperties", additionalProperties);
+
         JSONObject items = new JSONObject();
         items.put("type", ApiConstants.TYPE_OBJECT);
         JSONArray childArray = this.getSubResponseParameters(method, typeClass, responseClassLinked);
+        boolean additionalProperties = childArray.isEmpty();
+        responseParameter.put("additionalProperties", additionalProperties);
         items.put("childArray", childArray);
         responseParameter.put("items", items);
         return responseParameter;
@@ -737,20 +664,10 @@ public final class ApiDefinitionManager {
             ApiParameter myApiParameter = paramClass.getAnnotation(ApiParameter.class);
             responseParam.put("description", myApiParameter.description());
         }
-        responseParam.put("additionalProperties", false);
         JSONArray childArray = this.getSubResponseParameters(method, paramClass, responseClassLinked);
+        boolean additionalProperties = childArray.isEmpty();
+        responseParam.put("additionalProperties", additionalProperties);
         responseParam.put("childArray", childArray);
         return responseParam;
-    }
-
-    private JSONObject createObjectResponseParameter(String name, ApiParameter apiParameter) {
-        JSONObject responseParameter = new JSONObject();
-        responseParameter.put("name", name);
-        responseParameter.put("type", ApiConstants.TYPE_OBJECT);
-        responseParameter.put("description", apiParameter.description());
-        responseParameter.put("additionalProperties", true);
-        JSONArray childArray = new JSONArray();
-        responseParameter.put("childArray", childArray);
-        return responseParameter;
     }
 }

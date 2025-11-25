@@ -1,24 +1,33 @@
 package io.github.siyukio.application.model.parameter;
 
 import io.github.siyukio.tools.api.annotation.ApiParameter;
-import lombok.ToString;
+import lombok.Builder;
+import lombok.With;
+import org.json.JSONObject;
 
 import java.util.Date;
+import java.util.List;
 
-/**
- * @author Buddy
- */
-@ToString
+
 @ApiParameter(description = "items")
-public class ItemVo {
+@Builder
+@With
+public record ItemVo(
 
-    @ApiParameter
-    public String id;
+        @ApiParameter
+        String id,
 
-    @ApiParameter
-    public String title;
+        @ApiParameter
+        String title,
 
-    @ApiParameter
-    public Date lastUpdateDate;
+        @ApiParameter
+        Date lastUpdateDate,
+
+        @ApiParameter
+        JSONObject metadata,
+
+        @ApiParameter
+        List<JSONObject> children
+) {
 
 }

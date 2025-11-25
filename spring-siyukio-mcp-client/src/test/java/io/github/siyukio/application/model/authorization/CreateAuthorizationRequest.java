@@ -1,28 +1,27 @@
 package io.github.siyukio.application.model.authorization;
 
 import io.github.siyukio.tools.api.annotation.ApiParameter;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.With;
 
 import java.util.List;
 
 /**
  * @author Buddy
  */
-@ToString
+
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class CreateAuthorizationRequest {
+@With
+public record CreateAuthorizationRequest(
 
-    @ApiParameter
-    public String uid;
+        @ApiParameter
+        String uid,
 
-    @ApiParameter
-    public String name;
+        @ApiParameter
+        String name,
 
-    @ApiParameter
-    public List<String> roles;
+        @ApiParameter
+        List<String> roles
+) {
+
 }

@@ -14,7 +14,7 @@ import java.lang.annotation.*;
  * @author Buddy
  */
 
-@Target({ElementType.TYPE, ElementType.METHOD})
+@Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @ResponseBody

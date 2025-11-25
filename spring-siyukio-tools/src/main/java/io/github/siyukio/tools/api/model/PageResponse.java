@@ -1,26 +1,22 @@
 package io.github.siyukio.tools.api.model;
 
 import io.github.siyukio.tools.api.annotation.ApiParameter;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import lombok.experimental.SuperBuilder;
+import lombok.Builder;
+import lombok.With;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
  * @author Buddy
  */
-@NoArgsConstructor
-@AllArgsConstructor
-@SuperBuilder
-@ToString
-public class PageResponse<T> {
+@Builder
+@With
+public record PageResponse<T>(
+        
+        @ApiParameter(description = "total number of records")
+        int total,
 
-    @ApiParameter(description = "total number of records")
-    public int total;
-
-    @ApiParameter(description = "data items")
-    public List<T> items = new ArrayList<>();
+        @ApiParameter(description = "data items")
+        List<T> items
+) {
 }

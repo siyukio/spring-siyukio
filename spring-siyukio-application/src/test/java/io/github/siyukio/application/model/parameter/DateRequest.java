@@ -1,23 +1,19 @@
 package io.github.siyukio.application.model.parameter;
 
 import io.github.siyukio.tools.api.annotation.ApiParameter;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.With;
 
 import java.util.Date;
 
 /**
  * @author Buddy
  */
-@ToString
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class DateRequest {
+@With
+public record DateRequest(
 
-    @ApiParameter(required = false)
-    public Date date;
-
+        @ApiParameter(required = false)
+        Date date
+) {
 }

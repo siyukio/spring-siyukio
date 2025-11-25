@@ -1,26 +1,23 @@
 package io.github.siyukio.application.model.signature;
 
 import io.github.siyukio.tools.api.annotation.ApiParameter;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.With;
 
 /**
  * @author Buddy
  */
-@ToString
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class SignatureRequest {
+@With
+public record SignatureRequest(
 
-    @ApiParameter
-    public int num;
+        @ApiParameter
+        int num,
 
-    @ApiParameter
-    public String text;
+        @ApiParameter
+        String text,
 
-    @ApiParameter
-    public boolean bool;
+        @ApiParameter
+        boolean bool
+) {
 }

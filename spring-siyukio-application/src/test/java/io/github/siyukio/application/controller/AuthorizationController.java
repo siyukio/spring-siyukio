@@ -24,13 +24,13 @@ public class AuthorizationController {
     @ApiMapping(path = "/createAuthorization", authorization = false)
     public CreateResponseResponse createAuthorization(CreateAuthorizationRequest createAuthorizationRequest) {
         log.info("{}", JsonUtils.toPrettyJSONString(createAuthorizationRequest));
-        CreateResponseResponse createResponseResponse = new CreateResponseResponse();
-        Token token = Token.builder().uid(createAuthorizationRequest.uid)
-                .name(createAuthorizationRequest.name)
-                .roles(createAuthorizationRequest.roles)
+        Token token = Token.builder().uid(createAuthorizationRequest.uid())
+                .name(createAuthorizationRequest.name())
+                .roles(createAuthorizationRequest.roles())
                 .refresh(false).build();
-        createResponseResponse.authorization = this.tokenProvider.createAuthorization(token);
-        return createResponseResponse;
+        String authorization = this.tokenProvider.createAuthorization(token);
+        return CreateResponseResponse.builder()
+                .authorization(authorization).build();
     }
 
     @ApiMapping(path = "/getToken")

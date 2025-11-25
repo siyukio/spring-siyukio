@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 
 import java.util.Map;
 import java.util.SortedMap;
@@ -24,13 +25,8 @@ public abstract class OpenApiUtils {
         JSONObject requestParamJson = new JSONObject();
         //type
         requestParamJson.put("type", "array");
-        //description
-        String description = arrayParamJson.optString("description");
-        requestParamJson.put("description", description);
         //items
-        JSONObject itemsJson = new JSONObject();
-        requestParamJson.put("items", itemsJson);
-
+        JSONObject itemsJson;
         JSONObject arrayItemJson = arrayParamJson.optJSONObject("items");
         String itemType = arrayItemJson.optString("type");
         if (itemType.equals("object")) {
@@ -38,6 +34,7 @@ public abstract class OpenApiUtils {
             itemsJson = createObjectResponse(itemsChildArray);
         } else {
             itemsJson = new JSONObject();
+            itemsJson.put("type", itemType);
         }
         requestParamJson.put("items", itemsJson);
         return requestParamJson;
@@ -144,28 +141,20 @@ public abstract class OpenApiUtils {
         return requestBodyJson;
     }
 
-    public static JSONObject createDynamicObjectRequest(JSONObject requestParameter) {
-        JSONObject requestParamJson = new JSONObject();
-        //type
-        requestParamJson.put("type", "object");
-        requestParamJson.put("additionalProperties", "true");
-
-        if (requestParameter.has("example")) {
-            requestParamJson.put("example", requestParameter.opt("example"));
-        }
-        if (requestParameter.has("examples")) {
-            requestParamJson.put("examples", requestParameter.opt("examples"));
-        }
-        return requestParamJson;
-    }
-
     public static JSONObject createObjectRequest(JSONArray requestParameters) {
         JSONObject requestParamJson = new JSONObject();
+        if (requestParameters.isEmpty()) {
+            requestParamJson.put("additionalProperties", true);
+            requestParamJson.put("type", "object");
+            return requestParamJson;
+        }
         //type
         requestParamJson.put("type", "object");
         //required
         JSONArray requiredArray = new JSONArray();
-        requestParamJson.put("required", requiredArray);
+        if (!requiredArray.isEmpty()) {
+            requestParamJson.put("required", requiredArray);
+        }
         //properties
         JSONObject propertiesJson = new JSONObject();
         requestParamJson.put("properties", propertiesJson);
@@ -177,7 +166,6 @@ public abstract class OpenApiUtils {
         String description;
         JSONObject propJson;
         JSONArray itemsChildArray;
-        boolean additionalProperties;
         for (int index = 0; index < requestParameters.length(); index++) {
             childParam = requestParameters.getJSONObject(index);
             type = childParam.optString("type");
@@ -189,12 +177,13 @@ public abstract class OpenApiUtils {
             }
             switch (type) {
                 case "object":
-                    additionalProperties = childParam.optBoolean("additionalProperties", false);
-                    if (additionalProperties) {
-                        propJson = createDynamicObjectRequest(childParam);
-                    } else {
-                        itemsChildArray = childParam.optJSONArray("childArray");
-                        propJson = createObjectRequest(itemsChildArray);
+                    itemsChildArray = childParam.optJSONArray("childArray");
+                    propJson = createObjectRequest(itemsChildArray);
+                    if (childParam.has("example")) {
+                        propJson.put("example", childParam.opt("example"));
+                    }
+                    if (childParam.has("examples")) {
+                        propJson.put("examples", childParam.opt("examples"));
                     }
                     break;
                 case "array":
@@ -234,10 +223,10 @@ public abstract class OpenApiUtils {
                     if (childParam.has("default")) {
                         propJson.put("default", childParam.opt("default"));
                     }
-
-                    propJson.put("description", description);
-
                     break;
+            }
+            if (StringUtils.hasText(description)) {
+                propJson.put("description", description);
             }
             propertiesJson.put(name, propJson);
         }
@@ -248,9 +237,6 @@ public abstract class OpenApiUtils {
         JSONObject requestParamJson = new JSONObject();
         //type
         requestParamJson.put("type", "array");
-        //description
-        String description = arrayParamJson.optString("description");
-        requestParamJson.put("description", description);
         //items
         JSONObject itemsJson;
         JSONObject arrayItemJson = arrayParamJson.optJSONObject("items");
@@ -260,7 +246,6 @@ public abstract class OpenApiUtils {
             itemsJson = createObjectRequest(itemsChildArray);
         } else {
             itemsJson = arrayItemJson;
-            itemsJson.put("type", itemType);
         }
         requestParamJson.put("items", itemsJson);
         if (arrayParamJson.has("example")) {
@@ -301,11 +286,18 @@ public abstract class OpenApiUtils {
 
     public static JSONObject createObjectResponse(JSONArray responseParamArray) {
         JSONObject responseParamJson = new JSONObject();
+        if (responseParamArray.isEmpty()) {
+            responseParamJson.put("additionalProperties", true);
+            responseParamJson.put("type", "object");
+            return responseParamJson;
+        }
         //type
         responseParamJson.put("type", "object");
         //required
         JSONArray requiredArray = new JSONArray();
-        responseParamJson.put("required", requiredArray);
+        if (!requiredArray.isEmpty()) {
+            responseParamJson.put("required", requiredArray);
+        }
         //properties
         JSONObject propertiesJson = new JSONObject();
         responseParamJson.put("properties", propertiesJson);
@@ -338,8 +330,10 @@ public abstract class OpenApiUtils {
                     } else {
                         propJson.put("type", type);
                     }
-                    propJson.put("description", description);
                     break;
+            }
+            if (StringUtils.hasText(description)) {
+                propJson.put("description", description);
             }
             propertiesJson.put(name, propJson);
         }
