@@ -1,0 +1,73 @@
+package io.github.siyukio.postgresql.entity;
+
+import io.github.siyukio.tools.entity.postgresql.annotation.PgColumn;
+import io.github.siyukio.tools.entity.postgresql.annotation.PgEntity;
+import io.github.siyukio.tools.entity.postgresql.annotation.PgIndex;
+import io.github.siyukio.tools.entity.postgresql.annotation.PgKey;
+import lombok.Builder;
+import lombok.With;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.Date;
+import java.util.List;
+
+/**
+ * @author Bugee
+ */
+@PgEntity(schema = "test", comment = "record event", indexes = {
+        @PgIndex(columns = {"type"}),
+        @PgIndex(columns = {"error", "rating"})
+})
+@Builder
+@With
+public record RecordEvent(
+
+        @PgKey
+        String id,
+
+        @PgColumn
+        String type,
+
+        @PgColumn
+        String content,
+
+        @PgColumn
+        boolean error,
+
+        @PgColumn
+        double rating,
+
+        @PgColumn
+        int total,
+
+        @PgColumn(comment = "Elapsed time in milliseconds")
+        long times,
+
+        @PgColumn(comment = "Key attribute", defaultValue = "{\"role\":\"user\"}")
+        JSONObject metadata,
+
+        @PgColumn(comment = "Collection of messages")
+        JSONArray messages,
+
+        @PgColumn(comment = "item")
+        Item item,
+
+        @PgColumn(comment = "items")
+        List<Item> items,
+
+        @PgColumn
+        Date createAt,
+
+        @PgColumn
+        long createTime
+) {
+
+    @Builder
+    @With
+    public record Item(
+            String type,
+            long costTime
+    ) {
+    }
+}

@@ -169,10 +169,9 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
 
     @Override
     public Page<T> queryPage(QueryBuilder queryBuilder, SortBuilder sort, int page, int pageSize) {
-        Page<T> result = new Page<>();
-        result.total = this.countByQuery(queryBuilder);
+        int total = this.countByQuery(queryBuilder);
         int from = (page - 1) * pageSize;
-        result.items = this.query(queryBuilder, sort, from, pageSize);
-        return result;
+        List<T> items = this.query(queryBuilder, sort, from, pageSize);
+        return new Page<>(total, items);
     }
 }

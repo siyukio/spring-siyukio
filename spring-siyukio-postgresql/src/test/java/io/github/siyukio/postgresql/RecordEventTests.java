@@ -1,7 +1,6 @@
 package io.github.siyukio.postgresql;
 
-import io.github.siyukio.postgresql.entity.TestEvent;
-import io.github.siyukio.postgresql.service.TransactionService;
+import io.github.siyukio.postgresql.entity.RecordEvent;
 import io.github.siyukio.tools.entity.page.Page;
 import io.github.siyukio.tools.entity.postgresql.PgEntityDao;
 import io.github.siyukio.tools.entity.query.QueryBuilder;
@@ -22,23 +21,21 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author Bugee
  */
 @Slf4j
 @SpringBootTest
-public class PostgresqlTests {
+public class RecordEventTests {
 
     private final String id = "test";
 
     @Autowired
-    private PgEntityDao<TestEvent> testEventPgEntityDao;
+    private PgEntityDao<RecordEvent> recordEventPgEntityDao;
 
-    @Autowired
-    private TransactionService transactionService;
-
-    private TestEvent createRandom() {
+    private RecordEvent createRandom() {
         JSONObject metadataJson = new JSONObject();
         metadataJson.put("model", "gpt-5-chat");
 
@@ -48,11 +45,11 @@ public class PostgresqlTests {
         messageJson.put("text", "hello");
         messages.put(messageJson);
 
-        TestEvent.Item item = TestEvent.Item.builder()
+        RecordEvent.Item item = RecordEvent.Item.builder()
                 .costTime(1000)
                 .build();
 
-        return TestEvent.builder()
+        return RecordEvent.builder()
                 .error(false)
                 .times(1000)
                 .content("test")
@@ -67,89 +64,90 @@ public class PostgresqlTests {
 
     @Test
     public void testInsert() {
-        TestEvent testEvent = this.createRandom();
-        testEvent = this.testEventPgEntityDao.insert(testEvent);
-        log.info("{}", JsonUtils.toPrettyJSONString(testEvent));
+        RecordEvent recordEvent = this.createRandom();
+        recordEvent = this.recordEventPgEntityDao.insert(recordEvent);
+        log.info("{}", JsonUtils.toPrettyJSONString(recordEvent));
     }
 
     @Test
     public void testInsertBatch() {
-        List<TestEvent> testEvents = new ArrayList<>();
-        testEvents.add(this.createRandom());
-        int num = this.testEventPgEntityDao.insertBatch(testEvents);
+        List<RecordEvent> recordEvents = new ArrayList<>();
+        recordEvents.add(this.createRandom());
+        int num = this.recordEventPgEntityDao.insertBatch(recordEvents);
         log.info("{}", num);
     }
 
     @Test
     public void testInsertWithId() {
-        TestEvent testEvent = this.createRandom();
-        testEvent.id = this.id;
-        testEvent = this.testEventPgEntityDao.insert(testEvent);
-        log.info("{}", JsonUtils.toPrettyJSONString(testEvent));
+        RecordEvent recordEvent = this.createRandom();
+        recordEvent = recordEvent.withId(this.id);
+        recordEvent = this.recordEventPgEntityDao.insert(recordEvent);
+        log.info("{}", JsonUtils.toPrettyJSONString(recordEvent));
     }
 
     @Test
     public void testQueryWithId() {
-        TestEvent testEvent = this.testEventPgEntityDao.queryById(this.id);
-        log.info("{}", JsonUtils.toPrettyJSONString(testEvent));
+        RecordEvent recordEvent = this.recordEventPgEntityDao.queryById(this.id);
+        log.info("{}", JsonUtils.toPrettyJSONString(recordEvent));
     }
 
     @Test
     public void testQueryAndUpdate() {
-        TestEvent testEvent = this.testEventPgEntityDao.queryById(this.id);
-        if (testEvent == null) {
+        RecordEvent recordEvent = this.recordEventPgEntityDao.queryById(this.id);
+        if (recordEvent == null) {
             throw new RuntimeException("id not found");
         }
-        testEvent.content = "update";
-        testEvent.error = true;
-        testEvent = this.testEventPgEntityDao.update(testEvent);
-        log.info("{}", JsonUtils.toPrettyJSONString(testEvent));
+        recordEvent = recordEvent.withContent("update")
+                .withError(true);
+        recordEvent = this.recordEventPgEntityDao.update(recordEvent);
+        log.info("{}", JsonUtils.toPrettyJSONString(recordEvent));
     }
 
     @Test
     public void testUpdateBatch() {
-        List<TestEvent> testEvents = new ArrayList<>();
-        testEvents.add(this.createRandom());
-        for (TestEvent testEvent : testEvents) {
-            testEvent.id = IdUtils.getUniqueId();
-        }
+        List<RecordEvent> recordEvents = new ArrayList<>();
+        recordEvents.add(this.createRandom());
 
-        TestEvent testEvent = this.testEventPgEntityDao.queryById(this.id);
-        if (testEvent == null) {
+        recordEvents = recordEvents.stream()
+                .map(recordEvent -> recordEvent.withId(IdUtils.getUniqueId()))
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        RecordEvent recordEvent = this.recordEventPgEntityDao.queryById(this.id);
+        if (recordEvent == null) {
             throw new RuntimeException("id not found");
         }
-        testEvent.content = "update batch";
-        testEvents.add(testEvent);
-        int num = this.testEventPgEntityDao.updateBatch(testEvents);
+        recordEvent = recordEvent.withContent("update batch");
+        recordEvents.add(recordEvent);
+        int num = this.recordEventPgEntityDao.updateBatch(recordEvents);
         log.info("{}", num);
     }
 
     @Test
     public void testDeleteById() {
-        int num = this.testEventPgEntityDao.deleteById(this.id);
+        int num = this.recordEventPgEntityDao.deleteById(this.id);
         log.info("{}", num);
     }
 
     @Test
     public void testDeleteEntity() {
-        TestEvent testEvent = this.testEventPgEntityDao.queryById(this.id);
-        if (testEvent == null) {
+        RecordEvent recordEvent = this.recordEventPgEntityDao.queryById(this.id);
+        if (recordEvent == null) {
             throw new RuntimeException("id not found");
         }
-        int num = this.testEventPgEntityDao.delete(testEvent);
+        int num = this.recordEventPgEntityDao.delete(recordEvent);
         log.info("{}", num);
     }
 
     @Test
     public void testDeleteByQuery() {
         QueryBuilder queryBuilder = QueryBuilders.termQuery("type", "user");
-        int num = this.testEventPgEntityDao.deleteByQuery(queryBuilder);
+        int num = this.recordEventPgEntityDao.deleteByQuery(queryBuilder);
         log.info("{}", num);
     }
 
     @Test
     public void testCount() {
-        int num = this.testEventPgEntityDao.count();
+        int num = this.recordEventPgEntityDao.count();
         log.info("{}", num);
     }
 
@@ -157,22 +155,22 @@ public class PostgresqlTests {
     public void testCountByQuery() {
         Date maxDate = DateUtils.parse("2025-09-08 11:35:35");
         QueryBuilder queryBuilder = QueryBuilders.rangeQuery("createTime").lt(maxDate.getTime());
-        int num = this.testEventPgEntityDao.countByQuery(queryBuilder);
+        int num = this.recordEventPgEntityDao.countByQuery(queryBuilder);
         log.info("{}", num);
     }
 
     @Test
     public void testQuery() {
-        List<TestEvent> testEvents = this.testEventPgEntityDao.query(0, 10);
-        log.info("{}", JsonUtils.toPrettyJSONString(testEvents));
+        List<RecordEvent> recordEvents = this.recordEventPgEntityDao.query(0, 10);
+        log.info("{}", JsonUtils.toPrettyJSONString(recordEvents));
     }
 
     @Test
     public void testQuery2() {
         Date maxDate = DateUtils.parse("2025-09-08 11:35:35");
         QueryBuilder queryBuilder = QueryBuilders.rangeQuery("createTime").lt(maxDate.getTime());
-        List<TestEvent> testEvents = this.testEventPgEntityDao.query(queryBuilder, 0, 1);
-        log.info("{}", JsonUtils.toPrettyJSONString(testEvents));
+        List<RecordEvent> recordEvents = this.recordEventPgEntityDao.query(queryBuilder, 0, 1);
+        log.info("{}", JsonUtils.toPrettyJSONString(recordEvents));
     }
 
     @Test
@@ -181,28 +179,17 @@ public class PostgresqlTests {
         QueryBuilder queryBuilder = QueryBuilders.rangeQuery("createTime").lte(maxDate.getTime());
 
         SortBuilder sortBuilder = SortBuilders.fieldSort("createTime").order(SortOrder.DESC);
-        List<TestEvent> testEvents = this.testEventPgEntityDao.query(queryBuilder, sortBuilder, 0, 10);
-        log.info("{}", JsonUtils.toPrettyJSONString(testEvents));
+        List<RecordEvent> recordEvents = this.recordEventPgEntityDao.query(queryBuilder, sortBuilder, 0, 10);
+        log.info("{}", JsonUtils.toPrettyJSONString(recordEvents));
     }
 
     @Test
     public void testQueryPage() {
-        Date maxDate = DateUtils.parse("2025-09-08 11:35:36");
+        Date maxDate = new Date();
         QueryBuilder queryBuilder = QueryBuilders.rangeQuery("createTime").lte(maxDate.getTime());
 
         SortBuilder sortBuilder = SortBuilders.fieldSort("createTime").order(SortOrder.DESC);
-        Page<TestEvent> page = this.testEventPgEntityDao.queryPage(queryBuilder, sortBuilder, 1, 1);
+        Page<RecordEvent> page = this.recordEventPgEntityDao.queryPage(queryBuilder, sortBuilder, 1, 1);
         log.info("{}", JsonUtils.toPrettyJSONString(page));
     }
-
-    @Test
-    public void testTransaction() {
-        this.transactionService.insertWithTransaction();
-    }
-
-    @Test
-    public void testRollback() {
-        this.transactionService.insertWithRollback();
-    }
-
 }

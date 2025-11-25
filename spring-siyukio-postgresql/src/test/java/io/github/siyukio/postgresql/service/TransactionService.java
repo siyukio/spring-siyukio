@@ -1,6 +1,6 @@
 package io.github.siyukio.postgresql.service;
 
-import io.github.siyukio.postgresql.entity.TestEvent;
+import io.github.siyukio.postgresql.entity.RecordEvent;
 import io.github.siyukio.tools.entity.postgresql.PgEntityDao;
 import io.github.siyukio.tools.util.IdUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -16,42 +16,47 @@ import org.springframework.transaction.annotation.Transactional;
 public class TransactionService {
 
     @Autowired
-    private PgEntityDao<TestEvent> testEventPgEntityDao;
+    private PgEntityDao<RecordEvent> recordEventPgEntityDao;
 
     @Transactional
     public void insertWithTransaction() {
-        TestEvent testEvent = new TestEvent();
-        testEvent.id = IdUtils.getUniqueId();
-        testEvent.content = "first insert";
-        testEvent.type = "insert";
-        this.testEventPgEntityDao.insert(testEvent);
+        RecordEvent recordEvent = RecordEvent.builder()
+                .id(IdUtils.getUniqueId())
+                .content("first insert")
+                .type("insert")
+                .build();
+        this.recordEventPgEntityDao.insert(recordEvent);
 
-        boolean exist = this.testEventPgEntityDao.existById(testEvent.id);
-        log.info("insertWithTransaction exist:{},{}", testEvent.id, exist);
+        boolean exist = this.recordEventPgEntityDao.existById(recordEvent.id());
+        log.info("insertWithTransaction exist:{},{}", recordEvent.id(), exist);
 
-        testEvent = new TestEvent();
-        testEvent.id = IdUtils.getUniqueId();
-        testEvent.content = "second insert";
-        testEvent.type = "insert";
-        this.testEventPgEntityDao.insert(testEvent);
+        recordEvent = RecordEvent.builder()
+                .id(IdUtils.getUniqueId())
+                .content("second insert")
+                .type("insert")
+                .build();
+        this.recordEventPgEntityDao.insert(recordEvent);
     }
 
     @Transactional
     public void insertWithRollback() {
-        TestEvent testEvent = new TestEvent();
-        testEvent.id = IdUtils.getUniqueId();
-        testEvent.content = "first insert";
-        testEvent.type = "insert";
-        this.testEventPgEntityDao.insert(testEvent);
+        RecordEvent recordEvent = RecordEvent.builder()
+                .id(IdUtils.getUniqueId())
+                .content("first insert")
+                .type("insert")
+                .build();
+        this.recordEventPgEntityDao.insert(recordEvent);
 
-        boolean exist = this.testEventPgEntityDao.existById(testEvent.id);
-        log.info("insertWithRollback exist:{},{}", testEvent.id, exist);
+        boolean exist = this.recordEventPgEntityDao.existById(recordEvent.id());
+        log.info("insertWithRollback exist:{},{}", recordEvent.id(), exist);
 
-        testEvent = new TestEvent();
-        testEvent.id = IdUtils.getUniqueId();
-        testEvent.content = "second insert";
-        testEvent.type = "insert";
-        this.testEventPgEntityDao.insert(testEvent);
+        recordEvent = RecordEvent.builder()
+                .id(IdUtils.getUniqueId())
+                .content("second insert")
+                .type("insert")
+                .build();
+        this.recordEventPgEntityDao.insert(recordEvent);
+        this.recordEventPgEntityDao.insert(recordEvent);
         throw new RuntimeException("rollback");
     }
 }

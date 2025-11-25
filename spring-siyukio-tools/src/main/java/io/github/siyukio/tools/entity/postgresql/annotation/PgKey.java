@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
  * @author Bugee
  */
 
-@Target(value = {ElementType.FIELD})
+@Target(value = {ElementType.RECORD_COMPONENT})
 @Retention(value = RetentionPolicy.RUNTIME)
 public @interface PgKey {
 

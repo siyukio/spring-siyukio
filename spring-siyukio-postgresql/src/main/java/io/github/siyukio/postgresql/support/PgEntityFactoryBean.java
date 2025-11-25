@@ -33,8 +33,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import javax.sql.DataSource;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.RecordComponent;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.ResultSetMetaData;
@@ -89,11 +88,11 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
     }
 
 
-    private ColumnDefinition getColumnDefinition(Field field) {
-        PgColumn pgColumn = field.getAnnotation(PgColumn.class);
+    private ColumnDefinition getColumnDefinition(RecordComponent recordComponent) {
+        PgColumn pgColumn = recordComponent.getAnnotation(PgColumn.class);
         assert pgColumn != null;
-        ColumnType columnType = EntityUtils.getColumnType(field);
-        String fieldName = field.getName();
+        ColumnType columnType = EntityUtils.getColumnType(recordComponent);
+        String fieldName = recordComponent.getName();
         String columnName;
         if (StringUtils.hasText(pgColumn.column())) {
             columnName = pgColumn.column();
@@ -114,11 +113,11 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         return new ColumnDefinition(fieldName, columnName, columnType, defaultValue, pgColumn.comment());
     }
 
-    private KeyDefinition getKeyDefinition(Field field) {
-        PgKey pgKey = field.getAnnotation(PgKey.class);
+    private KeyDefinition getKeyDefinition(RecordComponent recordComponent) {
+        PgKey pgKey = recordComponent.getAnnotation(PgKey.class);
         assert pgKey != null;
-        ColumnType columnType = EntityUtils.getKeyType(field);
-        String fieldName = field.getName();
+        ColumnType columnType = EntityUtils.getKeyType(recordComponent);
+        String fieldName = recordComponent.getName();
         String columnName;
         if (StringUtils.hasText(pgKey.column())) {
             columnName = pgKey.column();
@@ -129,14 +128,17 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         return new KeyDefinition(fieldName, columnName, columnType, pgKey.generated(), pgKey.comment());
     }
 
-    private List<IndexDefinition> getIndexDefinitions(PgIndex[] pgIndexes) {
+    private List<IndexDefinition> getIndexDefinitions(String table, PgIndex[] pgIndexes) {
         List<IndexDefinition> indexDefinitions = Collections.emptyList();
         if (pgIndexes.length > 0) {
             indexDefinitions = new ArrayList<>();
             IndexDefinition indexDefinition;
             String indexName;
             for (PgIndex pgIndex : pgIndexes) {
-                indexName = EntityConstants.COMP_INDEX_PREFIX + String.join("_", pgIndex.columns());
+                indexName = EntityConstants.INDEX_PREFIX + table + "__" + String.join("_", pgIndex.columns());
+                if (indexName.length() > 63) {
+                    indexName = indexName.substring(0, 63);
+                }
                 EntityUtils.isSafe(indexName);
                 indexDefinition = new IndexDefinition(indexName, pgIndex.columns());
                 indexDefinitions.add(indexDefinition);
@@ -148,15 +150,12 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
     public EntityDefinition getEntityDefinition() {
         KeyDefinition keyDefinition = null;
         List<ColumnDefinition> columnDefinitions = new ArrayList<>();
-        Field[] fieldArray = this.entityClass.getDeclaredFields();
-        for (Field field : fieldArray) {
-            if (Modifier.isStatic(field.getModifiers())) {
-                continue;
-            }
-            if (field.isAnnotationPresent(PgKey.class)) {
-                keyDefinition = this.getKeyDefinition(field);
-            } else if (field.isAnnotationPresent(PgColumn.class)) {
-                columnDefinitions.add(this.getColumnDefinition(field));
+        RecordComponent[] recordComponents = this.entityClass.getRecordComponents();
+        for (RecordComponent recordComponent : recordComponents) {
+            if (recordComponent.isAnnotationPresent(PgKey.class)) {
+                keyDefinition = this.getKeyDefinition(recordComponent);
+            } else if (recordComponent.isAnnotationPresent(PgColumn.class)) {
+                columnDefinitions.add(this.getColumnDefinition(recordComponent));
             }
         }
 
@@ -185,7 +184,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
 
         EntityUtils.isSafe(table);
 
-        List<IndexDefinition> indexDefinitions = this.getIndexDefinitions(pgEntity.indexes());
+        List<IndexDefinition> indexDefinitions = this.getIndexDefinitions(table, pgEntity.indexes());
         return new EntityDefinition(dbName, schema, table, pgEntity.comment(),
                 pgEntity.createTableAuto(), pgEntity.addColumnAuto(), pgEntity.createIndexAuto(),
                 keyDefinition, columnDefinitions, indexDefinitions);

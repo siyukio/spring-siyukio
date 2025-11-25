@@ -5,7 +5,7 @@ import io.github.siyukio.tools.entity.EntityConstants;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.lang.reflect.Field;
+import java.lang.reflect.RecordComponent;
 import java.util.Collection;
 import java.util.Date;
 
@@ -64,8 +64,8 @@ public class EntityUtils {
         return result.toString();
     }
 
-    public static ColumnType getKeyType(Field field) {
-        Class<?> type = field.getType();
+    public static ColumnType getKeyType(RecordComponent recordComponent) {
+        Class<?> type = recordComponent.getType();
         if (int.class == type || Integer.class == type) {
             return ColumnType.INT;
         } else if (long.class == type || Long.class == type) {
@@ -73,7 +73,7 @@ public class EntityUtils {
         } else if (String.class == type) {
             return ColumnType.TEXT;
         } else {
-            String error = String.format(EntityConstants.ERROR_FILED_UNSUPPORTED_FORMAT, "Key", field.getType());
+            String error = String.format(EntityConstants.ERROR_FILED_UNSUPPORTED_FORMAT, "Key", recordComponent.getType());
             throw new IllegalArgumentException(error);
         }
     }
@@ -98,8 +98,8 @@ public class EntityUtils {
         return true;
     }
 
-    public static ColumnType getColumnType(Field field) {
-        Class<?> type = field.getType();
+    public static ColumnType getColumnType(RecordComponent recordComponent) {
+        Class<?> type = recordComponent.getType();
         if (boolean.class == type || Boolean.class == type) {
             return ColumnType.BOOLEAN;
         } else if (int.class == type || Integer.class == type) {
@@ -123,7 +123,7 @@ public class EntityUtils {
         } else if (isCustomClass(type)) {
             return ColumnType.JSON_OBJECT;
         } else {
-            String error = String.format(EntityConstants.ERROR_FILED_UNSUPPORTED_FORMAT, "Column", field.getType());
+            String error = String.format(EntityConstants.ERROR_FILED_UNSUPPORTED_FORMAT, "Column", recordComponent.getType());
             throw new IllegalArgumentException(error);
         }
     }
