@@ -1,6 +1,7 @@
 package io.github.siyukio.tools.util;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.StreamReadFeature;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -45,6 +46,8 @@ public abstract class JsonUtils {
         OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
         OBJECT_MAPPER.getFactory().enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION.mappedFeature());
+
+        OBJECT_MAPPER.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
     }
 
     public static ObjectMapper getObjectMapper() {
@@ -87,6 +90,33 @@ public abstract class JsonUtils {
         }
         JavaType type = OBJECT_MAPPER.getTypeFactory().constructParametricType(outerClass, firstClass, secondClass);
         return OBJECT_MAPPER.convertValue(from, type);
+    }
+
+    /**
+     * merge source properties from one object into target
+     *
+     * @param source
+     * @param target
+     * @param <T>
+     * @return
+     */
+    public static <T> T mergeNotNul(Object source, T target) {
+        if (source == null) {
+            return target;
+        }
+        JSONObject sourceObject = copy(source, JSONObject.class);
+        JSONObject targetObject = copy(target, JSONObject.class);
+        Object value;
+        for (String key : sourceObject.keySet()) {
+            value = sourceObject.opt(key);
+            if (value != null) {
+                targetObject.put(key, value);
+            }
+        }
+
+        @SuppressWarnings("unchecked")
+        Class<T> outerClass = (Class<T>) target.getClass();
+        return copy(targetObject, outerClass);
     }
 
     public static <T> T parse(String json, Class<T> toClazz) {
