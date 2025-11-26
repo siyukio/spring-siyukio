@@ -35,6 +35,8 @@ public class PgEntityExecutor implements EntityExecutor {
 
     private final String updateByIdSql;
 
+    private final String upsertSql;
+
     private final String deleteByIdSql;
 
     private final String countSql;
@@ -58,6 +60,7 @@ public class PgEntityExecutor implements EntityExecutor {
         }
         this.updateByIdSql = PgSqlUtils.updateByIdSql(this.entityDefinition);
         this.deleteByIdSql = PgSqlUtils.deleteByIdSql(this.entityDefinition);
+        this.upsertSql = PgSqlUtils.upsertSql(this.entityDefinition);
         this.queryByIdSql = PgSqlUtils.queryByIdSql(this.entityDefinition);
         this.countSql = PgSqlUtils.countSql(this.entityDefinition);
 
@@ -124,6 +127,13 @@ public class PgEntityExecutor implements EntityExecutor {
                     }
                 });
         return result.length;
+    }
+
+    @Override
+    public JSONObject upsert(JSONObject entityJson) {
+        List<Object> values = PgSqlUtils.upsertValues(this.entityDefinition, entityJson);
+        this.multiJdbcTemplate.getMaster().update(this.upsertSql, values.toArray());
+        return entityJson;
     }
 
     @Override

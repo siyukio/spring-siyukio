@@ -102,6 +102,23 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
         return this.entityExecutor.updateBatch(entityJsonList);
     }
 
+    private void preUpsert(JSONObject entityJson) {
+        Date createAt = new Date();
+        String dateStr = DateUtils.format(createAt);
+        entityJson.put("createTime", createAt.getTime());
+        entityJson.put("createAt", dateStr);
+        entityJson.put("updateTime", createAt.getTime());
+        entityJson.put("updateAt", dateStr);
+    }
+
+    @Override
+    public T upsert(T t) {
+        JSONObject entityJson = JsonUtils.copy(t, JSONObject.class);
+        this.preUpsert(entityJson);
+        entityJson = this.entityExecutor.upsert(entityJson);
+        return JsonUtils.copy(entityJson, this.entityClass);
+    }
+
     @Override
     public int deleteById(Object id) {
         return this.entityExecutor.delete(id);

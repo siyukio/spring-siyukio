@@ -85,6 +85,13 @@ public abstract class PgSqlUtils {
             WHERE %s;
             """;
 
+    private final static String UPSERT_TEMPLATE = """
+            INSERT INTO %s.%s ( %s )
+            VALUES ( %s )
+            ON CONFLICT ( %s )
+            DO UPDATE SET %s ;
+            """;
+
     private final static String DELETE_BY_QUERY_TEMPLATE = """
             DELETE FROM %s.%s
             WHERE %s;
@@ -350,6 +357,51 @@ public abstract class PgSqlUtils {
         KeyDefinition keyDefinition = entityDefinition.keyDefinition();
         values.add(entityJson.opt(keyDefinition.fieldName()));
 
+        return values;
+    }
+
+    public static String upsertSql(EntityDefinition entityDefinition) {
+        String schema = getSchema(entityDefinition);
+
+        String table = entityDefinition.table();
+
+        List<String> insertColumns = new ArrayList<>();
+        List<String> insertValues = new ArrayList<>();
+
+        List<String> updateColumnValues = new ArrayList<>();
+
+        KeyDefinition keyDefinition = entityDefinition.keyDefinition();
+        insertColumns.add(keyDefinition.columnName());
+        insertValues.add("?");
+        for (ColumnDefinition columnDefinition : entityDefinition.columnDefinitions()) {
+            insertColumns.add(columnDefinition.columnName());
+            insertValues.add("?");
+
+            if (columnDefinition.fieldName().equals("createAt") || columnDefinition.fieldName().equals("createTime")) {
+                continue;
+            }
+            updateColumnValues.add(columnDefinition.columnName() + " = ?");
+        }
+
+        return String.format(UPSERT_TEMPLATE, schema, table, String.join(",", insertColumns), String.join(",", insertValues),
+                keyDefinition.columnName(), String.join(", ", updateColumnValues));
+    }
+
+    public static List<Object> upsertValues(EntityDefinition entityDefinition, JSONObject entityJson) {
+        List<Object> values = new ArrayList<>();
+        //Construct insert values.
+        KeyDefinition keyDefinition = entityDefinition.keyDefinition();
+        values.add(entityJson.opt(keyDefinition.fieldName()));
+        for (ColumnDefinition columnDefinition : entityDefinition.columnDefinitions()) {
+            values.add(field2RowValue(entityJson, columnDefinition));
+        }
+        //Construct update values, excluding thi fields createAt and createTime.
+        for (ColumnDefinition columnDefinition : entityDefinition.columnDefinitions()) {
+            if (columnDefinition.fieldName().equals("createAt") || columnDefinition.fieldName().equals("createTime")) {
+                continue;
+            }
+            values.add(field2RowValue(entityJson, columnDefinition));
+        }
         return values;
     }
 

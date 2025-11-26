@@ -123,6 +123,21 @@ public class RecordEventTests {
     }
 
     @Test
+    public void testUpsertWithNewId() {
+        RecordEvent recordEvent = this.createRandom().withId(IdUtils.getUniqueId()).withType("upsert new id");
+        recordEvent = this.recordEventPgEntityDao.upsert(recordEvent);
+        log.info("{}", JsonUtils.toPrettyJSONString(recordEvent));
+    }
+
+    @Test
+    public void testUpsertWithExistId() {
+        RecordEvent recordEvent = this.createRandom().withId(this.id).withType("upsert exist id");
+        recordEvent = this.recordEventPgEntityDao.upsert(recordEvent);
+        log.info("{}", JsonUtils.toPrettyJSONString(recordEvent));
+    }
+
+
+    @Test
     public void testDeleteById() {
         int num = this.recordEventPgEntityDao.deleteById(this.id);
         log.info("{}", num);

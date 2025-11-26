@@ -20,6 +20,8 @@ public interface PgEntityDao<T> {
 
     int updateBatch(Collection<T> tList);
 
+    T upsert(T t);
+
     int deleteById(Object id);
 
     int delete(T t);
