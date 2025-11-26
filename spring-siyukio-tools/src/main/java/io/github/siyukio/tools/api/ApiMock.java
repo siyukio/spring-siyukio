@@ -1,5 +1,6 @@
 package io.github.siyukio.tools.api;
 
+import com.fasterxml.jackson.databind.JavaType;
 import io.github.siyukio.tools.api.signature.SignatureProvider;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
@@ -94,5 +95,27 @@ public class ApiMock {
 
         apiHandler.responseFilter().filter(resultJson);
         return resultJson;
+    }
+
+    public <T> T perform(String path, Object request, Class<T> responseClass) {
+        JSONObject responseJson = this.perform(path, request);
+        return JsonUtils.copy(responseJson, responseClass);
+    }
+
+    public <O, I, T> T perform(String path, Object request, Class<O> outerClass, final Class<I> innerClass) {
+        JSONObject responseJson = this.perform(path, request);
+        JavaType type = JsonUtils.getObjectMapper().getTypeFactory().constructParametricType(outerClass, innerClass);
+        return JsonUtils.copy(responseJson, type);
+    }
+
+    public <T> T perform(String path, String subPath, Object request, Class<T> responseClass) {
+        JSONObject responseJson = this.perform(path + subPath, request);
+        return JsonUtils.copy(responseJson, responseClass);
+    }
+
+    public <O, I, T> T perform(String path, String subPath, Object request, Class<O> outerClass, final Class<I> innerClass) {
+        JSONObject responseJson = this.perform(path + subPath, request);
+        JavaType type = JsonUtils.getObjectMapper().getTypeFactory().constructParametricType(outerClass, innerClass);
+        return JsonUtils.copy(responseJson, type);
     }
 }

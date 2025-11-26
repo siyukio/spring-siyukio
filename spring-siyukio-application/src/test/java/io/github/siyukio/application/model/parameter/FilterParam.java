@@ -12,7 +12,7 @@ import org.json.JSONObject;
 @ApiParameter(description = "item")
 @Builder
 @With
-public record ItemDto(
+public record FilterParam(
 
         @ApiParameter(description = "user id")
         String uid,

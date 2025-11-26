@@ -12,7 +12,7 @@ import java.util.List;
 @ApiParameter(description = "items")
 @Builder
 @With
-public record ItemVo(
+public record PageItem(
 
         @ApiParameter
         String id,
