@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.InvocationTargetException;
@@ -51,7 +52,7 @@ public class MethodToolCallback {
         if (name.startsWith("/")) {
             name = name.substring(1);
         }
-        
+
         name = name.replaceAll("/", "_");
 
         ApiDefinition apiDefinition = apiHandler.apiDefinition();
@@ -111,7 +112,9 @@ public class MethodToolCallback {
             if (!apiDefinition.roles().isEmpty()) {
                 // validate role
                 Set<String> roleSet = new HashSet<>(apiDefinition.roles());
-                roleSet.retainAll(token.roles);
+                if (!CollectionUtils.isEmpty(token.roles())) {
+                    roleSet.retainAll(token.roles());
+                }
                 if (roleSet.isEmpty()) {
                     ApiException exception = new ApiException(HttpStatus.FORBIDDEN);
                     return new McpSchema.CallToolResult(List.of(), true, exception.toJson().toMap());

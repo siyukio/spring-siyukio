@@ -1,11 +1,8 @@
 package io.github.siyukio.tools.api.token;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.With;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -13,35 +10,34 @@ import java.util.List;
  *
  * @author Budyy
  */
-@ToString
-@NoArgsConstructor
-@AllArgsConstructor
+
 @Builder
-public final class Token {
+@With
+public record Token(
 
-    /**
-     * User id
-     */
-    public String uid = "";
+        /*
+          User id
+         */
+        String uid,
 
-    /**
-     * User name
-     */
-    public String name = "";
+        /*
+          User name
+         */
+        String name,
 
-    /**
-     * Authorization roles
-     */
-    public List<String> roles = new ArrayList<>();
+        /*
+         * Authorization roles
+         */
+        List<String> roles,
 
-    /**
-     * Whether the token is used for refreshing the JWT token.
-     */
-    public boolean refresh = false;
+        /*
+         * Whether the token is used for refreshing the JWT token.
+         */
+        boolean refresh,
 
-    /**
-     * Whether the JWT token is expired.
-     */
-    public boolean expired = true;
-
+        /*
+         * Whether the JWT token is expired.
+         */
+        boolean expired
+) {
 }

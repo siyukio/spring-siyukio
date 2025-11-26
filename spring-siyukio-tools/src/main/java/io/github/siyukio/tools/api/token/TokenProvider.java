@@ -37,7 +37,8 @@ public final class TokenProvider {
     }
 
     public String createAuthorization(String uid, String name, boolean refresh) {
-        Token token = Token.builder().uid(uid).name(name).refresh(refresh).build();
+        Token token = Token.builder().uid(uid).name(name)
+                .refresh(refresh).roles(List.of()).build();
         return this.createAuthorization(token);
     }
 
@@ -47,7 +48,7 @@ public final class TokenProvider {
     }
 
     public String createAuthorization(Token token) {
-        Duration duration = token.refresh ? this.refreshTokenDuration : this.accessTokenDuration;
+        Duration duration = token.refresh() ? this.refreshTokenDuration : this.accessTokenDuration;
         Date expireTime = new Date(System.currentTimeMillis() + duration.toMillis());
         String json = JsonUtils.toJSONString(token);
         return JWT.create()

@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.util.CollectionUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -60,7 +61,10 @@ public class ApiMock {
             if (!apiHandler.apiDefinition().roles().isEmpty()) {
                 Set<String> roleSet = new HashSet<>(apiHandler.apiDefinition().roles());
 
-                roleSet.retainAll(token.roles);
+                if (!CollectionUtils.isEmpty(token.roles())) {
+                    roleSet.retainAll(token.roles());
+                }
+                
                 if (roleSet.isEmpty()) {
                     throw new ApiException(HttpStatus.FORBIDDEN);
                 }

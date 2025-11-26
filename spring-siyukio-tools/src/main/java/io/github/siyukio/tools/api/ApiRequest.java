@@ -1,6 +1,7 @@
 package io.github.siyukio.tools.api;
 
-import lombok.ToString;
+import lombok.Builder;
+import lombok.With;
 
 import java.util.Map;
 
@@ -8,21 +9,16 @@ import java.util.Map;
  * Author: Buddy
  */
 
-@ToString
-public class ApiRequest {
+@Builder
+@With
+public record ApiRequest(
 
-    public final Map<String, String> parameterMap;
+        Map<String, String> parameterMap,
 
-    public final String ip;
+        String ip,
 
-    public final String body;
+        String body,
 
-    public final String userAgent;
-
-    public ApiRequest(Map<String, String> parameterMap, String ip, String body, String userAgent) {
-        this.parameterMap = parameterMap;
-        this.ip = ip;
-        this.body = body;
-        this.userAgent = userAgent;
-    }
+        String userAgent
+) {
 }

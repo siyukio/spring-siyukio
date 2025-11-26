@@ -50,7 +50,7 @@ public class SiyukioWebMvcStreamableMcpServerAutoConfiguration implements Applic
                     Map<String, Object> metadata = new HashMap<>();
                     String authorization = serverRequest.headers().firstHeader(HttpHeaders.AUTHORIZATION);
                     Token token = tokenProvider.verifyToken(authorization);
-                    if (token != null && !token.refresh && !token.expired) {
+                    if (token != null && !token.refresh() && !token.expired()) {
                         metadata.put(HttpHeaders.AUTHORIZATION, token);
                     }
 
