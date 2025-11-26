@@ -613,7 +613,7 @@ public abstract class PgSqlUtils {
         if (queryBuilder == null) {
             return "1 = 1";
         }
-        return switch (queryBuilder) {
+        String result = switch (queryBuilder) {
             case TermQueryBuilder termQueryBuilder -> toConditionSql(termQueryBuilder, dictionaryMap);
             case TermsQueryBuilder termsQueryBuilder -> toConditionSql(termsQueryBuilder, dictionaryMap);
             case RangeQueryBuilder rangeQueryBuilder -> toConditionSql(rangeQueryBuilder, dictionaryMap);
@@ -622,6 +622,10 @@ public abstract class PgSqlUtils {
             case BoolQueryBuilder boolQueryBuilder -> toConditionSql(boolQueryBuilder, dictionaryMap);
             default -> "1 = 1";
         };
+        if (!StringUtils.hasText(result)) {
+            result = "1 = 1";
+        }
+        return result;
     }
 
     public static List<Object> toQueryValues(QueryBuilder queryBuilder) {
