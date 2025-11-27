@@ -57,6 +57,9 @@ public record RecordEvent(
         List<Item> items,
 
         @PgColumn
+        LoginType loginType,
+
+        @PgColumn
         LocalDateTime createdAt,
 
         @PgColumn
@@ -68,6 +71,14 @@ public record RecordEvent(
         @PgColumn
         long updatedAtTs
 ) {
+
+    public enum LoginType {
+        USERNAME,
+        PHONE,
+        EMAIL,
+        GOOGLE,
+        APPLE
+    }
 
     @Builder
     @With

@@ -59,6 +59,7 @@ public class RecordEventTests {
                 .messages(messages)
                 .item(item)
                 .items(List.of(item))
+                .loginType(RecordEvent.LoginType.USERNAME)
                 .build();
     }
 

@@ -110,7 +110,7 @@ public abstract class EntityUtils {
             return ColumnType.DOUBLE;
         } else if (LocalDateTime.class == type) {
             return ColumnType.DATETIME;
-        } else if (String.class == type) {
+        } else if (String.class == type || type.isEnum()) {
             return ColumnType.TEXT;
         } else if (JSONArray.class == type) {
             return ColumnType.JSON_ARRAY;
