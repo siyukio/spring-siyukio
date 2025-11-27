@@ -47,12 +47,12 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
                 entityJson.put(keyDefinition.fieldName(), IdUtils.getUniqueId());
             }
         }
-        Date createAt = new Date();
-        String dateStr = DateUtils.format(createAt);
-        entityJson.put("createTime", createAt.getTime());
-        entityJson.put("createAt", dateStr);
-        entityJson.put("updateTime", createAt.getTime());
-        entityJson.put("updateAt", dateStr);
+        Date createdAt = new Date();
+        String dateStr = DateUtils.format(createdAt);
+        entityJson.put("createdAtTs", createdAt.getTime());
+        entityJson.put("createdAt", dateStr);
+        entityJson.put("updatedAtTs", createdAt.getTime());
+        entityJson.put("updatedAt", dateStr);
     }
 
     @Override
@@ -78,8 +78,8 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
     private void preUpdate(JSONObject entityJson) {
         Date createAt = new Date();
         String dateStr = DateUtils.format(createAt);
-        entityJson.put("updateTime", createAt.getTime());
-        entityJson.put("updateAt", dateStr);
+        entityJson.put("updatedAtTs", createAt.getTime());
+        entityJson.put("updatedAt", dateStr);
     }
 
     @Override
@@ -103,12 +103,12 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
     }
 
     private void preUpsert(JSONObject entityJson) {
-        Date createAt = new Date();
-        String dateStr = DateUtils.format(createAt);
-        entityJson.put("createTime", createAt.getTime());
-        entityJson.put("createAt", dateStr);
-        entityJson.put("updateTime", createAt.getTime());
-        entityJson.put("updateAt", dateStr);
+        Date createdAt = new Date();
+        String dateStr = DateUtils.format(createdAt);
+        entityJson.put("createdAtTs", createdAt.getTime());
+        entityJson.put("createdAt", dateStr);
+        entityJson.put("updatedAtTs", createdAt.getTime());
+        entityJson.put("updatedAt", dateStr);
     }
 
     @Override
