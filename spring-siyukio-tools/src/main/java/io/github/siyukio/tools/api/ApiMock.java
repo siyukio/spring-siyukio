@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import io.github.siyukio.tools.api.signature.SignatureProvider;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
@@ -39,7 +39,7 @@ public class ApiMock {
     }
 
     public JSONObject perform(String path, Object request) {
-        JSONObject requestJson = JsonUtils.copy(request, JSONObject.class);
+        JSONObject requestJson = XDataUtils.copy(request, JSONObject.class);
 
         ApiHandler apiHandler = this.aipHandlerManager.getApiHandler(path);
         if (apiHandler == null) {
@@ -64,7 +64,7 @@ public class ApiMock {
                 if (!CollectionUtils.isEmpty(token.roles())) {
                     roleSet.retainAll(token.roles());
                 }
-                
+
                 if (roleSet.isEmpty()) {
                     throw new ApiException(HttpStatus.FORBIDDEN);
                 }
@@ -95,7 +95,7 @@ public class ApiMock {
             return new JSONObject();
         }
 
-        JSONObject resultJson = JsonUtils.copy(resultValue, JSONObject.class);
+        JSONObject resultJson = XDataUtils.copy(resultValue, JSONObject.class);
 
         apiHandler.responseFilter().filter(resultJson);
         return resultJson;
@@ -103,23 +103,23 @@ public class ApiMock {
 
     public <T> T perform(String path, Object request, Class<T> responseClass) {
         JSONObject responseJson = this.perform(path, request);
-        return JsonUtils.copy(responseJson, responseClass);
+        return XDataUtils.copy(responseJson, responseClass);
     }
 
     public <O, I, T> T perform(String path, Object request, Class<O> outerClass, final Class<I> innerClass) {
         JSONObject responseJson = this.perform(path, request);
-        JavaType type = JsonUtils.getObjectMapper().getTypeFactory().constructParametricType(outerClass, innerClass);
-        return JsonUtils.copy(responseJson, type);
+        JavaType type = XDataUtils.getObjectMapper().getTypeFactory().constructParametricType(outerClass, innerClass);
+        return XDataUtils.copy(responseJson, type);
     }
 
     public <T> T perform(String path, String subPath, Object request, Class<T> responseClass) {
         JSONObject responseJson = this.perform(path + subPath, request);
-        return JsonUtils.copy(responseJson, responseClass);
+        return XDataUtils.copy(responseJson, responseClass);
     }
 
     public <O, I, T> T perform(String path, String subPath, Object request, Class<O> outerClass, final Class<I> innerClass) {
         JSONObject responseJson = this.perform(path + subPath, request);
-        JavaType type = JsonUtils.getObjectMapper().getTypeFactory().constructParametricType(outerClass, innerClass);
-        return JsonUtils.copy(responseJson, type);
+        JavaType type = XDataUtils.getObjectMapper().getTypeFactory().constructParametricType(outerClass, innerClass);
+        return XDataUtils.copy(responseJson, type);
     }
 }

@@ -326,7 +326,7 @@ public abstract class OpenApiUtils {
                     propJson = new JSONObject();
                     if (type.equals("date")) {
                         propJson.put("type", "string");
-                        propJson.put("format", "date");
+                        propJson.put("format", "date-time");
                     } else {
                         propJson.put("type", type);
                     }

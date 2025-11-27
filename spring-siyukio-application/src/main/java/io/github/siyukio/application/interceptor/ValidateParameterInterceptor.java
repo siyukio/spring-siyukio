@@ -6,7 +6,7 @@ import io.github.siyukio.tools.api.ApiHandler;
 import io.github.siyukio.tools.api.ApiProfiles;
 import io.github.siyukio.tools.api.constants.ApiConstants;
 import io.github.siyukio.tools.api.parameter.request.RequestValidator;
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -87,7 +87,7 @@ public final class ValidateParameterInterceptor implements HandlerInterceptor {
     private JSONObject validate(String requestBody, RequestValidator requestValidator) {
         JSONObject requestBodyJson;
         try {
-            requestBodyJson = JsonUtils.parseObject(requestBody);
+            requestBodyJson = XDataUtils.parseObject(requestBody);
         } catch (RuntimeException e) {
             throw ApiException.getInvalidApiException("requestBody to json error");
         }

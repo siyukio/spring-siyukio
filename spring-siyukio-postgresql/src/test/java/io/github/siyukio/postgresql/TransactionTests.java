@@ -13,8 +13,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 public class TransactionTests {
 
-    private final String id = "test";
-
     @Autowired
     private TransactionService transactionService;
 

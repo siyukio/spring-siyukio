@@ -2,7 +2,7 @@ package io.github.siyukio.client;
 
 import io.github.siyukio.client.boot.starter.autoconfigure.SiyukioMcpClientCommonProperties;
 import io.github.siyukio.tools.api.ApiException;
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
@@ -80,7 +80,7 @@ public class McpSyncClient {
     }
 
     public static <T> T callTool(McpAsyncClient mcpAsyncClient, String toolName, Object params, Class<T> returnType) {
-        Map<String, Object> arguments = JsonUtils.copy(params, Map.class, String.class, Object.class);
+        Map<String, Object> arguments = XDataUtils.copy(params, Map.class, String.class, Object.class);
         McpSchema.CallToolResult result = mcpAsyncClient.callTool(new McpSchema.CallToolRequest(toolName, arguments)).block();
         return doResult(result, returnType);
     }
@@ -91,18 +91,18 @@ public class McpSyncClient {
         }
         if (result.isError()) {
             if (result.structuredContent() != null) {
-                JSONObject contentJson = JsonUtils.copy(result.structuredContent(), JSONObject.class);
+                JSONObject contentJson = XDataUtils.copy(result.structuredContent(), JSONObject.class);
                 JSONObject errorJson = contentJson.optJSONObject("error");
                 int code = errorJson.optInt("code", HttpStatus.OK.value());
                 String message = errorJson.optString("message", "");
                 throw new ApiException(code, message);
             }
 
-            JSONObject contentJson = JsonUtils.copy(result.content().getFirst(), JSONObject.class);
+            JSONObject contentJson = XDataUtils.copy(result.content().getFirst(), JSONObject.class);
             String text = contentJson.optString("text");
             throw new ApiException(text);
         }
-        return JsonUtils.copy(result.structuredContent(), returnType);
+        return XDataUtils.copy(result.structuredContent(), returnType);
     }
 
     public static <T> T callTool(McpAsyncClient mcpAsyncClient, String toolName, Class<T> returnType) {
@@ -155,7 +155,7 @@ public class McpSyncClient {
             transport = HttpClientStreamableHttpTransport
                     .builder(targetUri)
                     .endpoint(targetMcpEndpoint)
-                    .objectMapper(JsonUtils.getObjectMapper())
+                    .objectMapper(XDataUtils.getObjectMapper())
                     .requestBuilder(httpRequestBuilder)
                     .build();
         }
@@ -186,7 +186,7 @@ public class McpSyncClient {
     }
 
     public <T> T callTool(String toolName, Object params, Class<T> returnType) {
-        Map<String, Object> arguments = JsonUtils.copy(params, Map.class, String.class, Object.class);
+        Map<String, Object> arguments = XDataUtils.copy(params, Map.class, String.class, Object.class);
         McpAsyncClient mcpAsyncClient = this.getMcpSyncClient();
         try {
             McpSchema.CallToolResult result = mcpAsyncClient.callTool(new McpSchema.CallToolRequest(toolName, arguments)).block();

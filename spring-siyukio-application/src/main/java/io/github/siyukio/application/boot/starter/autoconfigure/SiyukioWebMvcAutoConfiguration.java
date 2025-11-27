@@ -10,8 +10,8 @@ import io.github.siyukio.tools.api.constants.ApiConstants;
 import io.github.siyukio.tools.api.definition.ApiDefinitionManager;
 import io.github.siyukio.tools.api.signature.SignatureProvider;
 import io.github.siyukio.tools.api.token.TokenProvider;
-import io.github.siyukio.tools.util.JsonUtils;
-import io.github.siyukio.tools.util.KeyUtils;
+import io.github.siyukio.tools.util.CryptoUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -91,7 +91,7 @@ public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
         RSAPublicKey rsaPublicKey = null;
         if (StringUtils.hasText(publicKey)) {
             try {
-                rsaPublicKey = KeyUtils.getPublicKeyFromPem(publicKey);
+                rsaPublicKey = CryptoUtils.getPublicKeyFromPem(publicKey);
             } catch (Exception e) {
                 log.error("getPublicKeyFromPem error: {}", publicKey, e);
             }
@@ -101,7 +101,7 @@ public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
         RSAPrivateKey rsaPrivateKey = null;
         if (StringUtils.hasText(privateKey)) {
             try {
-                rsaPrivateKey = KeyUtils.getPrivateKeyFromPem(privateKey);
+                rsaPrivateKey = CryptoUtils.getPrivateKeyFromPem(privateKey);
             } catch (Exception e) {
                 log.error("getPrivateKeyFromPem error: {}", privateKey, e);
             }
@@ -175,7 +175,7 @@ public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
             converter = converters.get(index);
             if (converter instanceof MappingJackson2HttpMessageConverter) {
                 log.info("override MappingJackson2HttpMessageConverter support JsonOrgModule,JavaTimeModule");
-                converters.set(index, new MappingJackson2HttpMessageConverter(JsonUtils.getObjectMapper()));
+                converters.set(index, new MappingJackson2HttpMessageConverter(XDataUtils.getObjectMapper()));
             }
         }
     }

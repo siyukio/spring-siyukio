@@ -4,6 +4,8 @@ import io.github.siyukio.tools.api.annotation.ApiParameter;
 import lombok.Builder;
 import lombok.With;
 
+import java.time.LocalDateTime;
+
 /**
  * @author Buddy
  */
@@ -12,6 +14,9 @@ import lombok.With;
 public record CreateResponseResponse(
 
         @ApiParameter
-        String authorization
+        String authorization,
+
+        @ApiParameter
+        LocalDateTime createdAt
 ) {
 }

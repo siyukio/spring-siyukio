@@ -6,13 +6,13 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.lang.reflect.RecordComponent;
+import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.Date;
 
 /**
  * @author Bugee
  */
-public class EntityUtils {
+public abstract class EntityUtils {
 
     public static String camelToSnake(String input) {
         StringBuilder result = new StringBuilder();
@@ -108,7 +108,7 @@ public class EntityUtils {
             return ColumnType.BIGINT;
         } else if (double.class == type || Double.class == type) {
             return ColumnType.DOUBLE;
-        } else if (Date.class == type) {
+        } else if (LocalDateTime.class == type) {
             return ColumnType.DATETIME;
         } else if (String.class == type) {
             return ColumnType.TEXT;

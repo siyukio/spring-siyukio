@@ -3,7 +3,7 @@ package io.modelcontextprotocol.server.transport;
 import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -137,7 +137,7 @@ public class WebSocketHandler extends TextWebSocketHandler implements HandshakeH
         }
 
         log.debug("handleTextMessage: {}", text);
-        WebSocketMessage websocketMessage = JsonUtils.parse(text, WebSocketMessage.class);
+        WebSocketMessage websocketMessage = XDataUtils.parse(text, WebSocketMessage.class);
         Mono.fromRunnable(() -> {
             WebSocketStreamableServerTransportProvider webSocketStreamableServerTransportProvider = this.webSocketStreamableContext.getWebSocketStreamableServerTransportProvider();
             if (webSocketStreamableServerTransportProvider != null) {

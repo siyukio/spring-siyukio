@@ -1,7 +1,7 @@
 package io.modelcontextprotocol.server.transport;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.json.JSONObject;
 import org.springframework.util.StringUtils;
@@ -29,7 +29,7 @@ public record WebSocketMessage(
     }
 
     public McpSchema.JSONRPCMessage deserializeJsonRpcMessage() {
-        ObjectMapper objectMapper = JsonUtils.getObjectMapper();
+        ObjectMapper objectMapper = XDataUtils.getObjectMapper();
         // Determine message type based on specific JSON structure
         if (this.body.has("method") && this.body.has("id")) {
             return objectMapper.convertValue(this.body, McpSchema.JSONRPCRequest.class);
@@ -39,7 +39,7 @@ public record WebSocketMessage(
             return objectMapper.convertValue(this.body, McpSchema.JSONRPCResponse.class);
         }
 
-        throw new IllegalArgumentException("Cannot deserialize JSONRPCMessage: " + JsonUtils.toPrettyJSONString(this.body));
+        throw new IllegalArgumentException("Cannot deserialize JSONRPCMessage: " + XDataUtils.toPrettyJSONString(this.body));
     }
 
     public boolean toDelete() {

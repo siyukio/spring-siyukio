@@ -5,7 +5,7 @@ import io.github.siyukio.application.mcp.MethodToolCallback;
 import io.github.siyukio.tools.api.AipHandlerManager;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServerFeatures;
@@ -42,7 +42,7 @@ public class SiyukioWebMvcStreamableMcpServerAutoConfiguration implements Applic
     public WebMvcStreamableServerTransportProvider webMvcStreamableServerTransportProvider(SiyukioMcpServerProperties siyukioMcpServerProperties) {
         TokenProvider tokenProvider = this.applicationContext.getBean(TokenProvider.class);
         return WebMvcStreamableServerTransportProvider.builder()
-                .objectMapper(JsonUtils.getObjectMapper())
+                .objectMapper(XDataUtils.getObjectMapper())
                 .mcpEndpoint(siyukioMcpServerProperties.getMcpEndpoint())
                 .keepAliveInterval(Duration.ofSeconds(20))
 //                .disallowDelete(true)

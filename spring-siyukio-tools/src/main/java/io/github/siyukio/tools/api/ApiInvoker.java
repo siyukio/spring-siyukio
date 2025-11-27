@@ -1,6 +1,6 @@
 package io.github.siyukio.tools.api;
 
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import lombok.ToString;
 import org.json.JSONObject;
 
@@ -46,7 +46,7 @@ public class ApiInvoker {
             if (objIndex >= 0) {
                 obj = objects[objIndex];
             } else if (requestBody != null) {
-                obj = JsonUtils.copy(requestBody, parameter.getType());
+                obj = XDataUtils.copy(requestBody, parameter.getType());
             } else {
                 obj = null;
             }

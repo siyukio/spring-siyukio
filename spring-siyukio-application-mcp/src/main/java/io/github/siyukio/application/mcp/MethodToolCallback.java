@@ -5,8 +5,8 @@ import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.api.ApiHandler;
 import io.github.siyukio.tools.api.definition.ApiDefinition;
 import io.github.siyukio.tools.api.token.Token;
-import io.github.siyukio.tools.util.JsonUtils;
 import io.github.siyukio.tools.util.OpenApiUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -63,10 +63,10 @@ public class MethodToolCallback {
         }
 
         JSONObject inputSchemaJson = OpenApiUtils.createObjectRequest(apiDefinition.requestParameters());
-        McpSchema.JsonSchema inputSchema = JsonUtils.copy(inputSchemaJson, McpSchema.JsonSchema.class);
+        McpSchema.JsonSchema inputSchema = XDataUtils.copy(inputSchemaJson, McpSchema.JsonSchema.class);
 
         JSONObject outputSchemaJson = OpenApiUtils.createObjectResponse(apiDefinition.responseParameters());
-        Map<String, Object> outputSchema = JsonUtils.copy(outputSchemaJson, Map.class, String.class, Object.class);
+        Map<String, Object> outputSchema = XDataUtils.copy(outputSchemaJson, Map.class, String.class, Object.class);
 
 
         MethodToolCallback toolCallback = new MethodToolCallback(apiHandler, name);
@@ -86,12 +86,12 @@ public class MethodToolCallback {
                         return toolCallback.call(exchange, req);
                     } catch (ApiException ex) {
                         JSONObject responseJson = ex.toJson();
-                        String text = JsonUtils.toJSONString(responseJson);
+                        String text = XDataUtils.toJSONString(responseJson);
                         return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(text)), true);
                     } catch (Exception e) {
                         ApiException apiException = ApiException.getUnknownApiException(e);
                         JSONObject responseJson = apiException.toJson();
-                        String text = JsonUtils.toJSONString(responseJson);
+                        String text = XDataUtils.toJSONString(responseJson);
                         return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(text)), true);
                     }
                 }).build();
@@ -99,7 +99,7 @@ public class MethodToolCallback {
 
     public McpSchema.CallToolResult call(McpSyncServerExchange exchange, McpSchema.CallToolRequest callToolRequest) {
         ApiDefinition apiDefinition = this.apiHandler.apiDefinition();
-        JSONObject requestJson = JsonUtils.copy(callToolRequest.arguments(), JSONObject.class);
+        JSONObject requestJson = XDataUtils.copy(callToolRequest.arguments(), JSONObject.class);
         Token token = this.getToken(exchange);
 
         if (apiDefinition.authorization()) {
@@ -152,7 +152,7 @@ public class MethodToolCallback {
             return new McpSchema.CallToolResult(List.of(), false, Map.of());
         }
 
-        JSONObject resultJson = JsonUtils.copy(resultValue, JSONObject.class);
+        JSONObject resultJson = XDataUtils.copy(resultValue, JSONObject.class);
 
         this.apiHandler.responseFilter().filter(resultJson);
 

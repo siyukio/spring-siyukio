@@ -1,7 +1,7 @@
 package io.modelcontextprotocol.client.transport;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.spec.*;
 import io.modelcontextprotocol.util.Utils;
@@ -125,7 +125,7 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
                             return Mono.just(jsonrpcMessage);
                         } else {
                             return Flux.<McpSchema.JSONRPCMessage>error(
-                                    new RuntimeException("Unknown received message type"));
+                                    new IllegalArgumentException("Unknown received message type"));
                         }
                     })
                     .flatMap(jsonRpcMessage -> this.handler.get().apply(Mono.just(jsonRpcMessage)))
@@ -207,7 +207,7 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
                                 }
                             } else {
                                 return Flux.<McpSchema.JSONRPCMessage>error(
-                                        new RuntimeException("Unknown returned message type"));
+                                        new IllegalArgumentException("Unknown returned message type"));
                             }
                         }
                     })
@@ -237,6 +237,6 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
 
     @Override
     public <T> T unmarshalFrom(Object data, TypeReference<T> typeRef) {
-        return JsonUtils.getObjectMapper().convertValue(data, typeRef);
+        return XDataUtils.getObjectMapper().convertValue(data, typeRef);
     }
 }

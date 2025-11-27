@@ -71,4 +71,6 @@ public interface ApiConstants {
 
     String ERROR_PARAMETER_REQUIRED_STRING_LIMIT_FORMAT = "The parameter '%s' must be an string[%s,%s].";
 
+    String ERROR_DATE_UNSUPPORTED_FORMAT = "Unsupported type: '%s' in %s. Please use LocalDateTime instead.";
+
 }

@@ -3,7 +3,7 @@ package io.github.siyukio.application.method;
 import io.github.siyukio.tools.api.AipHandlerManager;
 import io.github.siyukio.tools.api.ApiHandler;
 import io.github.siyukio.tools.api.ApiProfiles;
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.json.JSONObject;
@@ -98,7 +98,7 @@ public final class ApiReturnValueHandler implements HandlerMethodReturnValueHand
             return;
         }
 
-        JSONObject resultJson = JsonUtils.copy(returnValue, JSONObject.class);
+        JSONObject resultJson = XDataUtils.copy(returnValue, JSONObject.class);
 
         apiHandler.responseFilter().filter(resultJson);
         this.handlerMethodReturnValueHandler.handleReturnValue(resultJson, returnType, mavContainer, webRequest);

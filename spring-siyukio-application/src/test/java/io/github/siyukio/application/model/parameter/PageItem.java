@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.With;
 import org.json.JSONObject;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 
@@ -21,7 +21,7 @@ public record PageItem(
         String title,
 
         @ApiParameter
-        Date lastUpdateDate,
+        LocalDateTime updatedAt,
 
         @ApiParameter
         JSONObject metadata,

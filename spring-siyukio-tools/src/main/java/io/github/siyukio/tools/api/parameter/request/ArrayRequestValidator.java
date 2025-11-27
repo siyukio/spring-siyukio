@@ -1,7 +1,7 @@
 package io.github.siyukio.tools.api.parameter.request;
 
 import io.github.siyukio.tools.api.constants.ApiConstants;
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -43,7 +43,7 @@ public final class ArrayRequestValidator extends AbstractRequestValidator {
                 str = "[]";
             }
             try {
-                value = JsonUtils.parseArray(str);
+                value = XDataUtils.parseArray(str);
             } catch (RuntimeException ex) {
                 throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_PARSE_ARRAY_FORMAT);
             }

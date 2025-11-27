@@ -1,6 +1,6 @@
 package io.github.siyukio.tools.api.parameter.request;
 
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import org.json.JSONObject;
 
 /**
@@ -30,7 +30,7 @@ public final class BasicRequestValidator extends AbstractRequestValidator {
             return this.defaultValue;
         }
         if (value instanceof JSONObject) {
-            result = JsonUtils.toJSONString(value);
+            result = XDataUtils.toJSONString(value);
         }
         //
         return this.typeRequestValidator.validate(result);

@@ -8,15 +8,13 @@ import io.github.siyukio.tools.entity.page.Page;
 import io.github.siyukio.tools.entity.postgresql.PgEntityDao;
 import io.github.siyukio.tools.entity.query.QueryBuilder;
 import io.github.siyukio.tools.entity.sort.SortBuilder;
-import io.github.siyukio.tools.util.DateUtils;
 import io.github.siyukio.tools.util.IdUtils;
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -47,20 +45,20 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
                 entityJson.put(keyDefinition.fieldName(), IdUtils.getUniqueId());
             }
         }
-        Date createdAt = new Date();
-        String dateStr = DateUtils.format(createdAt);
-        entityJson.put("createdAtTs", createdAt.getTime());
-        entityJson.put("createdAt", dateStr);
-        entityJson.put("updatedAtTs", createdAt.getTime());
-        entityJson.put("updatedAt", dateStr);
+        long createdAtTs = System.currentTimeMillis();
+        String createdAtFormat = XDataUtils.formatMs(createdAtTs);
+        entityJson.put("createdAtTs", createdAtTs);
+        entityJson.put("createdAt", createdAtFormat);
+        entityJson.put("updatedAtTs", createdAtTs);
+        entityJson.put("updatedAt", createdAtFormat);
     }
 
     @Override
     public T insert(T t) {
-        JSONObject entityJson = JsonUtils.copy(t, JSONObject.class);
+        JSONObject entityJson = XDataUtils.copy(t, JSONObject.class);
         this.preInsert(entityJson);
         entityJson = this.entityExecutor.insert(entityJson);
-        return JsonUtils.copy(entityJson, this.entityClass);
+        return XDataUtils.copy(entityJson, this.entityClass);
     }
 
     @Override
@@ -68,7 +66,7 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
         if (CollectionUtils.isEmpty(tList)) {
             return 0;
         }
-        List<JSONObject> entityJsonList = JsonUtils.copy(tList, List.class, JSONObject.class);
+        List<JSONObject> entityJsonList = XDataUtils.copy(tList, List.class, JSONObject.class);
         for (JSONObject entityJson : entityJsonList) {
             this.preInsert(entityJson);
         }
@@ -76,18 +74,18 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
     }
 
     private void preUpdate(JSONObject entityJson) {
-        Date createAt = new Date();
-        String dateStr = DateUtils.format(createAt);
-        entityJson.put("updatedAtTs", createAt.getTime());
-        entityJson.put("updatedAt", dateStr);
+        long updatedAtTs = System.currentTimeMillis();
+        String updatedAtFormat = XDataUtils.formatMs(updatedAtTs);
+        entityJson.put("updatedAtTs", updatedAtTs);
+        entityJson.put("updatedAt", updatedAtFormat);
     }
 
     @Override
     public T update(T t) {
-        JSONObject entityJson = JsonUtils.copy(t, JSONObject.class);
+        JSONObject entityJson = XDataUtils.copy(t, JSONObject.class);
         this.preUpdate(entityJson);
         entityJson = this.entityExecutor.update(entityJson);
-        return JsonUtils.copy(entityJson, this.entityClass);
+        return XDataUtils.copy(entityJson, this.entityClass);
     }
 
     @Override
@@ -95,7 +93,7 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
         if (CollectionUtils.isEmpty(tList)) {
             return 0;
         }
-        List<JSONObject> entityJsonList = JsonUtils.copy(tList, List.class, JSONObject.class);
+        List<JSONObject> entityJsonList = XDataUtils.copy(tList, List.class, JSONObject.class);
         for (JSONObject entityJson : entityJsonList) {
             this.preUpdate(entityJson);
         }
@@ -103,20 +101,20 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
     }
 
     private void preUpsert(JSONObject entityJson) {
-        Date createdAt = new Date();
-        String dateStr = DateUtils.format(createdAt);
-        entityJson.put("createdAtTs", createdAt.getTime());
-        entityJson.put("createdAt", dateStr);
-        entityJson.put("updatedAtTs", createdAt.getTime());
-        entityJson.put("updatedAt", dateStr);
+        long createdAtTs = System.currentTimeMillis();
+        String createdAtFormat = XDataUtils.formatMs(createdAtTs);
+        entityJson.put("createdAtTs", createdAtTs);
+        entityJson.put("createdAt", createdAtFormat);
+        entityJson.put("updatedAtTs", createdAtTs);
+        entityJson.put("updatedAt", createdAtFormat);
     }
 
     @Override
     public T upsert(T t) {
-        JSONObject entityJson = JsonUtils.copy(t, JSONObject.class);
+        JSONObject entityJson = XDataUtils.copy(t, JSONObject.class);
         this.preUpsert(entityJson);
         entityJson = this.entityExecutor.upsert(entityJson);
-        return JsonUtils.copy(entityJson, this.entityClass);
+        return XDataUtils.copy(entityJson, this.entityClass);
     }
 
     @Override
@@ -126,7 +124,7 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
 
     @Override
     public int delete(T t) {
-        JSONObject entityJson = JsonUtils.copy(t, JSONObject.class);
+        JSONObject entityJson = XDataUtils.copy(t, JSONObject.class);
         String key = this.entityExecutor.getEntityDefinition().keyDefinition().fieldName();
         Object id = entityJson.opt(key);
         return this.deleteById(id);
@@ -149,7 +147,7 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
         if (entityJson == null) {
             return null;
         }
-        return JsonUtils.copy(entityJson, this.entityClass);
+        return XDataUtils.copy(entityJson, this.entityClass);
     }
 
     @Override
@@ -161,7 +159,7 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
             size = 100;
         }
         List<JSONObject> entityJsonList = this.entityExecutor.query(queryBuilder, sort, from, size);
-        return JsonUtils.copy(entityJsonList, List.class, this.entityClass);
+        return XDataUtils.copy(entityJsonList, List.class, this.entityClass);
     }
 
     @Override

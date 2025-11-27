@@ -5,7 +5,7 @@ import io.github.siyukio.tools.api.annotation.ApiController;
 import io.github.siyukio.tools.api.annotation.ApiMapping;
 import io.github.siyukio.tools.api.model.PageRequest;
 import io.github.siyukio.tools.api.model.PageResponse;
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -17,32 +17,32 @@ public class ParameterController {
 
     @ApiMapping(path = "/testString", authorization = false)
     public void testString(StringRequest stringRequest) {
-        log.info("{}", JsonUtils.toPrettyJSONString(stringRequest));
+        log.info("{}", XDataUtils.toPrettyJSONString(stringRequest));
     }
 
     @ApiMapping(path = "/testNum", authorization = false)
     public void testNum(NumRequest numRequest) {
-        log.info("{}", JsonUtils.toPrettyJSONString(numRequest));
+        log.info("{}", XDataUtils.toPrettyJSONString(numRequest));
     }
 
     @ApiMapping(path = "/testBool", authorization = false)
     public void testBool(BoolRequest boolRequest) {
-        log.info("{}", JsonUtils.toPrettyJSONString(boolRequest));
+        log.info("{}", XDataUtils.toPrettyJSONString(boolRequest));
     }
 
     @ApiMapping(path = "/testDate", authorization = false)
     public void testDate(DateRequest dateRequest) {
-        log.info("{}", JsonUtils.toPrettyJSONString(dateRequest));
+        log.info("{}", XDataUtils.toPrettyJSONString(dateRequest));
     }
 
     @ApiMapping(path = "/testList", authorization = false)
     public void testList(ListRequest listRequest) {
-        log.info("{}", JsonUtils.toPrettyJSONString(listRequest));
+        log.info("{}", XDataUtils.toPrettyJSONString(listRequest));
     }
 
     @ApiMapping(path = "/testPage", authorization = false)
     public PageResponse<PageItem> testPage(PageRequest<FilterParam> pageRequest) {
-        log.info("{}", JsonUtils.toPrettyJSONString(pageRequest));
+        log.info("{}", XDataUtils.toPrettyJSONString(pageRequest));
 
         return PageResponse.<PageItem>builder()
                 .total(1).build();

@@ -9,7 +9,7 @@ import lombok.With;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -42,7 +42,7 @@ public record RecordEvent(
         int total,
 
         @PgColumn(comment = "Elapsed time in milliseconds")
-        long times,
+        long costMs,
 
         @PgColumn(comment = "Key attribute", defaultValue = "{\"role\":\"user\"}")
         JSONObject metadata,
@@ -57,17 +57,23 @@ public record RecordEvent(
         List<Item> items,
 
         @PgColumn
-        Date createAt,
+        LocalDateTime createdAt,
 
         @PgColumn
-        long createTime
+        long createdAtTs,
+
+        @PgColumn
+        LocalDateTime updatedAt,
+
+        @PgColumn
+        long updatedAtTs
 ) {
 
     @Builder
     @With
     public record Item(
             String type,
-            long costTime
+            long costMs
     ) {
     }
 }

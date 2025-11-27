@@ -8,6 +8,7 @@ import io.github.siyukio.tools.api.annotation.ApiParameter;
 import io.github.siyukio.tools.api.annotation.Example;
 import io.github.siyukio.tools.api.constants.ApiConstants;
 import io.github.siyukio.tools.api.token.Token;
+import io.github.siyukio.tools.util.XDataUtils;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
@@ -15,6 +16,7 @@ import org.json.JSONObject;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.*;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -28,7 +30,7 @@ public final class ApiDefinitionManager {
     private final Set<Class<?>> alternativeSet = new HashSet<>();
 
     public static boolean isBasicType(Class<?> type) {
-        return type.isPrimitive() || type == String.class || type == Date.class || Number.class.isAssignableFrom(type) || Boolean.class.isAssignableFrom(type);
+        return type.isPrimitive() || type == String.class || type == LocalDateTime.class || Number.class.isAssignableFrom(type) || Boolean.class.isAssignableFrom(type);
     }
 
     public void addAlternative(Class<?> clazz) {
@@ -130,7 +132,7 @@ public final class ApiDefinitionManager {
         Class<?> returnValueType = this.getRealReturnType(method);
         if (returnValueType != void.class && returnValueType != Void.class && returnValueType != String.class) {
             if (isBasicType(returnValueType) || returnValueType.isArray() || Collection.class.isAssignableFrom(returnValueType) || returnValueType.getPackageName().startsWith("java.")) {
-                throw new RuntimeException(type.getName() + "." + method.getName() + " unsupported returnValueType:" + returnValueType.getSimpleName());
+                throw new IllegalArgumentException(type.getName() + "." + method.getName() + " unsupported returnValueType:" + returnValueType.getSimpleName());
             }
         }
         existParameterNameSet.clear();
@@ -191,7 +193,7 @@ public final class ApiDefinitionManager {
         } else if (typeClass == String.class) {
             itemType = ApiConstants.TYPE_STRING;
             this.defineString(items, apiParameter);
-        } else if (typeClass == Date.class) {
+        } else if (typeClass == LocalDateTime.class) {
             itemType = ApiConstants.TYPE_DATE;
         } else {
             itemType = typeClass.getSimpleName();
@@ -305,7 +307,7 @@ public final class ApiDefinitionManager {
         } else if (typeClass == String.class) {
             type = ApiConstants.TYPE_STRING;
             this.defineString(requestParameter, apiParameter);
-        } else if (typeClass == Date.class) {
+        } else if (typeClass == LocalDateTime.class) {
             type = ApiConstants.TYPE_DATE;
             this.defineDate(requestParameter);
         } else {
@@ -343,7 +345,6 @@ public final class ApiDefinitionManager {
                     result = Double.parseDouble(defaultValue);
                     break;
                 case ApiConstants.TYPE_STRING:
-                case ApiConstants.TYPE_DATE:
                     result = defaultValue;
                     break;
                 default:
@@ -508,6 +509,7 @@ public final class ApiDefinitionManager {
                     apiParameter = recordComponent.getAnnotation(ApiParameter.class);
                     parameterName = recordComponent.getName();
                     type = recordComponent.getType();
+                    XDataUtils.checkType(typeClass, type);
                     if (isBasicType(type)) {
                         requestParameter = this.createBasicRequestParameter(type, parameterName, apiParameter);
                         requestParameters.put(requestParameter);
@@ -552,6 +554,7 @@ public final class ApiDefinitionManager {
                     apiParameter = recordComponent.getAnnotation(ApiParameter.class);
                     parameterName = recordComponent.getName();
                     type = recordComponent.getType();
+                    XDataUtils.checkType(paramClass, type);
                     if (isBasicType(type)) {
                         responseParameter = this.createBasicResponseParameter(type, parameterName, apiParameter);
                         responseParameters.put(responseParameter);
@@ -591,7 +594,7 @@ public final class ApiDefinitionManager {
             type = ApiConstants.TYPE_NUMBER;
         } else if (typeClass == String.class) {
             type = ApiConstants.TYPE_STRING;
-        } else if (typeClass == Date.class) {
+        } else if (typeClass == LocalDateTime.class) {
             type = ApiConstants.TYPE_DATE;
         } else {
             type = typeClass.getSimpleName();
@@ -614,7 +617,7 @@ public final class ApiDefinitionManager {
             itemType = ApiConstants.TYPE_NUMBER;
         } else if (typeClass == String.class) {
             itemType = ApiConstants.TYPE_STRING;
-        } else if (typeClass == Date.class) {
+        } else if (typeClass == LocalDateTime.class) {
             itemType = ApiConstants.TYPE_DATE;
         } else {
             itemType = typeClass.getSimpleName();

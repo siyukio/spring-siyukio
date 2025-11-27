@@ -8,9 +8,8 @@ import io.github.siyukio.tools.entity.query.QueryBuilders;
 import io.github.siyukio.tools.entity.sort.SortBuilder;
 import io.github.siyukio.tools.entity.sort.SortBuilders;
 import io.github.siyukio.tools.entity.sort.SortOrder;
-import io.github.siyukio.tools.util.DateUtils;
 import io.github.siyukio.tools.util.IdUtils;
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -18,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -46,12 +46,12 @@ public class RecordEventTests {
         messages.put(messageJson);
 
         RecordEvent.Item item = RecordEvent.Item.builder()
-                .costTime(1000)
+                .costMs(1000)
                 .build();
 
         return RecordEvent.builder()
                 .error(false)
-                .times(1000)
+                .costMs(1000)
                 .content("test")
                 .type("user")
                 .rating(0.3)
@@ -66,7 +66,7 @@ public class RecordEventTests {
     public void testInsert() {
         RecordEvent recordEvent = this.createRandom();
         recordEvent = this.recordEventPgEntityDao.insert(recordEvent);
-        log.info("{}", JsonUtils.toPrettyJSONString(recordEvent));
+        log.info("{}", XDataUtils.toPrettyJSONString(recordEvent));
     }
 
     @Test
@@ -82,13 +82,13 @@ public class RecordEventTests {
         RecordEvent recordEvent = this.createRandom();
         recordEvent = recordEvent.withId(this.id);
         recordEvent = this.recordEventPgEntityDao.insert(recordEvent);
-        log.info("{}", JsonUtils.toPrettyJSONString(recordEvent));
+        log.info("{}", XDataUtils.toPrettyJSONString(recordEvent));
     }
 
     @Test
     public void testQueryWithId() {
         RecordEvent recordEvent = this.recordEventPgEntityDao.queryById(this.id);
-        log.info("{}", JsonUtils.toPrettyJSONString(recordEvent));
+        log.info("{}", XDataUtils.toPrettyJSONString(recordEvent));
     }
 
     @Test
@@ -100,7 +100,7 @@ public class RecordEventTests {
         recordEvent = recordEvent.withContent("update")
                 .withError(true);
         recordEvent = this.recordEventPgEntityDao.update(recordEvent);
-        log.info("{}", JsonUtils.toPrettyJSONString(recordEvent));
+        log.info("{}", XDataUtils.toPrettyJSONString(recordEvent));
     }
 
     @Test
@@ -126,14 +126,14 @@ public class RecordEventTests {
     public void testUpsertWithNewId() {
         RecordEvent recordEvent = this.createRandom().withId(IdUtils.getUniqueId()).withType("upsert new id");
         recordEvent = this.recordEventPgEntityDao.upsert(recordEvent);
-        log.info("{}", JsonUtils.toPrettyJSONString(recordEvent));
+        log.info("{}", XDataUtils.toPrettyJSONString(recordEvent));
     }
 
     @Test
     public void testUpsertWithExistId() {
         RecordEvent recordEvent = this.createRandom().withId(this.id).withType("upsert exist id");
         recordEvent = this.recordEventPgEntityDao.upsert(recordEvent);
-        log.info("{}", JsonUtils.toPrettyJSONString(recordEvent));
+        log.info("{}", XDataUtils.toPrettyJSONString(recordEvent));
     }
 
 
@@ -168,8 +168,9 @@ public class RecordEventTests {
 
     @Test
     public void testCountByQuery() {
-        Date maxDate = DateUtils.parse("2025-09-08 11:35:35");
-        QueryBuilder queryBuilder = QueryBuilders.rangeQuery("createTime").lt(maxDate.getTime());
+        LocalDateTime maxCreatedAt = XDataUtils.parse("2025-09-08 11:35:35");
+        long maxCreateAtTs = XDataUtils.toMills(maxCreatedAt);
+        QueryBuilder queryBuilder = QueryBuilders.rangeQuery("createdAtTs").lt(maxCreateAtTs);
         int num = this.recordEventPgEntityDao.countByQuery(queryBuilder);
         log.info("{}", num);
     }
@@ -177,25 +178,27 @@ public class RecordEventTests {
     @Test
     public void testQuery() {
         List<RecordEvent> recordEvents = this.recordEventPgEntityDao.query(0, 10);
-        log.info("{}", JsonUtils.toPrettyJSONString(recordEvents));
+        log.info("{}", XDataUtils.toPrettyJSONString(recordEvents));
     }
 
     @Test
     public void testQuery2() {
-        Date maxDate = DateUtils.parse("2025-09-08 11:35:35");
-        QueryBuilder queryBuilder = QueryBuilders.rangeQuery("createTime").lt(maxDate.getTime());
+        LocalDateTime maxCreatedAt = XDataUtils.parse("2025-09-08 11:35:35");
+        long maxCreateAtTs = XDataUtils.toMills(maxCreatedAt);
+        QueryBuilder queryBuilder = QueryBuilders.rangeQuery("createdAtTs").lt(maxCreateAtTs);
         List<RecordEvent> recordEvents = this.recordEventPgEntityDao.query(queryBuilder, 0, 1);
-        log.info("{}", JsonUtils.toPrettyJSONString(recordEvents));
+        log.info("{}", XDataUtils.toPrettyJSONString(recordEvents));
     }
 
     @Test
     public void testQuery3() {
-        Date maxDate = DateUtils.parse("2025-09-08 11:35:36");
-        QueryBuilder queryBuilder = QueryBuilders.rangeQuery("createTime").lte(maxDate.getTime());
+        LocalDateTime maxCreatedAt = XDataUtils.parse("2025-09-08 11:35:36");
+        long maxCreateAtTs = XDataUtils.toMills(maxCreatedAt);
+        QueryBuilder queryBuilder = QueryBuilders.rangeQuery("createdAtTs").lte(maxCreateAtTs);
 
-        SortBuilder sortBuilder = SortBuilders.fieldSort("createTime").order(SortOrder.DESC);
+        SortBuilder sortBuilder = SortBuilders.fieldSort("createdAtTs").order(SortOrder.DESC);
         List<RecordEvent> recordEvents = this.recordEventPgEntityDao.query(queryBuilder, sortBuilder, 0, 10);
-        log.info("{}", JsonUtils.toPrettyJSONString(recordEvents));
+        log.info("{}", XDataUtils.toPrettyJSONString(recordEvents));
     }
 
     @Test
@@ -205,6 +208,6 @@ public class RecordEventTests {
 
         SortBuilder sortBuilder = SortBuilders.fieldSort("createTime").order(SortOrder.DESC);
         Page<RecordEvent> page = this.recordEventPgEntityDao.queryPage(queryBuilder, sortBuilder, 1, 1);
-        log.info("{}", JsonUtils.toPrettyJSONString(page));
+        log.info("{}", XDataUtils.toPrettyJSONString(page));
     }
 }

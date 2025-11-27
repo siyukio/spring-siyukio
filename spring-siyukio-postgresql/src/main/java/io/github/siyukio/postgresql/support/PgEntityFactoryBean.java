@@ -12,9 +12,8 @@ import io.github.siyukio.tools.entity.postgresql.annotation.PgColumn;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgEntity;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgIndex;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgKey;
-import io.github.siyukio.tools.util.DateUtils;
 import io.github.siyukio.tools.util.EntityUtils;
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -104,7 +103,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         if (defaultValue.isEmpty()) {
             defaultValue = switch (columnType) {
                 case ColumnType.INT, ColumnType.BIGINT, ColumnType.DOUBLE -> "0";
-                case ColumnType.DATETIME -> DateUtils.format(new Date(0));
+                case ColumnType.DATETIME -> null;
                 case ColumnType.BOOLEAN -> "false";
                 case ColumnType.JSON_ARRAY -> "[]";
                 default -> "";
@@ -152,6 +151,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         List<ColumnDefinition> columnDefinitions = new ArrayList<>();
         RecordComponent[] recordComponents = this.entityClass.getRecordComponents();
         for (RecordComponent recordComponent : recordComponents) {
+            XDataUtils.checkType(this.entityClass, recordComponent.getType());
             if (recordComponent.isAnnotationPresent(PgKey.class)) {
                 keyDefinition = this.getKeyDefinition(recordComponent);
             } else if (recordComponent.isAnnotationPresent(PgColumn.class)) {
@@ -203,7 +203,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             for (int index = 1; index <= columnCount; index++) {
                 rowJson.put(resultSetMetaData.getColumnLabel(index), rs.getObject(index));
             }
-            return JsonUtils.copy(rowJson, InformationIndex.class);
+            return XDataUtils.copy(rowJson, InformationIndex.class);
         }, schema, entityDefinition.table());
 
         return informationIndexes.stream()
@@ -242,7 +242,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             for (int index = 1; index <= columnCount; index++) {
                 rowJson.put(resultSetMetaData.getColumnLabel(index), rs.getObject(index));
             }
-            return JsonUtils.copy(rowJson, InformationColumn.class);
+            return XDataUtils.copy(rowJson, InformationColumn.class);
         }, schema, entityDefinition.table());
 
         return informationColumns.stream()

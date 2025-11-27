@@ -1,24 +1,20 @@
 package io.github.siyukio.tools.util;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.StreamReadFeature;
+import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
-import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
+import io.github.siyukio.tools.api.constants.ApiConstants;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 /**
  * Provides conversion between Strings and JSON objects or JSON collections.
@@ -26,34 +22,73 @@ import java.time.format.DateTimeFormatter;
  *
  * @author Buddy
  */
-public abstract class JsonUtils {
+public abstract class XDataUtils {
 
     public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+    private static final DateTimeFormatter DEFAULT_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    private static final DateTimeFormatter DEFAULT_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    private static final XmlMapper XML_MAPPER = new XmlMapper();
+
+    private static final List<DateTimeFormatter> DATE_TIME_FORMATTERS = List.of(
+            DEFAULT_DATE_TIME_FORMATTER,
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"),
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"),
+            DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss"),
+            DateTimeFormatter.ISO_LOCAL_DATE_TIME
+    );
+
+    private static final List<DateTimeFormatter> DATE_FORMATTERS = List.of(
+            DEFAULT_DATE_FORMATTER,
+            DateTimeFormatter.ofPattern("yyyy/MM/dd"),
+            DateTimeFormatter.ISO_LOCAL_DATE
+    );
+
     static {
-        OBJECT_MAPPER.setDateFormat(DateUtils.DEFAULT_DATE_FORMAT);
+        // Supports LocalDateTime
         JavaTimeModule javaTimeModule = new JavaTimeModule();
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-        javaTimeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(dateTimeFormatter));
-        javaTimeModule.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(dateTimeFormatter));
+        javaTimeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSmartSerializer());
+        javaTimeModule.addDeserializer(LocalDateTime.class, new MultiFormatLocalDateTimeDeserializer());
+
+        // Config json
         OBJECT_MAPPER.registerModule(javaTimeModule);
-        //
+
+        // Support JSONObject and JSONArray
         OBJECT_MAPPER.registerModule(new JsonOrgModule());
-//        OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.ALWAYS);
+
+        // Ignore properties with null values
+        OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
+        // Others...
         OBJECT_MAPPER.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         OBJECT_MAPPER.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 //        OBJECT_MAPPER.disable(MapperFeature.DEFAULT_VIEW_INCLUSION);
-        OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
         OBJECT_MAPPER.getFactory().enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION.mappedFeature());
 
         OBJECT_MAPPER.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+
+        // Config xml
+        XML_MAPPER.registerModule(javaTimeModule);
+        XML_MAPPER.registerModule(new JsonOrgModule());
+
+        XML_MAPPER.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        XML_MAPPER.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        XML_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
 
     public static ObjectMapper getObjectMapper() {
         return OBJECT_MAPPER;
     }
 
+    public static void checkType(Class<?> clazz, Class<?> type) {
+        if (java.util.Date.class == type || java.sql.Date.class == type) {
+            String error = String.format(ApiConstants.ERROR_DATE_UNSUPPORTED_FORMAT, type, clazz);
+            throw new IllegalArgumentException(error);
+        }
+    }
 
     public static <T> T copy(Object from, Class<T> toClazz) {
         if (from == null) {
@@ -190,4 +225,98 @@ public abstract class JsonUtils {
         }
     }
 
+    public static LocalDateTime parse(String text) {
+        for (DateTimeFormatter formatter : DATE_TIME_FORMATTERS) {
+            try {
+                return LocalDateTime.parse(text, formatter);
+            } catch (Exception ignored) {
+            }
+        }
+
+        for (DateTimeFormatter formatter : DATE_FORMATTERS) {
+            try {
+                return LocalDate.parse(text, formatter).atStartOfDay();
+            } catch (Exception ignored) {
+            }
+        }
+
+        // Supports timestamp
+        if (text.matches("\\d+")) {
+            long epoch = Long.parseLong(text);
+            ZoneId zone = ZoneId.systemDefault();
+            if (text.length() == 10) { // seconds
+                return LocalDateTime.ofEpochSecond(epoch, 0, zone.getRules().getOffset(Instant.ofEpochSecond(epoch)));
+            } else { // mills
+                return LocalDateTime.ofInstant(Instant.ofEpochMilli(epoch), zone);
+            }
+        }
+
+        throw new IllegalArgumentException("Unsupported LocalDateTime format: " + text);
+    }
+
+    public static LocalDateTime toLocalDateTime(long timestamp) {
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.systemDefault());
+    }
+
+    public static long toMills(LocalDateTime localDateTime) {
+        return localDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+    }
+
+    public static String format(LocalDateTime localDateTime) {
+        // Check if the time is 00:00:00
+        if (localDateTime.toLocalTime().equals(LocalTime.MIDNIGHT)) {
+            return localDateTime.toLocalDate().format(DEFAULT_DATE_FORMATTER);
+        }
+        return localDateTime.format(DEFAULT_DATE_TIME_FORMATTER);
+    }
+
+    public static String formatMs(long timestamp) {
+        ZoneId zone = ZoneId.systemDefault();
+        LocalDateTime localDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zone);
+        return format(localDateTime);
+    }
+
+    public static <T> T parseXml(String xml, Class<T> toClazz) {
+        try {
+            return XML_MAPPER.reader().readValue(xml, toClazz);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public static JSONObject parseXml(String xml) {
+
+        if (xml == null || xml.isEmpty()) {
+            return new JSONObject();
+        }
+        try {
+            return XML_MAPPER.reader().readValue(xml, JSONObject.class);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public static class MultiFormatLocalDateTimeDeserializer extends JsonDeserializer<LocalDateTime> {
+
+        @Override
+        public LocalDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
+            String text = p.getText().trim();
+            try {
+                return parse(text);
+            } catch (Exception ignored) {
+            }
+
+            throw new JsonParseException(p, "Unsupported LocalDateTime format: " + text);
+        }
+    }
+
+    public static class LocalDateTimeSmartSerializer extends JsonSerializer<LocalDateTime> {
+
+        @Override
+        public void serialize(LocalDateTime value,
+                              JsonGenerator gen,
+                              SerializerProvider serializers) throws IOException {
+            gen.writeString(format(value));
+        }
+    }
 }

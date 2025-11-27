@@ -8,7 +8,7 @@ import java.util.Arrays;
 /**
  * @author Bugee
  */
-public final class IdUtils {
+public abstract class IdUtils {
 
     private static final char[] BASE = (
             "0123456789"

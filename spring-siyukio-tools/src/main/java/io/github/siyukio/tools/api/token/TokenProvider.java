@@ -7,7 +7,7 @@ import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
@@ -50,7 +50,7 @@ public final class TokenProvider {
     public String createAuthorization(Token token) {
         Duration duration = token.refresh() ? this.refreshTokenDuration : this.accessTokenDuration;
         Date expireTime = new Date(System.currentTimeMillis() + duration.toMillis());
-        String json = JsonUtils.toJSONString(token);
+        String json = XDataUtils.toJSONString(token);
         return JWT.create()
                 .withSubject(json)
                 .withExpiresAt(expireTime)
@@ -63,7 +63,7 @@ public final class TokenProvider {
             JWTVerifier verifier = JWT.require(this.algorithm).build();
             DecodedJWT jwt = verifier.verify(authorization);
             String json = jwt.getSubject();
-            token = JsonUtils.parse(json, Token.class);
+            token = XDataUtils.parse(json, Token.class);
         } catch (TokenExpiredException e) {
             token = Token.builder().expired(true).build();
         } catch (JWTVerificationException e) {
@@ -82,7 +82,7 @@ public final class TokenProvider {
         try {
             DecodedJWT jwt = JWT.decode(authorization);
             String json = jwt.getSubject();
-            token = JsonUtils.parse(json, Token.class);
+            token = XDataUtils.parse(json, Token.class);
         } catch (JWTDecodeException e) {
             token = null;
         }

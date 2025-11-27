@@ -3,7 +3,7 @@ package io.modelcontextprotocol.server.transport;
 import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.util.IdUtils;
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -69,9 +69,9 @@ public class WebSocketServerSession {
         McpSchema.JSONRPCResponse.JSONRPCError error = new McpSchema.JSONRPCResponse.JSONRPCError(
                 apiException.getCode(), apiException.getMessage(), null);
         McpSchema.JSONRPCResponse response = new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, "", "", error);
-        JSONObject body = JsonUtils.copy(response, JSONObject.class);
+        JSONObject body = XDataUtils.copy(response, JSONObject.class);
         WebSocketMessage webSocketMessage = new WebSocketMessage(id, body);
-        String text = JsonUtils.toJSONString(webSocketMessage);
+        String text = XDataUtils.toJSONString(webSocketMessage);
         try {
             this.sendTextMessage(text);
         } catch (IOException ignored) {
@@ -83,9 +83,9 @@ public class WebSocketServerSession {
     }
 
     public void sendResponse(String id, String mcpSessionId, McpSchema.JSONRPCResponse response) {
-        JSONObject body = JsonUtils.copy(response, JSONObject.class);
+        JSONObject body = XDataUtils.copy(response, JSONObject.class);
         WebSocketMessage webSocketMessage = new WebSocketMessage(id, mcpSessionId, body);
-        String text = JsonUtils.toJSONString(webSocketMessage);
+        String text = XDataUtils.toJSONString(webSocketMessage);
         try {
             this.sendTextMessage(text);
         } catch (IOException ignored) {
@@ -94,9 +94,9 @@ public class WebSocketServerSession {
 
     public void sendRequestOrNotificationMessage(McpSchema.JSONRPCMessage message) {
         String id = IdUtils.getUniqueId();
-        JSONObject body = JsonUtils.copy(message, JSONObject.class);
+        JSONObject body = XDataUtils.copy(message, JSONObject.class);
         WebSocketMessage webSocketMessage = new WebSocketMessage(id, body);
-        String text = JsonUtils.toJSONString(webSocketMessage);
+        String text = XDataUtils.toJSONString(webSocketMessage);
         try {
             this.sendTextMessage(text);
         } catch (IOException ignored) {
@@ -105,7 +105,7 @@ public class WebSocketServerSession {
 
     public void sendAccepted(String id) {
         WebSocketMessage webSocketMessage = new WebSocketMessage(id);
-        String text = JsonUtils.toJSONString(webSocketMessage);
+        String text = XDataUtils.toJSONString(webSocketMessage);
         try {
             this.sendTextMessage(text);
         } catch (IOException ignored) {

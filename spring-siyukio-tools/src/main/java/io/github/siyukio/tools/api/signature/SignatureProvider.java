@@ -2,7 +2,7 @@ package io.github.siyukio.tools.api.signature;
 
 import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.collection.ConcurrentCache;
-import io.github.siyukio.tools.util.MessageDigestUtils;
+import io.github.siyukio.tools.util.CryptoUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
@@ -50,6 +50,6 @@ public class SignatureProvider {
 
     public String createSignature(long timestamp, String nonce) {
         String text = this.salt + timestamp + nonce;
-        return MessageDigestUtils.md5(text);
+        return CryptoUtils.md5(text);
     }
 }

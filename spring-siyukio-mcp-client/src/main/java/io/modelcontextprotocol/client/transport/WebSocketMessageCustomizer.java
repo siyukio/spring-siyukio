@@ -1,7 +1,7 @@
 package io.modelcontextprotocol.client.transport;
 
 import io.github.siyukio.tools.util.IdUtils;
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.json.JSONObject;
@@ -27,7 +27,7 @@ public interface WebSocketMessageCustomizer {
 
             JSONObject body = null;
             if (sentMessage != null) {
-                body = JsonUtils.copy(sentMessage, JSONObject.class);
+                body = XDataUtils.copy(sentMessage, JSONObject.class);
             }
             WebSocketMessage webSocketMessage = new WebSocketMessage(id, mcpSessionId, method, body);
             return Mono.just(webSocketMessage);

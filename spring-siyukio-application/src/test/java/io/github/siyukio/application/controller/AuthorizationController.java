@@ -7,7 +7,7 @@ import io.github.siyukio.tools.api.annotation.ApiMapping;
 import io.github.siyukio.tools.api.model.TokenResponse;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -23,7 +23,7 @@ public class AuthorizationController {
 
     @ApiMapping(path = "/createAuthorization", authorization = false)
     public CreateResponseResponse createAuthorization(CreateAuthorizationRequest createAuthorizationRequest) {
-        log.info("{}", JsonUtils.toPrettyJSONString(createAuthorizationRequest));
+        log.info("{}", XDataUtils.toPrettyJSONString(createAuthorizationRequest));
         Token token = Token.builder().uid(createAuthorizationRequest.uid())
                 .name(createAuthorizationRequest.name())
                 .roles(createAuthorizationRequest.roles())
@@ -35,8 +35,8 @@ public class AuthorizationController {
 
     @ApiMapping(path = "/getToken")
     public TokenResponse getToken(Token token) {
-        log.info("{}", JsonUtils.toPrettyJSONString(token));
-        return JsonUtils.copy(token, TokenResponse.class);
+        log.info("{}", XDataUtils.toPrettyJSONString(token));
+        return XDataUtils.copy(token, TokenResponse.class);
     }
 
 }

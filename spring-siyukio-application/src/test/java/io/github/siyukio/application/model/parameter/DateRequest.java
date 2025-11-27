@@ -4,7 +4,7 @@ import io.github.siyukio.tools.api.annotation.ApiParameter;
 import lombok.Builder;
 import lombok.With;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * @author Buddy
@@ -14,6 +14,6 @@ import java.util.Date;
 public record DateRequest(
 
         @ApiParameter(required = false)
-        Date date
+        LocalDateTime date
 ) {
 }

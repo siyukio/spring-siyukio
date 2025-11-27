@@ -6,7 +6,7 @@ import io.github.siyukio.client.boot.starter.autoconfigure.SiyukioMcpClientCommo
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.AsyncUtils;
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +49,7 @@ class McpWebsocketClientTests {
         McpSchema.ListToolsResult toolsList = client.listTools();
 
         for (McpSchema.Tool tool : toolsList.tools()) {
-            log.info("{}", JsonUtils.toPrettyJSONString(tool));
+            log.info("{}", XDataUtils.toPrettyJSONString(tool));
         }
     }
 
@@ -127,7 +127,7 @@ class McpWebsocketClientTests {
         JSONObject result = client.callTool("createAuthorization",
                 createAuthorizationRequest, JSONObject.class);
 
-        log.info("{}", JsonUtils.toPrettyJSONString(result));
+        log.info("{}", XDataUtils.toPrettyJSONString(result));
     }
 
     @Test
@@ -149,7 +149,7 @@ class McpWebsocketClientTests {
         try {
             for (int i = 0; i < 3; i++) {
                 JSONObject result = McpSyncClient.callTool(asyncClient, "createAuthorization", createAuthorizationRequest, JSONObject.class);
-                log.info("callTool {} --> {}", i, JsonUtils.toPrettyJSONString(result));
+                log.info("callTool {} --> {}", i, XDataUtils.toPrettyJSONString(result));
             }
         } finally {
             asyncClient.close();
@@ -177,7 +177,7 @@ class McpWebsocketClientTests {
 
         JSONObject result = client.callTool("getToken", JSONObject.class);
 
-        log.info("{}", JsonUtils.toPrettyJSONString(result));
+        log.info("{}", XDataUtils.toPrettyJSONString(result));
     }
 
     @Test
@@ -204,7 +204,7 @@ class McpWebsocketClientTests {
         try {
             for (int i = 0; i < 3; i++) {
                 JSONObject result = McpSyncClient.callTool(asyncClient, "getToken", JSONObject.class);
-                log.info("sampling callTool {} --> {}", i, JsonUtils.toPrettyJSONString(result));
+                log.info("sampling callTool {} --> {}", i, XDataUtils.toPrettyJSONString(result));
             }
         } finally {
             asyncClient.close();
@@ -215,7 +215,7 @@ class McpWebsocketClientTests {
     void testCallToolOnProgress() throws InterruptedException {
 
         Consumer<McpSchema.ProgressNotification> progressHandler = progressNotification -> {
-            log.info("progressNotification:{}", JsonUtils.toPrettyJSONString(progressNotification));
+            log.info("progressNotification:{}", XDataUtils.toPrettyJSONString(progressNotification));
         };
 
         McpSyncClient client = McpSyncClient.builder()
@@ -227,14 +227,14 @@ class McpWebsocketClientTests {
 
         JSONObject result = client.callTool("getTokenByProgress", JSONObject.class);
 
-        log.info("{}", JsonUtils.toPrettyJSONString(result));
+        log.info("{}", XDataUtils.toPrettyJSONString(result));
     }
 
     @Test
     void testMultiCallToolOnProgress() throws InterruptedException {
 
         Consumer<McpSchema.ProgressNotification> progressHandler = progressNotification -> {
-            log.info("multi progressNotification:{}", JsonUtils.toPrettyJSONString(progressNotification));
+            log.info("multi progressNotification:{}", XDataUtils.toPrettyJSONString(progressNotification));
         };
 
         McpSyncClient client = McpSyncClient.builder()
@@ -248,7 +248,7 @@ class McpWebsocketClientTests {
         try {
             for (int i = 0; i < 3; i++) {
                 JSONObject result = McpSyncClient.callTool(asyncClient, "getTokenByProgress", JSONObject.class);
-                log.info("progress callTool {} --> {}", i, JsonUtils.toPrettyJSONString(result));
+                log.info("progress callTool {} --> {}", i, XDataUtils.toPrettyJSONString(result));
             }
         } finally {
             asyncClient.close();

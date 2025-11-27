@@ -3,7 +3,7 @@ package io.github.siyukio.application.test;
 import io.github.siyukio.application.model.signature.SignatureRequest;
 import io.github.siyukio.tools.api.ApiMock;
 import io.github.siyukio.tools.api.signature.SignatureProvider;
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -29,7 +29,7 @@ class SignatureControllerTests {
                 .num(6)
                 .text("hello")
                 .build();
-        JSONObject requestJson = JsonUtils.copy(signatureRequest, JSONObject.class);
+        JSONObject requestJson = XDataUtils.copy(signatureRequest, JSONObject.class);
         long timestamp = System.currentTimeMillis();
         requestJson.put("timestamp", timestamp);
         String nonce = UUID.randomUUID().toString();

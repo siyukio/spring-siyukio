@@ -5,7 +5,7 @@ import io.github.siyukio.application.mcp.MethodToolCallback;
 import io.github.siyukio.tools.api.AipHandlerManager;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServerFeatures;
@@ -63,7 +63,7 @@ public class SiyukioWebSocketStreamableMcpServerConfiguration implements WebSock
             }
             return McpTransportContext.create(metadata);
         };
-        return new WebSocketStreamableServerTransportProvider(JsonUtils.getObjectMapper(), webSocketStreamableContext,
+        return new WebSocketStreamableServerTransportProvider(XDataUtils.getObjectMapper(), webSocketStreamableContext,
                 siyukioMcpServerProperties.getMcpEndpoint() + "/ws", contextExtractor, Duration.ofSeconds(20));
     }
 

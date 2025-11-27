@@ -6,7 +6,7 @@ import io.github.siyukio.tools.api.ApiRequest;
 import io.github.siyukio.tools.api.constants.ApiConstants;
 import io.github.siyukio.tools.api.definition.ApiDefinitionManager;
 import io.github.siyukio.tools.api.token.Token;
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import org.json.JSONObject;
 import org.springframework.core.MethodParameter;
@@ -88,14 +88,14 @@ public final class RequestArgumentResolver implements HandlerMethodArgumentResol
             ServletServerHttpRequest inputMessage = new ServletServerHttpRequest(httpServletRequest);
             requestBody = new String(inputMessage.getBody().readAllBytes());
         }
-        return JsonUtils.parseObject(requestBody);
+        return XDataUtils.parseObject(requestBody);
     }
 
     private Object getRequestBodyObject(MethodParameter parameter, HttpServletRequest httpServletRequest) throws IOException {
         JSONObject requestBodyJson = this.getJSONObject(httpServletRequest);
         Type type = parameter.getGenericParameterType();
         JavaType javaType = TypeFactory.defaultInstance().constructType(type);
-        return JsonUtils.copy(requestBodyJson, javaType);
+        return XDataUtils.copy(requestBodyJson, javaType);
     }
 
     @Override
@@ -113,7 +113,7 @@ public final class RequestArgumentResolver implements HandlerMethodArgumentResol
             Object requestBodyJson = httpServletRequest.getAttribute(ApiConstants.ATTRIBUTE_REQUEST_BODY_JSON);
             Type type = parameter.getGenericParameterType();
             JavaType javaType = TypeFactory.defaultInstance().constructType(type);
-            return JsonUtils.copy(requestBodyJson, javaType);
+            return XDataUtils.copy(requestBodyJson, javaType);
         }
     }
 

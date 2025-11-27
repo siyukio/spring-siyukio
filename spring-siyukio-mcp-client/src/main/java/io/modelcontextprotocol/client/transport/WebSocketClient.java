@@ -1,6 +1,6 @@
 package io.modelcontextprotocol.client.transport;
 
-import io.github.siyukio.tools.util.JsonUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
@@ -112,7 +112,7 @@ public class WebSocketClient {
     private void handleText(String text) {
         Mono.fromRunnable(() -> {
             log.debug("handleText: {}", text);
-            WebSocketMessage websocketMessage = JsonUtils.parse(text, WebSocketMessage.class);
+            WebSocketMessage websocketMessage = XDataUtils.parse(text, WebSocketMessage.class);
             CompletableFuture<WebSocketMessage> future = this.pendingMap.remove(websocketMessage.id());
             if (future == null) {
                 this.incomingSink.tryEmitNext(websocketMessage);
@@ -143,7 +143,7 @@ public class WebSocketClient {
             CompletableFuture<WebSocketMessage> future = new CompletableFuture<>();
             this.pendingMap.put(requestMessage.id(), future);
 
-            String text = JsonUtils.toJSONString(requestMessage);
+            String text = XDataUtils.toJSONString(requestMessage);
             boolean ok = this.sendTextMessage(text);
             if (!ok) {
                 this.pendingMap.remove(requestMessage.id());

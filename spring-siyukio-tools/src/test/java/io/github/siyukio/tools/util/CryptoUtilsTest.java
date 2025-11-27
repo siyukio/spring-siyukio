@@ -5,10 +5,10 @@ import org.junit.jupiter.api.Test;
 /**
  * @author Buddy
  */
-public class KeyUtilsTest {
+public class CryptoUtilsTest {
 
     @Test
     void testCreateKeyPair() throws Exception {
-        KeyUtils.createKeyPair();
+        CryptoUtils.createKeyPair();
     }
 }
