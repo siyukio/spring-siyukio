@@ -5,7 +5,9 @@ package io.github.siyukio.tools.entity;
  */
 public interface EntityConstants {
 
-    String INDEX_PREFIX = "idx_";
+    String INDEX_SUFFIX = "idx";
+
+    String UNIQUE_INDEX_SUFFIX = "uidx";
 
     String ERROR_FILED_UNSUPPORTED_FORMAT = "Entity: '%s' unsupported field type: '%s'.";
 

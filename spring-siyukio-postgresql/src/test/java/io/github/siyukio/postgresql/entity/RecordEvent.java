@@ -17,7 +17,8 @@ import java.util.List;
  */
 @PgEntity(schema = "test", comment = "record event", indexes = {
         @PgIndex(columns = {"type"}),
-        @PgIndex(columns = {"error", "rating"})
+        @PgIndex(columns = {"error", "rating"}),
+        @PgIndex(columns = {"teamId", "userId"}, unique = true)
 })
 @Builder
 @With
@@ -40,6 +41,12 @@ public record RecordEvent(
 
         @PgColumn
         int total,
+
+        @PgColumn
+        String teamId,
+
+        @PgColumn
+        String userId,
 
         @PgColumn(comment = "Elapsed time in milliseconds")
         long costMs,

@@ -9,6 +9,7 @@ import io.github.siyukio.tools.entity.query.*;
 import io.github.siyukio.tools.entity.sort.FieldSortBuilder;
 import io.github.siyukio.tools.entity.sort.ListSortBuilder;
 import io.github.siyukio.tools.entity.sort.SortBuilder;
+import io.github.siyukio.tools.util.EntityUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import org.json.JSONObject;
 import org.postgresql.util.PGobject;
@@ -67,6 +68,8 @@ public abstract class PgSqlUtils {
             """;
 
     private final static String CREATE_INDEX_TEMPLATE = "CREATE INDEX %s ON %s.%s ( %s ) ;";
+
+    private final static String CREATE_UNIQUE_INDEX_TEMPLATE = "CREATE UNIQUE INDEX %s ON %s.%s ( %s ) ;";
 
     private final static String INSERT_TEMPLATE = """
             INSERT INTO %s.%s ( %s )
@@ -184,25 +187,13 @@ public abstract class PgSqlUtils {
         return String.join(" ", partList);
     }
 
-    private static String getSchema(EntityDefinition entityDefinition) {
-        String schema = entityDefinition.schema();
-        if (!StringUtils.hasText(schema)) {
-            schema = DEFAULT_SCHEMA;
-        }
-        return schema;
-    }
-
     public static List<String> addColumnAndCommentSql(EntityDefinition entityDefinition, ColumnDefinition columnDefinition) {
         List<String> sqlList = new ArrayList<>();
-        String schema = getSchema(entityDefinition);
-
+        String schema = entityDefinition.schema();
         String table = entityDefinition.table();
         String columnDefinitionSql = getColumnDefinitionSql(columnDefinition);
-
         String alterSql = String.format(ADD_COLUMN_TEMPLATE, schema, table, columnDefinitionSql);
-
         sqlList.add(alterSql);
-
         String commentSql = String.format(COLUMN_COMMENT_TEMPLATE,
                 schema + "." + table + "." + columnDefinition.columnName(),
                 columnDefinition.comment());
@@ -211,8 +202,7 @@ public abstract class PgSqlUtils {
     }
 
     public static String alterColumnDefaultSql(EntityDefinition entityDefinition, ColumnDefinition columnDefinition) {
-        String schema = getSchema(entityDefinition);
-
+        String schema = entityDefinition.schema();
         String table = entityDefinition.table();
         String columnName = columnDefinition.columnName();
         String defaultValue = getSqlDefault(columnDefinition);
@@ -220,8 +210,7 @@ public abstract class PgSqlUtils {
     }
 
     public static String alterColumnTypeSql(EntityDefinition entityDefinition, ColumnDefinition columnDefinition) {
-        String schema = getSchema(entityDefinition);
-
+        String schema = entityDefinition.schema();
         String table = entityDefinition.table();
         String columnName = columnDefinition.columnName();
         String sqlType = getSqlType(columnDefinition);
@@ -232,8 +221,7 @@ public abstract class PgSqlUtils {
         List<String> sqlList = new ArrayList<>();
 
         //create table
-        String schema = getSchema(entityDefinition);
-
+        String schema = entityDefinition.schema();
         String table = entityDefinition.table();
         List<String> columnDefinitionSqlList = new ArrayList<>();
         columnDefinitionSqlList.add(getKeyDefinitionSql(entityDefinition.keyDefinition()));
@@ -265,20 +253,20 @@ public abstract class PgSqlUtils {
     }
 
     public static String createIndexSql(EntityDefinition entityDefinition, IndexDefinition indexDefinition) {
-        String schema = getSchema(entityDefinition);
-
+        String schema = entityDefinition.schema();
         String table = entityDefinition.table();
         String indexName = indexDefinition.indexName();
-        List<String> columnNameList = Arrays.asList(indexDefinition.columns());
+        List<String> columnNameList = Arrays.stream(indexDefinition.columns()).map(EntityUtils::camelToSnake).toList();
         String columns = String.join(", ", columnNameList);
+        if (indexDefinition.unique()) {
+            return String.format(CREATE_UNIQUE_INDEX_TEMPLATE, indexName, schema, table, columns);
+        }
         return String.format(CREATE_INDEX_TEMPLATE, indexName, schema, table, columns);
     }
 
     public static String insertAndReturnIdSql(EntityDefinition entityDefinition) {
-        String schema = getSchema(entityDefinition);
-
+        String schema = entityDefinition.schema();
         String table = entityDefinition.table();
-
         List<String> columns = new ArrayList<>();
         List<String> values = new ArrayList<>();
 
@@ -303,10 +291,8 @@ public abstract class PgSqlUtils {
     }
 
     public static String insertSql(EntityDefinition entityDefinition) {
-        String schema = getSchema(entityDefinition);
-
+        String schema = entityDefinition.schema();
         String table = entityDefinition.table();
-
         List<String> columns = new ArrayList<>();
         List<String> values = new ArrayList<>();
 
@@ -333,8 +319,7 @@ public abstract class PgSqlUtils {
     }
 
     public static String updateByIdSql(EntityDefinition entityDefinition) {
-        String schema = getSchema(entityDefinition);
-
+        String schema = entityDefinition.schema();
         String table = entityDefinition.table();
 
         List<String> columns = new ArrayList<>();
@@ -361,8 +346,7 @@ public abstract class PgSqlUtils {
     }
 
     public static String upsertSql(EntityDefinition entityDefinition) {
-        String schema = getSchema(entityDefinition);
-
+        String schema = entityDefinition.schema();
         String table = entityDefinition.table();
 
         List<String> insertColumns = new ArrayList<>();
@@ -406,8 +390,7 @@ public abstract class PgSqlUtils {
     }
 
     public static String deleteByIdSql(EntityDefinition entityDefinition) {
-        String schema = getSchema(entityDefinition);
-
+        String schema = entityDefinition.schema();
         String table = entityDefinition.table();
 
         KeyDefinition keyDefinition = entityDefinition.keyDefinition();
@@ -417,8 +400,7 @@ public abstract class PgSqlUtils {
     }
 
     public static String queryByIdSql(EntityDefinition entityDefinition) {
-        String schema = getSchema(entityDefinition);
-
+        String schema = entityDefinition.schema();
         String table = entityDefinition.table();
 
         KeyDefinition keyDefinition = entityDefinition.keyDefinition();
@@ -644,23 +626,20 @@ public abstract class PgSqlUtils {
     }
 
     public static String deleteByQuerySql(EntityDefinition entityDefinition, QueryBuilder queryBuilder, Map<String, String> dictionaryMap) {
-        String schema = getSchema(entityDefinition);
-
+        String schema = entityDefinition.schema();
         String table = entityDefinition.table();
         String conditionSql = toQuerySql(queryBuilder, dictionaryMap);
         return String.format(DELETE_BY_QUERY_TEMPLATE, schema, table, conditionSql);
     }
 
     public static String countSql(EntityDefinition entityDefinition) {
-        String schema = getSchema(entityDefinition);
-
+        String schema = entityDefinition.schema();
         String table = entityDefinition.table();
         return String.format(COUNT_TEMPLATE, schema, table);
     }
 
     public static String countByQuerySql(EntityDefinition entityDefinition, QueryBuilder queryBuilder, Map<String, String> dictionaryMap) {
-        String schema = getSchema(entityDefinition);
-
+        String schema = entityDefinition.schema();
         String table = entityDefinition.table();
         String conditionSql = toQuerySql(queryBuilder, dictionaryMap);
         return String.format(COUNT_BY_QUERY_TEMPLATE, schema, table, conditionSql);
@@ -690,8 +669,7 @@ public abstract class PgSqlUtils {
     }
 
     public static String querySql(EntityDefinition entityDefinition, QueryBuilder queryBuilder, SortBuilder sortBuilder, Map<String, String> dictionaryMap) {
-        String schema = getSchema(entityDefinition);
-
+        String schema = entityDefinition.schema();
         String table = entityDefinition.table();
         String conditionSql = toQuerySql(queryBuilder, dictionaryMap);
         String sortSql = toSortSql(sortBuilder, dictionaryMap);

@@ -127,6 +127,22 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         return new KeyDefinition(fieldName, columnName, columnType, pgKey.generated(), pgKey.comment());
     }
 
+    private String getIndexName(String table, String[] columns, boolean unique) {
+        List<String> list = new ArrayList<>();
+        list.add(table);
+        list.addAll(List.of(columns));
+        String indexName = String.join("_", list);
+        if (indexName.length() > 58) {
+            indexName = indexName.substring(0, 58);
+        }
+        if (unique) {
+            indexName += "_" + EntityConstants.UNIQUE_INDEX_SUFFIX;
+        } else {
+            indexName += "_" + EntityConstants.INDEX_SUFFIX;
+        }
+        return indexName.toLowerCase();
+    }
+
     private List<IndexDefinition> getIndexDefinitions(String table, PgIndex[] pgIndexes) {
         List<IndexDefinition> indexDefinitions = Collections.emptyList();
         if (pgIndexes.length > 0) {
@@ -134,12 +150,9 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             IndexDefinition indexDefinition;
             String indexName;
             for (PgIndex pgIndex : pgIndexes) {
-                indexName = EntityConstants.INDEX_PREFIX + table + "__" + String.join("_", pgIndex.columns());
-                if (indexName.length() > 63) {
-                    indexName = indexName.substring(0, 63);
-                }
+                indexName = this.getIndexName(table, pgIndex.columns(), pgIndex.unique());
                 EntityUtils.isSafe(indexName);
-                indexDefinition = new IndexDefinition(indexName, pgIndex.columns());
+                indexDefinition = new IndexDefinition(indexName, pgIndex.columns(), pgIndex.unique());
                 indexDefinitions.add(indexDefinition);
             }
         }
@@ -175,6 +188,8 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         if (StringUtils.hasText(schema)) {
             schema = propertySourcesPlaceholdersResolver.resolvePlaceholders(schema).toString();
             EntityUtils.isSafe(schema);
+        } else {
+            schema = PgSqlUtils.DEFAULT_SCHEMA;
         }
 
         String table = pgEntity.table();
@@ -225,6 +240,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             }
         }
         if (!sqlList.isEmpty()) {
+            log.info("createIndex: {}, {}", entityDefinition.schema(), sqlList);
             this.executeSqlScript("createIndex", entityDefinition.dbName(), sqlList);
         }
     }
@@ -295,8 +311,6 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
 
     private void executeSqlScript(String title, String dbName, List<String> sqlList) {
         String sql = String.join(System.lineSeparator(), sqlList);
-        log.debug("{} Postgresql: {}", title, sql);
-
         MultiJdbcTemplate multiJdbcTemplate = PostgresqlEntityRegistrar.getMultiJdbcTemplate(dbName);
         DataSource dataSource = multiJdbcTemplate.getDataSource();
 
@@ -317,6 +331,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             sqlList.addAll(this.checkColumn(entityDefinition, columnDefinition, informationColumnMap));
         }
         if (!sqlList.isEmpty()) {
+            log.debug("alterTable: {}, {}", entityDefinition.schema(), sqlList);
             this.executeSqlScript("alterTable", entityDefinition.dbName(), sqlList);
         }
     }
@@ -326,6 +341,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             return;
         }
         List<String> sqlList = PgSqlUtils.createTableAndCommentSql(entityDefinition);
+        log.info("createTable: {}, {}", entityDefinition.schema(), sqlList);
         this.executeSqlScript("createTable", entityDefinition.dbName(), sqlList);
     }
 
@@ -333,7 +349,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
 
         if (StringUtils.hasText(entityDefinition.schema()) && !SCHEMA_SET.contains(entityDefinition.schema())) {
             String sql = PgSqlUtils.createSchemaIfNotExistsSql(entityDefinition.schema());
-            log.debug("checkTable Postgresql: {}", sql);
+            log.info("checkSchema: {}", sql);
             jdbcTemplate.execute(sql);
             SCHEMA_SET.add(entityDefinition.schema());
         }

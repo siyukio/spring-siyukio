@@ -14,4 +14,6 @@ import java.lang.annotation.Target;
 public @interface PgIndex {
 
     String[] columns();
+
+    boolean unique() default false;
 }
