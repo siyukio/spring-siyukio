@@ -15,32 +15,32 @@ import lombok.extern.slf4j.Slf4j;
 @ApiController(tags = "parameter")
 public class ParameterController {
 
-    @ApiMapping(path = "/testString", authorization = false)
+    @ApiMapping(path = "/string/test", authorization = false)
     public void testString(StringRequest stringRequest) {
         log.info("{}", XDataUtils.toPrettyJSONString(stringRequest));
     }
 
-    @ApiMapping(path = "/testNum", authorization = false)
+    @ApiMapping(path = "/num/test", authorization = false)
     public void testNum(NumRequest numRequest) {
         log.info("{}", XDataUtils.toPrettyJSONString(numRequest));
     }
 
-    @ApiMapping(path = "/testBool", authorization = false)
+    @ApiMapping(path = "/bool/test", authorization = false)
     public void testBool(BoolRequest boolRequest) {
         log.info("{}", XDataUtils.toPrettyJSONString(boolRequest));
     }
 
-    @ApiMapping(path = "/testDate", authorization = false)
+    @ApiMapping(path = "/date/test", authorization = false)
     public void testDate(DateRequest dateRequest) {
         log.info("{}", XDataUtils.toPrettyJSONString(dateRequest));
     }
 
-    @ApiMapping(path = "/testList", authorization = false)
+    @ApiMapping(path = "/list/test", authorization = false)
     public void testList(ListRequest listRequest) {
         log.info("{}", XDataUtils.toPrettyJSONString(listRequest));
     }
 
-    @ApiMapping(path = "/testPage", authorization = false)
+    @ApiMapping(path = "/page/test", authorization = false)
     public PageResponse<PageItem> testPage(PageRequest<FilterParam> pageRequest) {
         log.info("{}", XDataUtils.toPrettyJSONString(pageRequest));
 

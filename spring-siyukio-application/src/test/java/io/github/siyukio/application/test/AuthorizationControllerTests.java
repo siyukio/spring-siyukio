@@ -25,7 +25,7 @@ class AuthorizationControllerTests {
                 .name("Buddy")
                 .roles(List.of("user"))
                 .build();
-        JSONObject resultJson = this.apiMock.perform("/createAuthorization", createAuthorizationRequest);
+        JSONObject resultJson = this.apiMock.perform("/authorization/create", createAuthorizationRequest);
         log.info("{}", createAuthorizationRequest);
         log.info("{}", resultJson);
     }
@@ -38,7 +38,7 @@ class AuthorizationControllerTests {
                 .refresh(false).build();
         this.apiMock.setToken(token);
 
-        JSONObject resultJson = this.apiMock.perform("/getToken", new JSONObject());
+        JSONObject resultJson = this.apiMock.perform("/token/get", new JSONObject());
         log.info("{}", resultJson);
     }
 
@@ -47,7 +47,7 @@ class AuthorizationControllerTests {
         String authorization = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ7XCJ1aWRcIjpcIjEyM1wiLFwibmFtZVwiOlwiQnVkZHlcIixcInJvbGVzXCI6W1widXNlclwiXSxcInJlZnJlc2hcIjpmYWxzZSxcImV4cGlyZWRcIjpmYWxzZX0iLCJleHAiOjE3NDg4NjM0ODd9.OqqyhuryLrrf7k8zNLvH3I-OnArtk3kSRS0CdXhIz376qlXlqVpz2lDfL_x6TyUKzCDauRPrmd42nDyN5wqjLD2Ud_VJBGIPTGFeZl3XqRVn-DDTnbJdST6J4yhTuAXJBrYwqd1f-XEvxA8hlU1vsUGaFGqM4uTMGl5EKfJ_DYm-UWvASYykoGMnN7rtJ2hVyc9hXqyqpDynAN3QVY3SjBx5ItRBrJO3awokpJAMNYiVAYUWjZHg623BaHFeqgAb28H_Jk9wUHh7kk0w-RsMuAihLxg5cAJhqWxrZD7riGIKKGz6Lk9aFuTUc1rcoVibzzDs8I7gaEKZzk7EevK90w";
         this.apiMock.setAuthorization(authorization);
 
-        JSONObject resultJson = this.apiMock.perform("/getToken", new JSONObject());
+        JSONObject resultJson = this.apiMock.perform("/token/get", new JSONObject());
         log.info("{}", resultJson);
     }
 }

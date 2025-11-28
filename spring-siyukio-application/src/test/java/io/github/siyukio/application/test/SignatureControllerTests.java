@@ -36,7 +36,7 @@ class SignatureControllerTests {
         requestJson.put("nonce", nonce);
         String signature = this.signatureProvider.createSignature(timestamp, nonce);
         requestJson.put("signature", signature);
-        JSONObject resultJson = this.apiMock.perform("/testSignature", requestJson);
+        JSONObject resultJson = this.apiMock.perform("/signature/test", requestJson);
         log.info("{}", requestJson);
         log.info("{}", resultJson);
     }

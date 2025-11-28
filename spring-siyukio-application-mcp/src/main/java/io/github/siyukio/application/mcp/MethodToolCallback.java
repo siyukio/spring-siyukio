@@ -53,7 +53,7 @@ public class MethodToolCallback {
             name = name.substring(1);
         }
 
-        name = name.replaceAll("/", "_");
+        name = name.replaceAll("/", ".");
 
         ApiDefinition apiDefinition = apiHandler.apiDefinition();
         String title = apiDefinition.summary();

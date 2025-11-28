@@ -91,7 +91,7 @@ class McpStreamableClientTests {
                 .roles(List.of("user"))
                 .build();
 
-        JSONObject result = client.callTool("createAuthorization",
+        JSONObject result = client.callTool("authorization.create",
                 createAuthorizationRequest, JSONObject.class);
 
         log.info("{}", XDataUtils.toPrettyJSONString(result));
@@ -114,7 +114,7 @@ class McpStreamableClientTests {
 
         try {
             for (int i = 0; i < 3; i++) {
-                JSONObject result = McpSyncClient.callTool(asyncClient, "createAuthorization", createAuthorizationRequest, JSONObject.class);
+                JSONObject result = McpSyncClient.callTool(asyncClient, "authorization.create", createAuthorizationRequest, JSONObject.class);
                 log.info("callTool {} --> {}", i, XDataUtils.toPrettyJSONString(result));
             }
         } finally {
@@ -123,7 +123,7 @@ class McpStreamableClientTests {
     }
 
     @Test
-    void testCallToolOnSampling() throws InterruptedException {
+    void testCallToolOnSampling() {
         // Configure sampling handler
         Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler = request -> {
             // Sampling implementation that interfaces with LLM
@@ -140,7 +140,7 @@ class McpStreamableClientTests {
                 .setSamplingHandler(samplingHandler)
                 .build();
 
-        JSONObject result = client.callTool("getToken", JSONObject.class);
+        JSONObject result = client.callTool("token.get", JSONObject.class);
 
         log.info("{}", XDataUtils.toPrettyJSONString(result));
     }
@@ -167,7 +167,7 @@ class McpStreamableClientTests {
 
         try {
             for (int i = 0; i < 3; i++) {
-                JSONObject result = McpSyncClient.callTool(asyncClient, "getToken", JSONObject.class);
+                JSONObject result = McpSyncClient.callTool(asyncClient, "token.get", JSONObject.class);
                 log.info("sampling callTool {} --> {}", i, XDataUtils.toPrettyJSONString(result));
             }
         } finally {
@@ -188,7 +188,7 @@ class McpStreamableClientTests {
                 .setProgressHandler(progressHandler)
                 .build();
 
-        JSONObject result = client.callTool("getTokenByProgress", JSONObject.class);
+        JSONObject result = client.callTool("token.getByProgress", JSONObject.class);
 
         log.info("{}", XDataUtils.toPrettyJSONString(result));
     }
@@ -209,7 +209,7 @@ class McpStreamableClientTests {
         McpAsyncClient asyncClient = client.getMcpSyncClient();
         try {
             for (int i = 0; i < 3; i++) {
-                JSONObject result = McpSyncClient.callTool(asyncClient, "getTokenByProgress", JSONObject.class);
+                JSONObject result = McpSyncClient.callTool(asyncClient, "token.getByProgress", JSONObject.class);
                 log.info("progress callTool {} --> {}", i, XDataUtils.toPrettyJSONString(result));
             }
         } finally {

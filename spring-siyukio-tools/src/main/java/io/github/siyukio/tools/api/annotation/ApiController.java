@@ -16,7 +16,7 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Controller
-@RequestMapping(method = {RequestMethod.POST})
+@RequestMapping(method = {RequestMethod.POST, RequestMethod.GET})
 public @interface ApiController {
 
     /**

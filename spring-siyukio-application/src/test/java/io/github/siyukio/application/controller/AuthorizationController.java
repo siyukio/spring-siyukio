@@ -21,7 +21,7 @@ public class AuthorizationController {
     @Autowired
     private TokenProvider tokenProvider;
 
-    @ApiMapping(path = "/createAuthorization", authorization = false)
+    @ApiMapping(path = "/authorization/create", authorization = false)
     public CreateResponseResponse createAuthorization(CreateAuthorizationRequest createAuthorizationRequest) {
         log.info("{}", XDataUtils.toPrettyJSONString(createAuthorizationRequest));
         Token token = Token.builder().uid(createAuthorizationRequest.uid())
@@ -33,7 +33,7 @@ public class AuthorizationController {
                 .authorization(authorization).build();
     }
 
-    @ApiMapping(path = "/getToken")
+    @ApiMapping(path = "/token/get")
     public TokenResponse getToken(Token token) {
         log.info("{}", XDataUtils.toPrettyJSONString(token));
         return XDataUtils.copy(token, TokenResponse.class);
