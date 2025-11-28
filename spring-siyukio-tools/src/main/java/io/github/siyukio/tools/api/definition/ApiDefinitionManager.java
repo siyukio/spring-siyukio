@@ -103,8 +103,6 @@ public final class ApiDefinitionManager {
     }
 
     private ApiDefinition parseMethod(Class<?> type, Method method, ApiController apiController, ApiMapping apiMapping) {
-
-        boolean sampling = false;
         JSONArray requestParameters = new JSONArray();
         //create request parameter
         LinkedList<Class<?>> requestClassLinked = new LinkedList<>();
@@ -114,9 +112,6 @@ public final class ApiDefinitionManager {
         String parameterName;
         Parameter[] parameters = method.getParameters();
         for (Parameter parameter : parameters) {
-            if (!sampling && parameter.getType() == McpSyncServerExchange.class) {
-                sampling = true;
-            }
             subRequestParameters = this.getSubRequestParameters(method, parameter.getType(), requestClassLinked);
             for (int index = 0; index < subRequestParameters.length(); index++) {
                 requestParameter = subRequestParameters.getJSONObject(index);
@@ -164,7 +159,6 @@ public final class ApiDefinitionManager {
                 .roles(List.of(apiMapping.roles()))
                 .returnType(method.getReturnType())
                 .realReturnType(returnValueType)
-                .sampling(sampling)
                 .requestParameters(requestParameters)
                 .responseParameters(responseParameters);
         return builder.build();

@@ -21,7 +21,6 @@ public record ApiDefinition(
         boolean authorization,
         boolean signature,
         boolean mcpTool,
-        boolean sampling,
         JSONArray requestParameters,
         JSONArray responseParameters,
         Class<?> returnType,
