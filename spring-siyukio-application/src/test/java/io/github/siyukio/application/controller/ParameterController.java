@@ -1,12 +1,15 @@
 package io.github.siyukio.application.controller;
 
-import io.github.siyukio.application.model.parameter.*;
+import io.github.siyukio.application.dto.parameter.*;
 import io.github.siyukio.tools.api.annotation.ApiController;
 import io.github.siyukio.tools.api.annotation.ApiMapping;
 import io.github.siyukio.tools.api.model.PageRequest;
 import io.github.siyukio.tools.api.model.PageResponse;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * @author Buddy
@@ -18,6 +21,11 @@ public class ParameterController {
     @ApiMapping(path = "/string/test", authorization = false)
     public void testString(StringRequest stringRequest) {
         log.info("{}", XDataUtils.toPrettyJSONString(stringRequest));
+    }
+
+    @ApiMapping(path = "/enum/test", authorization = false)
+    public void testEnum(EnumRequest enumRequest) {
+        log.info("{}", XDataUtils.toPrettyJSONString(enumRequest));
     }
 
     @ApiMapping(path = "/num/test", authorization = false)
@@ -45,6 +53,9 @@ public class ParameterController {
         log.info("{}", XDataUtils.toPrettyJSONString(pageRequest));
 
         return PageResponse.<PageItem>builder()
+                .items(List.of(PageItem.builder()
+                        .loginType(LoginType.APPLE)
+                        .updatedAt(LocalDateTime.now()).build()))
                 .total(1).build();
     }
 

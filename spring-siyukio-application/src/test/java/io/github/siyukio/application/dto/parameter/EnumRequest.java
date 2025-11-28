@@ -1,4 +1,4 @@
-package io.github.siyukio.application.model.authorization;
+package io.github.siyukio.application.dto.parameter;
 
 import io.github.siyukio.tools.api.annotation.ApiParameter;
 import lombok.Builder;
@@ -9,9 +9,9 @@ import lombok.With;
  */
 @Builder
 @With
-public record CreateResponseResponse(
+public record EnumRequest(
 
         @ApiParameter
-        String authorization
+        LoginType loginType
 ) {
 }

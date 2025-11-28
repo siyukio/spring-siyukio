@@ -1,4 +1,4 @@
-package io.github.siyukio.application.model.parameter;
+package io.github.siyukio.application.dto.parameter;
 
 import io.github.siyukio.tools.api.annotation.ApiParameter;
 import lombok.Builder;

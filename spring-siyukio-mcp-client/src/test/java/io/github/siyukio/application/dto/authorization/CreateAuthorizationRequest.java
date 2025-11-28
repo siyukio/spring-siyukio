@@ -1,23 +1,27 @@
-package io.github.siyukio.application.model.signature;
+package io.github.siyukio.application.dto.authorization;
 
 import io.github.siyukio.tools.api.annotation.ApiParameter;
 import lombok.Builder;
 import lombok.With;
 
+import java.util.List;
+
 /**
  * @author Buddy
  */
+
 @Builder
 @With
-public record SignatureRequest(
+public record CreateAuthorizationRequest(
 
         @ApiParameter
-        int num,
+        String uid,
 
         @ApiParameter
-        String text,
+        String name,
 
         @ApiParameter
-        boolean bool
+        List<String> roles
 ) {
+
 }

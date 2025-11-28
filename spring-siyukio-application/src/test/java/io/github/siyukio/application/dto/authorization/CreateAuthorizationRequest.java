@@ -1,4 +1,4 @@
-package io.github.siyukio.application.model.authorization;
+package io.github.siyukio.application.dto.authorization;
 
 import io.github.siyukio.tools.api.annotation.ApiParameter;
 import lombok.Builder;
@@ -16,11 +16,10 @@ public record CreateAuthorizationRequest(
         @ApiParameter
         String uid,
 
-        @ApiParameter(required = false)
+        @ApiParameter
         String name,
 
-        @ApiParameter(required = false)
+        @ApiParameter
         List<String> roles
 ) {
-
 }

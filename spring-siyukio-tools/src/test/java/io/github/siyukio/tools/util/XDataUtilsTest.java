@@ -68,6 +68,30 @@ public class XDataUtilsTest {
         log.info("{}", XDataUtils.toPrettyJSONString(dateRequest));
     }
 
+    @Test
+    void testEnum() {
+        String text = """
+                {
+                  "loginType": "USERNAME"
+                }
+                """;
+        EnumRequest enumRequest = XDataUtils.parse(text, EnumRequest.class);
+        log.info("{}", XDataUtils.toPrettyJSONString(enumRequest));
+    }
+
+    public enum LoginType {
+        USERNAME,
+        PHONE,
+        EMAIL,
+        GOOGLE,
+        APPLE
+    }
+
+    public record EnumRequest(
+            LoginType loginType
+    ) {
+    }
+
     public record DateRequest(
 
             LocalDateTime date1,

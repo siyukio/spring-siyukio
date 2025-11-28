@@ -30,7 +30,9 @@ public final class ApiDefinitionManager {
     private final Set<Class<?>> alternativeSet = new HashSet<>();
 
     public static boolean isBasicType(Class<?> type) {
-        return type.isPrimitive() || type == String.class || type == LocalDateTime.class || Number.class.isAssignableFrom(type) || Boolean.class.isAssignableFrom(type);
+        return type.isPrimitive() || type == String.class || type == LocalDateTime.class
+                || Number.class.isAssignableFrom(type) || Boolean.class.isAssignableFrom(type)
+                || type.isEnum();
     }
 
     public void addAlternative(Class<?> clazz) {
@@ -192,7 +194,7 @@ public final class ApiDefinitionManager {
             items.put("minimum", apiParameter.minimum());
         } else if (typeClass == String.class) {
             itemType = ApiConstants.TYPE_STRING;
-            this.defineString(items, apiParameter);
+            this.defineString(items, apiParameter, apiParameter.pattern());
         } else if (typeClass == LocalDateTime.class) {
             itemType = ApiConstants.TYPE_DATE;
         } else {
@@ -244,9 +246,8 @@ public final class ApiDefinitionManager {
         }
     }
 
-    private void defineString(JSONObject requestParameter, ApiParameter apiParameter) {
-        if (StringUtils.hasText(apiParameter.pattern())) {
-            String pattern = apiParameter.pattern();
+    private void defineString(JSONObject requestParameter, ApiParameter apiParameter, String pattern) {
+        if (StringUtils.hasText(pattern)) {
             requestParameter.put("pattern", pattern);
         } else {
             //common String
@@ -306,7 +307,13 @@ public final class ApiDefinitionManager {
             this.defineNumber(requestParameter, apiParameter);
         } else if (typeClass == String.class) {
             type = ApiConstants.TYPE_STRING;
-            this.defineString(requestParameter, apiParameter);
+            this.defineString(requestParameter, apiParameter, apiParameter.pattern());
+        } else if (typeClass.isEnum()) {
+            Object[] values = typeClass.getEnumConstants();
+            List<String> items = Arrays.stream(values).map(String::valueOf).toList();
+            String pattern = String.join("|", items);
+            type = ApiConstants.TYPE_STRING;
+            this.defineString(requestParameter, apiParameter, pattern);
         } else if (typeClass == LocalDateTime.class) {
             type = ApiConstants.TYPE_DATE;
             this.defineDate(requestParameter);
@@ -592,7 +599,7 @@ public final class ApiDefinitionManager {
             type = ApiConstants.TYPE_INTEGER;
         } else if (typeClass == double.class || typeClass == Double.class || typeClass == float.class || typeClass == Float.class || Number.class.isAssignableFrom(typeClass)) {
             type = ApiConstants.TYPE_NUMBER;
-        } else if (typeClass == String.class) {
+        } else if (typeClass == String.class || typeClass.isEnum()) {
             type = ApiConstants.TYPE_STRING;
         } else if (typeClass == LocalDateTime.class) {
             type = ApiConstants.TYPE_DATE;

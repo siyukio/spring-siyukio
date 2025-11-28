@@ -1,6 +1,6 @@
 package io.github.siyukio.application.test;
 
-import io.github.siyukio.application.model.signature.SignatureRequest;
+import io.github.siyukio.application.dto.signature.SignatureRequest;
 import io.github.siyukio.tools.api.ApiMock;
 import io.github.siyukio.tools.api.signature.SignatureProvider;
 import io.github.siyukio.tools.util.XDataUtils;

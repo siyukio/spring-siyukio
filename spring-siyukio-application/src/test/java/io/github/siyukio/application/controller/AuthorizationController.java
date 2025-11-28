@@ -1,7 +1,7 @@
 package io.github.siyukio.application.controller;
 
-import io.github.siyukio.application.model.authorization.CreateAuthorizationRequest;
-import io.github.siyukio.application.model.authorization.CreateResponseResponse;
+import io.github.siyukio.application.dto.authorization.CreateAuthorizationRequest;
+import io.github.siyukio.application.dto.authorization.CreateResponseResponse;
 import io.github.siyukio.tools.api.annotation.ApiController;
 import io.github.siyukio.tools.api.annotation.ApiMapping;
 import io.github.siyukio.tools.api.model.TokenResponse;

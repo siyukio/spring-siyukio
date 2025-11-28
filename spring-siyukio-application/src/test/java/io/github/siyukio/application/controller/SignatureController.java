@@ -1,6 +1,6 @@
 package io.github.siyukio.application.controller;
 
-import io.github.siyukio.application.model.signature.SignatureRequest;
+import io.github.siyukio.application.dto.signature.SignatureRequest;
 import io.github.siyukio.tools.api.annotation.ApiController;
 import io.github.siyukio.tools.api.annotation.ApiMapping;
 import io.github.siyukio.tools.util.XDataUtils;

@@ -1,10 +1,8 @@
-package io.github.siyukio.application.model.authorization;
+package io.github.siyukio.application.dto.authorization;
 
 import io.github.siyukio.tools.api.annotation.ApiParameter;
 import lombok.Builder;
 import lombok.With;
-
-import java.time.LocalDateTime;
 
 /**
  * @author Buddy
@@ -14,9 +12,6 @@ import java.time.LocalDateTime;
 public record CreateResponseResponse(
 
         @ApiParameter
-        String authorization,
-
-        @ApiParameter
-        LocalDateTime createdAt
+        String authorization
 ) {
 }

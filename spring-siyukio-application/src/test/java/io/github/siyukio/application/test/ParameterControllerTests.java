@@ -1,6 +1,8 @@
 package io.github.siyukio.application.test;
 
-import io.github.siyukio.application.model.parameter.StringRequest;
+import io.github.siyukio.application.dto.parameter.EnumRequest;
+import io.github.siyukio.application.dto.parameter.LoginType;
+import io.github.siyukio.application.dto.parameter.StringRequest;
 import io.github.siyukio.tools.api.ApiMock;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
@@ -18,7 +20,7 @@ class ParameterControllerTests {
     private ApiMock apiMock;
 
     @Test
-    void testStringRequired() {
+    void testStringRequiredError() {
         StringRequest stringRequest = StringRequest.builder()
                 .required("")
                 .build();
@@ -28,7 +30,7 @@ class ParameterControllerTests {
     }
 
     @Test
-    void testStringLength() {
+    void testStringLengthError() {
         StringRequest stringRequest = StringRequest.builder()
                 .required("123456")
                 .length("4444")
@@ -39,7 +41,7 @@ class ParameterControllerTests {
     }
 
     @Test
-    void testStringPattern() {
+    void testStringPatternError() {
         StringRequest stringRequest = StringRequest.builder()
                 .required("123456")
                 .pattern("1234")
@@ -50,7 +52,26 @@ class ParameterControllerTests {
     }
 
     @Test
-    void testIntNumMin() {
+    void testEnumSuccess() {
+        EnumRequest stringRequest = EnumRequest.builder()
+                .loginType(LoginType.USERNAME)
+                .build();
+        JSONObject resultJson = this.apiMock.perform("/enum/test", stringRequest);
+        log.info("{}", stringRequest);
+        log.info("{}", resultJson);
+    }
+
+    @Test
+    void testEnumError() {
+        JSONObject requestJson = new JSONObject();
+        requestJson.put("loginType", "username");
+        JSONObject resultJson = this.apiMock.perform("/enum/test", requestJson);
+        log.info("{}", requestJson);
+        log.info("{}", resultJson);
+    }
+
+    @Test
+    void testIntNumMinError() {
         JSONObject numRequest = new JSONObject();
         numRequest.put("intNum", 1);
         JSONObject resultJson = this.apiMock.perform("/num/test", numRequest);
@@ -59,7 +80,7 @@ class ParameterControllerTests {
     }
 
     @Test
-    void testIntNumMax() {
+    void testIntNumMaxError() {
         JSONObject numRequest = new JSONObject();
         numRequest.put("intNum", 100);
         JSONObject resultJson = this.apiMock.perform("/num/test", numRequest);
@@ -68,7 +89,7 @@ class ParameterControllerTests {
     }
 
     @Test
-    void testDoubleNumMin() {
+    void testDoubleNumMinError() {
         JSONObject numRequest = new JSONObject();
         numRequest.put("doubleNum", 1);
         JSONObject resultJson = this.apiMock.perform("/num/test", numRequest);
@@ -77,7 +98,7 @@ class ParameterControllerTests {
     }
 
     @Test
-    void testDoubleNumMax() {
+    void testDoubleNumMaxError() {
         JSONObject numRequest = new JSONObject();
         numRequest.put("doubleNum", 100);
         JSONObject resultJson = this.apiMock.perform("/num/test", numRequest);
@@ -86,7 +107,7 @@ class ParameterControllerTests {
     }
 
     @Test
-    void testBigNumMin() {
+    void testBigNumMinError() {
         JSONObject numDto = new JSONObject();
         numDto.put("bigNum", "100");
         JSONObject resultJson = this.apiMock.perform("/num/test", numDto);
@@ -95,7 +116,7 @@ class ParameterControllerTests {
     }
 
     @Test
-    void testBigNumMax() {
+    void testBigNumMaxError() {
         JSONObject numDto = new JSONObject();
         numDto.put("bigNum", "999999");
         JSONObject resultJson = this.apiMock.perform("/num/test", numDto);
@@ -104,7 +125,7 @@ class ParameterControllerTests {
     }
 
     @Test
-    void testBool() {
+    void testBoolError() {
         JSONObject boolDto = new JSONObject();
         boolDto.put("bool", "222");
         JSONObject resultJson = this.apiMock.perform("/bool/test", boolDto);
@@ -113,7 +134,7 @@ class ParameterControllerTests {
     }
 
     @Test
-    void testDate() {
+    void testDateError() {
         JSONObject dateDto = new JSONObject();
         dateDto.put("date", "ss222-455");
         JSONObject resultJson = this.apiMock.perform("/date/test", dateDto);
@@ -122,7 +143,7 @@ class ParameterControllerTests {
     }
 
     @Test
-    void testStringListMin() {
+    void testStringListMinError() {
         List<String> list = List.of("1", "2");
         JSONObject listDto = new JSONObject();
         listDto.put("stringList", list);
@@ -132,7 +153,7 @@ class ParameterControllerTests {
     }
 
     @Test
-    void testStringListMax() {
+    void testStringListMaxError() {
         List<String> list = List.of("1", "2", "3", "4", "5", "6", "7");
         JSONObject listDto = new JSONObject();
         listDto.put("stringList", list);
@@ -142,7 +163,7 @@ class ParameterControllerTests {
     }
 
     @Test
-    void testStringListItemMax() {
+    void testStringListItemMaxError() {
         List<String> list = List.of("1", "2", "3333");
         JSONObject listDto = new JSONObject();
         listDto.put("stringList", list);
@@ -152,7 +173,7 @@ class ParameterControllerTests {
     }
 
     @Test
-    void testStringListByNum() {
+    void testStringListByNumSuccess() {
         List<Integer> list = List.of(1, 2, 3, 4, 5, 6);
         JSONObject listDto = new JSONObject();
         listDto.put("stringList", list);
@@ -163,7 +184,7 @@ class ParameterControllerTests {
 
 
     @Test
-    void testStringListByJson() {
+    void testStringListByJsonSuccess() {
         JSONObject listDto = new JSONObject();
         listDto.put("stringList", "[\"1\", \"2\", \"3\", \"4\", \"5\", \"6\"]");
         JSONObject requestJson = this.apiMock.perform("/list/test", listDto);
@@ -172,7 +193,7 @@ class ParameterControllerTests {
     }
 
     @Test
-    void testStringListByJsonNum() {
+    void testStringListByJsonNumSuccess() {
         JSONObject listDto = new JSONObject();
         listDto.put("stringList", "[1, 2, 3, 4, 5, 6]");
         JSONObject requestJson = this.apiMock.perform("/list/test", listDto);
@@ -181,7 +202,7 @@ class ParameterControllerTests {
     }
 
     @Test
-    void testNumListByString() {
+    void testNumListByStringSuccess() {
         List<String> list = List.of("1", "2", "3", "4");
         JSONObject listDto = new JSONObject();
         listDto.put("numList", list);
@@ -191,7 +212,7 @@ class ParameterControllerTests {
     }
 
     @Test
-    void testNumListByErrorString() {
+    void testNumListByStringError() {
         List<String> list = List.of("1", "2w", "3", "4");
         JSONObject listDto = new JSONObject();
         listDto.put("numList", list);
@@ -201,7 +222,7 @@ class ParameterControllerTests {
     }
 
     @Test
-    void testNumListByJsonString() {
+    void testNumListByJsonStringSuccess() {
         JSONObject listDto = new JSONObject();
         listDto.put("numList", "[\"1\", \"2\", \"3\", \"4\", \"5\", \"6\"]");
         JSONObject requestJson = this.apiMock.perform("/list/test", listDto);
@@ -210,7 +231,7 @@ class ParameterControllerTests {
     }
 
     @Test
-    void testObjectArray() {
+    void testObjectArraySuccess() {
         JSONObject listDto = new JSONObject();
         listDto.put("objectArray", """
                 [
@@ -225,7 +246,7 @@ class ParameterControllerTests {
     }
 
     @Test
-    void testObjectList() {
+    void testObjectListSuccess() {
         JSONObject listDto = new JSONObject();
         listDto.put("objectList", """
                 [
@@ -240,7 +261,7 @@ class ParameterControllerTests {
     }
 
     @Test
-    void testPage() {
+    void testPageSuccess() {
         JSONObject myPageRequest = new JSONObject();
         myPageRequest.put("uid", "123");
 
