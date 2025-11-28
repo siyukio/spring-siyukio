@@ -41,4 +41,9 @@ public @interface ApiController {
      */
     String summary() default "";
 
+    /**
+     * Validates whether the authorization contains the specified role.
+     */
+    String[] roles() default {};
+
 }

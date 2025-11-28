@@ -104,7 +104,7 @@ public final class ApiDefinitionManager {
 
     private ApiDefinition parseMethod(Class<?> type, Method method, ApiController apiController, ApiMapping apiMapping) {
         JSONArray requestParameters = new JSONArray();
-        //create request parameter
+        // Create request parameter
         LinkedList<Class<?>> requestClassLinked = new LinkedList<>();
         JSONObject requestParameter;
         Set<String> existParameterNameSet = new HashSet<>();
@@ -123,7 +123,7 @@ public final class ApiDefinitionManager {
             }
         }
 
-        //create response parameter
+        // Create response parameter
         Class<?> returnValueType = this.getRealReturnType(method);
         if (returnValueType != void.class && returnValueType != Void.class && returnValueType != String.class) {
             if (isBasicType(returnValueType) || returnValueType.isArray() || Collection.class.isAssignableFrom(returnValueType) || returnValueType.getPackageName().startsWith("java.")) {
@@ -146,6 +146,12 @@ public final class ApiDefinitionManager {
         if (!StringUtils.hasText(summary)) {
             summary = method.getName();
         }
+
+        // Determine the roles
+        String[] roles = apiMapping.roles();
+        if (roles.length == 0) {
+            roles = apiController.roles();
+        }
         ApiDefinition.ApiDefinitionBuilder builder = ApiDefinition.builder();
         builder.id(type.getSimpleName() + "_" + method.getName())
                 .paths(new ArrayList<>())
@@ -156,7 +162,7 @@ public final class ApiDefinitionManager {
                 .signature(apiMapping.signature())
                 .tags(List.of(apiController.tags()))
                 .mcpTool(apiMapping.mcpTool())
-                .roles(List.of(apiMapping.roles()))
+                .roles(List.of(roles))
                 .returnType(method.getReturnType())
                 .realReturnType(returnValueType)
                 .requestParameters(requestParameters)
