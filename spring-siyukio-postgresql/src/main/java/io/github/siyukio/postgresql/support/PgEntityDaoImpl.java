@@ -150,6 +150,14 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
         return XDataUtils.copy(entityJson, this.entityClass);
     }
 
+    public T queryOne(QueryBuilder queryBuilder) {
+        List<T> list = this.query(queryBuilder, 0, 1);
+        if (list.isEmpty()) {
+            return null;
+        }
+        return list.getFirst();
+    }
+
     @Override
     public List<T> query(QueryBuilder queryBuilder, SortBuilder sort, int from, int size) {
         if (from < 0) {
