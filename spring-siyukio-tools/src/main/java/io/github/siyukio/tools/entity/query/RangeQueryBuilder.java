@@ -12,9 +12,9 @@ public class RangeQueryBuilder implements QueryBuilder {
 
     private final String fieldName;
 
-    private Object minValue = null;
+    private Number minValue = null;
 
-    private Object maxValue = null;
+    private Number maxValue = null;
 
     private boolean gte = false;
 
@@ -28,28 +28,28 @@ public class RangeQueryBuilder implements QueryBuilder {
         this.fieldName = fieldName;
     }
 
-    public RangeQueryBuilder gt(Object from) {
+    public RangeQueryBuilder gt(Number from) {
         this.gt = true;
         this.gte = false;
         this.minValue = from;
         return this;
     }
 
-    public RangeQueryBuilder gte(Object from) {
+    public RangeQueryBuilder gte(Number from) {
         this.gt = false;
         this.gte = true;
         this.minValue = from;
         return this;
     }
 
-    public RangeQueryBuilder lt(Object to) {
+    public RangeQueryBuilder lt(Number to) {
         this.lt = true;
         this.lte = false;
         this.maxValue = to;
         return this;
     }
 
-    public RangeQueryBuilder lte(Object to) {
+    public RangeQueryBuilder lte(Number to) {
         this.lt = false;
         this.lte = true;
         this.maxValue = to;

@@ -3,7 +3,6 @@ package io.github.siyukio.tools.entity.query;
 import lombok.Getter;
 import lombok.ToString;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 
@@ -26,16 +25,29 @@ public class TermsQueryBuilder implements QueryBuilder {
     public TermsQueryBuilder(String fieldName, Object... values) {
         this.fieldName = fieldName;
         this.valueSet = new LinkedHashSet<>(values.length);
-        this.valueSet.addAll(Arrays.asList(values));
+        for (Object value : values) {
+            if (value instanceof Enum<?> enumValue) {
+                value = enumValue.name();
+            }
+            this.valueSet.add(value);
+        }
     }
 
     public TermsQueryBuilder add(Object value) {
+        if (value instanceof Enum<?> enumValue) {
+            value = enumValue.name();
+        }
         this.valueSet.add(value);
         return this;
     }
 
     public TermsQueryBuilder addAll(Collection<?> values) {
-        this.valueSet.addAll(values);
+        for (Object value : values) {
+            if (value instanceof Enum<?> enumValue) {
+                value = enumValue.name();
+            }
+            this.valueSet.add(value);
+        }
         return this;
     }
 }

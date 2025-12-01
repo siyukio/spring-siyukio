@@ -3,6 +3,7 @@ package io.github.siyukio.postgresql;
 import io.github.siyukio.postgresql.entity.RecordEvent;
 import io.github.siyukio.tools.entity.page.Page;
 import io.github.siyukio.tools.entity.postgresql.PgEntityDao;
+import io.github.siyukio.tools.entity.query.BoolQueryBuilder;
 import io.github.siyukio.tools.entity.query.QueryBuilder;
 import io.github.siyukio.tools.entity.query.QueryBuilders;
 import io.github.siyukio.tools.entity.sort.SortBuilder;
@@ -205,10 +206,12 @@ public class RecordEventTests {
     @Test
     public void testQueryPage() {
         Date maxDate = new Date();
-        QueryBuilder queryBuilder = QueryBuilders.rangeQuery("createTime").lte(maxDate.getTime());
+        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        boolQueryBuilder.must(QueryBuilders.rangeQuery("createdAtTs").lte(maxDate.getTime()));
+        boolQueryBuilder.must(QueryBuilders.termQuery("loginType", RecordEvent.LoginType.USERNAME));
 
-        SortBuilder sortBuilder = SortBuilders.fieldSort("createTime").order(SortOrder.DESC);
-        Page<RecordEvent> page = this.recordEventPgEntityDao.queryPage(queryBuilder, sortBuilder, 1, 1);
+        SortBuilder sortBuilder = SortBuilders.fieldSort("createdAtTs").order(SortOrder.DESC);
+        Page<RecordEvent> page = this.recordEventPgEntityDao.queryPage(boolQueryBuilder, sortBuilder, 1, 1);
         log.info("{}", XDataUtils.toPrettyJSONString(page));
     }
 }

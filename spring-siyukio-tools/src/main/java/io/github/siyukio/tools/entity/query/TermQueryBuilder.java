@@ -16,6 +16,9 @@ public class TermQueryBuilder implements QueryBuilder {
 
     public TermQueryBuilder(String fieldName, Object value) {
         this.fieldName = fieldName;
+        if (value instanceof Enum<?> enumValue) {
+            value = enumValue.name();
+        }
         this.value = value;
     }
 
