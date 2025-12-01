@@ -76,7 +76,7 @@ public class WebSocketHandler extends TextWebSocketHandler implements HandshakeH
         }
 
         Token token = this.tokenProvider.verifyToken(authorization);
-        if (token == null || token.refresh() || token.expired()) {
+        if (token == null || token.refresh()) {
             throw new ApiException(HttpStatus.UNAUTHORIZED);
         }
         attributes.put(HttpHeaders.AUTHORIZATION, token);

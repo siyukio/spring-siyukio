@@ -74,7 +74,7 @@ public final class ValidateAuthorizationInterceptor implements HandlerIntercepto
             token = this.tokenProvider.verifyToken(authorization);
         }
 
-        if (token == null || token.refresh() || token.expired()) {
+        if (token == null || token.refresh()) {
             throw new ApiException(HttpStatus.UNAUTHORIZED);
         }
 

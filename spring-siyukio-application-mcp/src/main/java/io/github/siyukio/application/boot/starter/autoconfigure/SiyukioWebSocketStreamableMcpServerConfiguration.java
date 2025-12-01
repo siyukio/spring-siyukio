@@ -58,7 +58,7 @@ public class SiyukioWebSocketStreamableMcpServerConfiguration implements WebSock
         {
             Map<String, Object> metadata = new HashMap<>();
             Token token = webSocketServerSession.getToken();
-            if (token != null && !token.refresh() && !token.expired()) {
+            if (token != null && !token.refresh()) {
                 metadata.put(HttpHeaders.AUTHORIZATION, token);
             }
             return McpTransportContext.create(metadata);

@@ -33,11 +33,16 @@ public record Token(
         /*
          * Whether the token is used for refreshing the JWT token.
          */
-        boolean refresh,
-
-        /*
-         * Whether the JWT token is expired.
-         */
-        boolean expired
+        boolean refresh
 ) {
+
+    public Token toAccessToken() {
+        if (!this.refresh) {
+            throw new IllegalStateException("Only refresh token can be converted to access token.");
+        }
+        return Token.builder()
+                .uid(this.uid).name(this.name)
+                .roles(this.roles).refresh(false)
+                .build();
+    }
 }

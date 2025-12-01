@@ -8,16 +8,17 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import io.github.siyukio.tools.util.XDataUtils;
+import lombok.extern.slf4j.Slf4j;
 
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
 import java.util.Date;
-import java.util.List;
 
 /**
  * @author Buddy
  */
+@Slf4j
 public final class TokenProvider {
 
     private final Duration accessTokenDuration;
@@ -34,17 +35,6 @@ public final class TokenProvider {
         }
         this.accessTokenDuration = accessTokenDuration;
         this.refreshTokenDuration = refreshTokenDuration;
-    }
-
-    public String createAuthorization(String uid, String name, boolean refresh) {
-        Token token = Token.builder().uid(uid).name(name)
-                .refresh(refresh).roles(List.of()).build();
-        return this.createAuthorization(token);
-    }
-
-    public String createAuthorization(List<String> roles, boolean refresh) {
-        Token token = Token.builder().roles(roles).refresh(refresh).build();
-        return this.createAuthorization(token);
     }
 
     public String createAuthorization(Token token) {
@@ -65,7 +55,11 @@ public final class TokenProvider {
             String json = jwt.getSubject();
             token = XDataUtils.parse(json, Token.class);
         } catch (TokenExpiredException e) {
-            token = Token.builder().expired(true).build();
+            Token expiredToken = this.decode(authorization);
+            if (expiredToken != null) {
+                log.warn("token expired: {}, {}", expiredToken.uid(), expiredToken.name());
+            }
+            token = null;
         } catch (JWTVerificationException e) {
             token = null;
         }
