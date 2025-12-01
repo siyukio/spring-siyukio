@@ -415,25 +415,25 @@ public final class ApiDefinitionManager {
         return requestParameter;
     }
 
-    private Class<?> getRequestListActualType(Method method, Class<?> paramClass, RecordComponent recordComponent) {
+    private Class<?> getRequestActualType(Method method, Class<?> paramClass, RecordComponent recordComponent) {
         Type generictype = recordComponent.getGenericType();
         if (generictype instanceof ParameterizedType parameterizedType) {
-            Type[] listActualTypeArguments = parameterizedType.getActualTypeArguments();
-            Type listType = listActualTypeArguments[0];
-            if (!(listType instanceof TypeVariable)) {
+            Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+            Type actualType = actualTypeArguments[0];
+            if (!(actualType instanceof TypeVariable)) {
                 //not T
-                return (Class<?>) listType;
+                return (Class<?>) actualType;
             }
         }
         //Type = T
         Class<?> subType = null;
         //find in method
         Type[] paramTypes = method.getGenericParameterTypes();
-        for (Type type : paramTypes) {
-            if (type instanceof ParameterizedType parameterizedType) {
+        for (Type paramType : paramTypes) {
+            if (paramType instanceof ParameterizedType parameterizedType) {
                 if (parameterizedType.getRawType().equals(paramClass)) {
-                    Type[] types = parameterizedType.getActualTypeArguments();
-                    subType = (Class<?>) types[0];
+                    Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+                    subType = (Class<?>) actualTypeArguments[0];
                     return subType;
                 }
             }
@@ -444,8 +444,8 @@ public final class ApiDefinitionManager {
         while (typeClass != Object.class) {
             Type type = typeClass.getGenericSuperclass();
             if (type instanceof ParameterizedType parameterizedType) {
-                Type[] types = parameterizedType.getActualTypeArguments();
-                subType = (Class<?>) types[0];
+                Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+                subType = (Class<?>) actualTypeArguments[0];
                 break;
             } else {
                 typeClass = typeClass.getSuperclass();
@@ -457,23 +457,24 @@ public final class ApiDefinitionManager {
         return subType;
     }
 
-    private Class<?> getResponseListActualType(Method method, Class<?> paramClass, RecordComponent recordComponent) {
+    private Class<?> getResponseActualType(Method method, Class<?> paramClass, RecordComponent recordComponent) {
         Type generictype = recordComponent.getGenericType();
-        ParameterizedType listGenericType = (ParameterizedType) generictype;
-        Type[] listActualTypeArguments = listGenericType.getActualTypeArguments();
-        Type listType = listActualTypeArguments[0];
-        if (!(listType instanceof TypeVariable)) {
-            //not T
-            return (Class<?>) listType;
+        if (generictype instanceof ParameterizedType parameterizedType) {
+            Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+            Type listType = actualTypeArguments[0];
+            if (!(listType instanceof TypeVariable)) {
+                //not T
+                return (Class<?>) listType;
+            }
         }
+
         //Type = T
         Class<?> subType = null;
         //find in method
         generictype = method.getGenericReturnType();
-        if (generictype instanceof ParameterizedType) {
-            listGenericType = (ParameterizedType) generictype;
-            listActualTypeArguments = listGenericType.getActualTypeArguments();
-            subType = (Class<?>) listActualTypeArguments[0];
+        if (generictype instanceof ParameterizedType parameterizedType) {
+            Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+            subType = (Class<?>) actualTypeArguments[0];
             return subType;
         }
 
@@ -482,8 +483,8 @@ public final class ApiDefinitionManager {
         while (typeClass != Object.class) {
             Type type = typeClass.getGenericSuperclass();
             if (type instanceof ParameterizedType parameterizedType) {
-                Type[] types = parameterizedType.getActualTypeArguments();
-                subType = (Class<?>) types[0];
+                Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+                subType = (Class<?>) actualTypeArguments[0];
                 break;
             } else {
                 typeClass = typeClass.getSuperclass();
@@ -521,7 +522,7 @@ public final class ApiDefinitionManager {
                         requestParameter = this.createBasicRequestParameter(type, parameterName, apiParameter);
                         requestParameters.put(requestParameter);
                     } else if (Iterable.class.isAssignableFrom(type)) {
-                        Class<?> subType = this.getRequestListActualType(method, typeClass, recordComponent);
+                        Class<?> subType = this.getRequestActualType(method, typeClass, recordComponent);
                         requestParameter = this.createCollectionRequestParameter(method, subType, parameterName, apiParameter, requestClassLinked);
                         requestParameters.put(requestParameter);
                     } else if (type.isArray()) {
@@ -529,7 +530,7 @@ public final class ApiDefinitionManager {
                         requestParameter = this.createCollectionRequestParameter(method, componentType, parameterName, apiParameter, requestClassLinked);
                         requestParameters.put(requestParameter);
                     } else if (Object.class == type) {
-                        Class<?> subType = this.getRequestListActualType(method, typeClass, recordComponent);
+                        Class<?> subType = this.getRequestActualType(method, typeClass, recordComponent);
                         JSONObject objectRequestParamVo = this.createObjectRequestParameter(method, subType, requestClassLinked, parameterName, apiParameter);
                         requestParameters.put(objectRequestParamVo);
                     } else {
@@ -566,7 +567,7 @@ public final class ApiDefinitionManager {
                         responseParameter = this.createBasicResponseParameter(type, parameterName, apiParameter);
                         responseParameters.put(responseParameter);
                     } else if (Iterable.class.isAssignableFrom(type)) {
-                        Class<?> subType = this.getResponseListActualType(method, paramClass, recordComponent);
+                        Class<?> subType = this.getResponseActualType(method, paramClass, recordComponent);
                         responseParameter = this.createCollectionResponseParameter(method, subType, parameterName, apiParameter, responseClassLinked);
                         responseParameters.put(responseParameter);
                     } else if (type.isArray()) {
@@ -574,7 +575,7 @@ public final class ApiDefinitionManager {
                         responseParameter = this.createCollectionResponseParameter(method, componentType, parameterName, apiParameter, responseClassLinked);
                         responseParameters.put(responseParameter);
                     } else if (Object.class == type) {
-                        Class<?> subType = this.getResponseListActualType(method, paramClass, recordComponent);
+                        Class<?> subType = this.getResponseActualType(method, paramClass, recordComponent);
                         responseParameter = this.createObjectResponseParameter(method, subType, responseClassLinked, parameterName, apiParameter);
                         responseParameters.put(responseParameter);
                     } else {

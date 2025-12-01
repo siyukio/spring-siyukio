@@ -1,12 +1,11 @@
 package io.github.siyukio.tools.api;
 
+import com.fasterxml.jackson.databind.JavaType;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.ToString;
 import org.json.JSONObject;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
+import java.lang.reflect.*;
 
 /**
  * @author Buddy
@@ -46,7 +45,20 @@ public class ApiInvoker {
             if (objIndex >= 0) {
                 obj = objects[objIndex];
             } else if (requestBody != null) {
-                obj = XDataUtils.copy(requestBody, parameter.getType());
+                Class<?> subType = null;
+                if (parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
+                    Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+                    Type actualType = actualTypeArguments[0];
+                    if (!(actualType instanceof TypeVariable)) {
+                        subType = (Class<?>) actualType;
+                    }
+                }
+                if (subType == null) {
+                    obj = XDataUtils.copy(requestBody, parameter.getType());
+                } else {
+                    JavaType javaType = XDataUtils.getObjectMapper().getTypeFactory().constructParametricType(parameter.getType(), subType);
+                    obj = XDataUtils.copy(requestBody, javaType);
+                }
             } else {
                 obj = null;
             }

@@ -235,9 +235,9 @@ class ParameterControllerTests {
         JSONObject listDto = new JSONObject();
         listDto.put("objectArray", """
                 [
-                    {\"name\":\"test\"},
-                    {\"index\":1},
-                    {\"show\":true}
+                    {"name":"test"},
+                    {"index":1},
+                    {"show":true}
                 ]
                 """);
         JSONObject requestJson = this.apiMock.perform("/list/test", listDto);
@@ -250,9 +250,9 @@ class ParameterControllerTests {
         JSONObject listDto = new JSONObject();
         listDto.put("objectList", """
                 [
-                    {\"name\":\"test\"},
-                    {\"index\":1},
-                    {\"show\":true}
+                    {"name":"test"},
+                    {"index":1},
+                    {"show":true}
                 ]
                 """);
         JSONObject requestJson = this.apiMock.perform("/list/test", listDto);
@@ -263,12 +263,10 @@ class ParameterControllerTests {
     @Test
     void testPageSuccess() {
         JSONObject myPageRequest = new JSONObject();
-        myPageRequest.put("uid", "123");
 
-        JSONObject json = new JSONObject();
-        json.put("name", "Bugee");
-        json.put("value", "bugee");
-        myPageRequest.put("json", json);
+        JSONObject filterJson = new JSONObject();
+        filterJson.put("uid", "admin");
+        myPageRequest.put("filter", filterJson);
 
         JSONObject requestJson = this.apiMock.perform("/page/test", myPageRequest);
         log.info("{}", myPageRequest);
