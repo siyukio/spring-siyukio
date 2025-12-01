@@ -10,6 +10,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.siyukio.tools.api.constants.ApiConstants;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.time.*;
@@ -226,6 +227,9 @@ public abstract class XDataUtils {
     }
 
     public static LocalDateTime parse(String text) {
+        if (!StringUtils.hasText(text)) {
+            return null;
+        }
         for (DateTimeFormatter formatter : DATE_TIME_FORMATTERS) {
             try {
                 return LocalDateTime.parse(text, formatter);

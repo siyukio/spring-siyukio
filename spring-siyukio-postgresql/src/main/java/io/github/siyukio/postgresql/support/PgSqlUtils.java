@@ -162,15 +162,14 @@ public abstract class PgSqlUtils {
         };
     }
 
-    private static String getSqlDefault(ColumnDefinition columnDefinition) {
-        if (StringUtils.hasText(columnDefinition.defaultValue())) {
-            return switch (columnDefinition.type()) {
-                case ColumnType.INT, ColumnType.BIGINT, ColumnType.DOUBLE, ColumnType.BOOLEAN ->
-                        columnDefinition.defaultValue();
-                default -> "'" + columnDefinition.defaultValue() + "'";
-            };
-        }
-        return "''";
+    public static String getSqlDefault(ColumnDefinition columnDefinition) {
+        return switch (columnDefinition.type()) {
+            case ColumnType.INT, ColumnType.BIGINT, ColumnType.DOUBLE, ColumnType.BOOLEAN ->
+                    String.valueOf(columnDefinition.defaultValue());
+            case ColumnType.JSON_OBJECT, ColumnType.JSON_ARRAY ->
+                    "'" + XDataUtils.toJSONString(columnDefinition.defaultValue()) + "'";
+            default -> "'" + columnDefinition.defaultValue() + "'";
+        };
     }
 
     private static String getColumnDefinitionSql(ColumnDefinition columnDefinition) {
@@ -679,17 +678,17 @@ public abstract class PgSqlUtils {
     private static Object field2RowValue(JSONObject entityJson, ColumnDefinition columnDefinition) {
         Object value = entityJson.opt(columnDefinition.fieldName());
         if (columnDefinition.type() == ColumnType.JSON_ARRAY || columnDefinition.type() == ColumnType.JSON_OBJECT) {
-            PGobject jsonObject = new PGobject();
-            jsonObject.setType("json");
+            PGobject pGobject = new PGobject();
+            pGobject.setType("json");
             try {
                 if (value == null) {
-                    jsonObject.setValue(null);
+                    pGobject.setValue(null);
                 } else {
-                    jsonObject.setValue(XDataUtils.toJSONString(value));
+                    pGobject.setValue(XDataUtils.toJSONString(value));
                 }
             } catch (SQLException ignored) {
             }
-            value = jsonObject;
+            value = pGobject;
         }
         return value;
     }

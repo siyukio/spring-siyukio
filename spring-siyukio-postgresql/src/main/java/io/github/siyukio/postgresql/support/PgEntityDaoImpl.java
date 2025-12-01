@@ -2,6 +2,7 @@ package io.github.siyukio.postgresql.support;
 
 import io.github.siyukio.tools.entity.ColumnType;
 import io.github.siyukio.tools.entity.EntityExecutor;
+import io.github.siyukio.tools.entity.definition.ColumnDefinition;
 import io.github.siyukio.tools.entity.definition.EntityDefinition;
 import io.github.siyukio.tools.entity.definition.KeyDefinition;
 import io.github.siyukio.tools.entity.page.Page;
@@ -39,12 +40,22 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
     }
 
     private void preInsert(JSONObject entityJson) {
+        // generate the primary key value
         KeyDefinition keyDefinition = this.entityExecutor.getEntityDefinition().keyDefinition();
         if (keyDefinition.generated() && keyDefinition.type().equals(ColumnType.TEXT)) {
             if (!entityJson.has(keyDefinition.fieldName())) {
                 entityJson.put(keyDefinition.fieldName(), IdUtils.getUniqueId());
             }
         }
+        // fill in the default value when column value is null
+        Object columnValue;
+        for (ColumnDefinition columnDefinition : this.entityExecutor.getEntityDefinition().columnDefinitions()) {
+            columnValue = entityJson.opt(columnDefinition.fieldName());
+            if (JSONObject.NULL.equals(columnValue)) {
+                entityJson.put(columnDefinition.fieldName(), columnDefinition.defaultValue());
+            }
+        }
+        //
         long createdAtTs = System.currentTimeMillis();
         String createdAtFormat = XDataUtils.formatMs(createdAtTs);
         entityJson.put("createdAtTs", createdAtTs);

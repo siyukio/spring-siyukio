@@ -51,7 +51,9 @@ public record RecordEvent(
         @PgColumn(comment = "Elapsed time in milliseconds")
         long costMs,
 
-        @PgColumn(comment = "Key attribute", defaultValue = "{\"role\":\"user\"}")
+        @PgColumn(comment = "Key attribute", defaultValue = """
+                {"role":"user", "name":"hello"}
+                """)
         JSONObject metadata,
 
         @PgColumn(comment = "Collection of messages")

@@ -17,6 +17,7 @@ import io.github.siyukio.tools.util.XDataUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.FactoryBean;
@@ -99,14 +100,26 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             columnName = EntityUtils.camelToSnake(fieldName);
         }
         EntityUtils.isSafe(columnName);
-        String defaultValue = pgColumn.defaultValue();
-        if (defaultValue.isEmpty()) {
+        String defaultValueStr = pgColumn.defaultValue();
+        Object defaultValue;
+        if (defaultValueStr.isEmpty()) {
             defaultValue = switch (columnType) {
-                case ColumnType.INT, ColumnType.BIGINT, ColumnType.DOUBLE -> "0";
-                case ColumnType.DATETIME -> null;
-                case ColumnType.BOOLEAN -> "false";
-                case ColumnType.JSON_ARRAY -> "[]";
-                default -> "";
+                case ColumnType.INT, ColumnType.BIGINT, ColumnType.DOUBLE -> 0;
+                case ColumnType.BOOLEAN -> false;
+                case ColumnType.JSON_ARRAY -> new JSONArray();
+                case ColumnType.JSON_OBJECT -> new JSONObject();
+                case ColumnType.TEXT, ColumnType.DATETIME -> "";
+            };
+        } else {
+            defaultValue = switch (columnType) {
+                case ColumnType.INT -> Integer.parseInt(defaultValueStr);
+                case ColumnType.BIGINT -> Long.parseLong(defaultValueStr);
+                case ColumnType.DOUBLE -> Double.parseDouble(defaultValueStr);
+                case ColumnType.BOOLEAN -> Boolean.valueOf(defaultValueStr);
+                case ColumnType.JSON_ARRAY -> XDataUtils.parseArray(defaultValueStr);
+                case ColumnType.JSON_OBJECT -> XDataUtils.parseObject(defaultValueStr);
+                case ColumnType.TEXT -> defaultValueStr;
+                case ColumnType.DATETIME -> XDataUtils.parse(defaultValueStr);
             };
         }
         return new ColumnDefinition(fieldName, columnName, columnType, defaultValue, pgColumn.comment());
@@ -282,7 +295,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
                 case ColumnType.INT -> udtName.equalsIgnoreCase("int4");
                 case ColumnType.BIGINT -> udtName.equalsIgnoreCase("int8");
                 case ColumnType.DOUBLE -> udtName.equalsIgnoreCase("float8");
-                case ColumnType.DATETIME -> udtName.equalsIgnoreCase("timestamp");
+                case ColumnType.DATETIME -> udtName.equalsIgnoreCase("text");
                 case ColumnType.JSON_ARRAY, ColumnType.JSON_OBJECT -> udtName.equalsIgnoreCase("json");
                 default -> columnDefinition.type().name().equalsIgnoreCase(informationColumn.udtName());
             };
@@ -292,15 +305,16 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             }
 
             String columnDefault = informationColumn.columnDefault();
-            if (columnDefault != null) {
+            if (columnDefault == null) {
+                sqlList.add(PgSqlUtils.alterColumnDefaultSql(entityDefinition, columnDefinition));
+            } else {
                 if (StringUtils.hasText(columnDefault)) {
                     int index = columnDefault.indexOf("::");
                     if (index > 0) {
                         columnDefault = columnDefault.substring(0, index);
                     }
-                    columnDefault = columnDefault.replaceAll("'", "");
                 }
-                String defaultValue = columnDefinition.defaultValue();
+                String defaultValue = PgSqlUtils.getSqlDefault(columnDefinition);
                 if (!columnDefault.equals(defaultValue)) {
                     sqlList.add(PgSqlUtils.alterColumnDefaultSql(entityDefinition, columnDefinition));
                 }

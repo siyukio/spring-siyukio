@@ -79,6 +79,12 @@ public class XDataUtilsTest {
         log.info("{}", XDataUtils.toPrettyJSONString(enumRequest));
     }
 
+    @Test
+    void testParseLocalDateTime() {
+        LocalDateTime localDateTime = XDataUtils.parse("");
+        log.info("testParseLocalDateTime: {}", localDateTime);
+    }
+
     public enum LoginType {
         USERNAME,
         PHONE,
