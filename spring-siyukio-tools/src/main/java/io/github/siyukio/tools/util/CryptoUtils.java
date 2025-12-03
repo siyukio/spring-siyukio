@@ -3,8 +3,6 @@ package io.github.siyukio.tools.util;
 import lombok.extern.slf4j.Slf4j;
 
 import java.security.*;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
@@ -15,7 +13,7 @@ import java.util.Base64;
 @Slf4j
 public abstract class CryptoUtils {
 
-    public static RSAPrivateKey getPrivateKeyFromPem(String pem) throws Exception {
+    public static PrivateKey getPrivateKeyFromPem(String pem) throws Exception {
         String privateKeyPEM = pem
                 .replace("-----BEGIN PRIVATE KEY-----", "")
                 .replace("-----END PRIVATE KEY-----", "")
@@ -23,24 +21,39 @@ public abstract class CryptoUtils {
 
         byte[] keyBytes = Base64.getDecoder().decode(privateKeyPEM);
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
-        KeyFactory kf = KeyFactory.getInstance("RSA");
-        PrivateKey privateKey = kf.generatePrivate(keySpec);
 
-        return (RSAPrivateKey) privateKey;
+        try {
+            KeyFactory kf = KeyFactory.getInstance("EC");
+            PrivateKey privateKey = kf.generatePrivate(keySpec);
+            log.info("Find ECDSA private key");
+            return privateKey;
+        } catch (Exception ex) {
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+            PrivateKey privateKey = kf.generatePrivate(keySpec);
+            log.info("Find RSA private key");
+            return privateKey;
+        }
     }
 
-    public static RSAPublicKey getPublicKeyFromPem(String pem) throws Exception {
+    public static PublicKey getPublicKeyFromPem(String pem) throws Exception {
         String publicKeyPEM = pem
                 .replace("-----BEGIN PUBLIC KEY-----", "")
                 .replace("-----END PUBLIC KEY-----", "")
                 .replaceAll("\\s+", "");  // 去掉空格和换行
 
         byte[] encoded = Base64.getDecoder().decode(publicKeyPEM);
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         X509EncodedKeySpec keySpec = new X509EncodedKeySpec(encoded);
-        PublicKey key = keyFactory.generatePublic(keySpec);
-
-        return (RSAPublicKey) key;
+        try {
+            KeyFactory keyFactory = KeyFactory.getInstance("EC");
+            PublicKey key = keyFactory.generatePublic(keySpec);
+            log.info("Find ECDSA public key");
+            return key;
+        } catch (Exception ex) {
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            PublicKey key = keyFactory.generatePublic(keySpec);
+            log.info("Find RSA public key");
+            return key;
+        }
     }
 
     public static String toPem(String title, byte[] bytes) {
@@ -58,7 +71,7 @@ public abstract class CryptoUtils {
         return toPem("PRIVATE KEY", privateKey.getEncoded()); // PKCS#8 格式
     }
 
-    public static void createKeyPair() throws Exception {
+    public static void createRSAKeyPair() throws Exception {
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
         keyGen.initialize(2048);
         KeyPair pair = keyGen.generateKeyPair();
@@ -66,8 +79,20 @@ public abstract class CryptoUtils {
         String publicPem = publicKeyToPem(pair.getPublic());
         String privatePem = privateKeyToPem(pair.getPrivate());
 
-        log.info("Public Key:\n{}", publicPem);
-        log.info("Private Key:\n{}", privatePem);
+        log.info("RSA Public Key:\n{}", publicPem);
+        log.info("RSA Private Key:\n{}", privatePem);
+    }
+
+    public static void createECKeyPair() throws Exception {
+        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
+        keyGen.initialize(256);
+        KeyPair pair = keyGen.generateKeyPair();
+
+        String publicPem = publicKeyToPem(pair.getPublic());
+        String privatePem = privateKeyToPem(pair.getPrivate());
+
+        log.info("EC Public Key:\n{}", publicPem);
+        log.info("EC Private Key:\n{}", privatePem);
     }
 
     public static String md5(String input) {

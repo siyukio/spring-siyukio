@@ -8,7 +8,12 @@ import org.junit.jupiter.api.Test;
 public class CryptoUtilsTest {
 
     @Test
-    void testCreateKeyPair() throws Exception {
-        CryptoUtils.createKeyPair();
+    void testCreateRSAKeyPair() throws Exception {
+        CryptoUtils.createRSAKeyPair();
+    }
+
+    @Test
+    void testCreateECKeyPair() throws Exception {
+        CryptoUtils.createECKeyPair();
     }
 }

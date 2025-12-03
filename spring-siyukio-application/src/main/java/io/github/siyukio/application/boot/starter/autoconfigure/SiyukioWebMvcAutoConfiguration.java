@@ -41,8 +41,8 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 import org.springframework.web.servlet.mvc.method.annotation.RequestResponseBodyMethodProcessor;
 import org.springframework.web.servlet.resource.ResourceUrlProvider;
 
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -87,21 +87,21 @@ public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
         assert this.getApplicationContext() != null;
         Environment env = this.getApplicationContext().getEnvironment();
 
-        String publicKey = env.getProperty(ApiConstants.PROPERTY_API_JWT_PUBLIC, "");
-        RSAPublicKey rsaPublicKey = null;
-        if (StringUtils.hasText(publicKey)) {
+        String publicKeyText = env.getProperty(ApiConstants.PROPERTY_API_JWT_PUBLIC, "");
+        PublicKey publicKey = null;
+        if (StringUtils.hasText(publicKeyText)) {
             try {
-                rsaPublicKey = CryptoUtils.getPublicKeyFromPem(publicKey);
+                publicKey = CryptoUtils.getPublicKeyFromPem(publicKeyText);
             } catch (Exception e) {
                 log.error("getPublicKeyFromPem error: {}", publicKey, e);
             }
         }
 
-        String privateKey = env.getProperty(ApiConstants.PROPERTY_API_JWT_PRIVATE, "");
-        RSAPrivateKey rsaPrivateKey = null;
-        if (StringUtils.hasText(privateKey)) {
+        String privateKeyText = env.getProperty(ApiConstants.PROPERTY_API_JWT_PRIVATE, "");
+        PrivateKey privateKey = null;
+        if (StringUtils.hasText(publicKeyText)) {
             try {
-                rsaPrivateKey = CryptoUtils.getPrivateKeyFromPem(privateKey);
+                privateKey = CryptoUtils.getPrivateKeyFromPem(privateKeyText);
             } catch (Exception e) {
                 log.error("getPrivateKeyFromPem error: {}", privateKey, e);
             }
@@ -114,7 +114,7 @@ public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
 
         log.info("init TokenProvider, accessTokenDuration:{} refreshTokenDuration:{}", accessTokenDuration, refreshTokenDuration);
 
-        return new TokenProvider(rsaPublicKey, rsaPrivateKey, accessDuration, refreshDuration);
+        return new TokenProvider(publicKey, privateKey, accessDuration, refreshDuration);
     }
 
     @Bean

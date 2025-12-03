@@ -15,6 +15,8 @@ import java.util.List;
 @With
 public record Token(
 
+        String id,
+
         /*
           User id
          */

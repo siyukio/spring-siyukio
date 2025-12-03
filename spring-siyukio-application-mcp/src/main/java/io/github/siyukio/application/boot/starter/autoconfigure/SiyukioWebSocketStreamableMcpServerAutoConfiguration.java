@@ -41,7 +41,7 @@ import java.util.Map;
 @EnableConfigurationProperties(SiyukioMcpServerProperties.class)
 @AutoConfigureAfter({SiyukioApplicationAutoConfiguration.class})
 @Slf4j
-public class SiyukioWebSocketStreamableMcpServerConfiguration implements WebSocketConfigurer, ApplicationContextAware {
+public class SiyukioWebSocketStreamableMcpServerAutoConfiguration implements WebSocketConfigurer, ApplicationContextAware {
 
     private ApplicationContext applicationContext;
 

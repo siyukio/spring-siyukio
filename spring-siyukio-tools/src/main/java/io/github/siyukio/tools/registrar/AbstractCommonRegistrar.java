@@ -70,7 +70,7 @@ public abstract class AbstractCommonRegistrar implements ImportBeanDefinitionReg
         if (attrMap != null) {
             String[] valueArray = (String[]) attrMap.get("value");
             for (String value : valueArray) {
-                if (value.isEmpty() == false) {
+                if (!value.isEmpty()) {
                     basePackageSet.add(value);
                 }
             }
