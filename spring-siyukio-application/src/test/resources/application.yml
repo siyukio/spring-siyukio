@@ -10,6 +10,8 @@ API_JWT_PRIVATE_KEY: |
   hCSvly9hfoK2z2UcpfAyD/n0KQ==
   -----END PRIVATE KEY-----
 
+API_JWT_PASSWORD: siyukio
+
 API_SIGNATURE_SALT: siyukio
 
 API_PROFILES_DOCS: true

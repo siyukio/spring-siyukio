@@ -44,7 +44,11 @@ class AuthorizationControllerTests {
 
     @Test
     void testGetTokenByAuthorization() {
-        String authorization = "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJhRHRYRHNjaFdMQXJQbU1IUVo0TDIiLCJzdWIiOiIxMjMiLCJuIjoiQnVnZWUiLCJyIjpbInVzZXIiXSwiYSI6dHJ1ZSwiaWF0IjoxNzY0NzQzNjMxLCJleHAiOjE3NjQ3NDQ1MzF9.iCImG8aOmtPDPi_ihqBifC5Fo1KsE9RoNwqIE9oviYP6g5gNvzSBBOnwfntn8UDbHpVIUPyKiLl4BDwgajmKNA";
+        // plainText
+        String authorization = "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiOiIxMjMiLCJzIjpbInVzZXIiXSwiZSI6IkJ1Z2VlIiwiaCI6ZmFsc2UsImV4cCI6MTc2NDc1MTU3MywiaWF0IjoxNzY0NzUwNjczLCJqdGkiOiJhRHR4SjgzWmVHRmd2VnhmQ0t2WnAifQ.mI_oR9Q7ktVQGlZugneLtDvQ3t3JnJETvmBrOG_R_hzFavLJdkQEf65vpn2zVvu6ALnPyvciORCUCcbZFGrteQ";
+
+        // cipherText
+        authorization = "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.NFc3WlhrWXVLMkhFUllIenc2MTQrTURDZEQ1MzRIRFVrL1d2MFFJWmRpdTVyOGxJSGVCRXI3WHA4WmxDQ1E3QU40SjRnK2tzVmFaZHVTMzNrVVpmTEhpVHpHdGFkS2w4WHlURHROdWV6TngxRmlvWG1UL3lDQ3lEM2hhMTQzRVZ4ZDRiVmxSV2p4aFhYMHZlVmhXOFNQT3c5ZnVHV0w1YmdmY0g.Pp_3u-H68zmRMYkd79jxQLASgeitZ4Z6b8FePA96NE0MAKdNuZPBg5bqWhklLQUG_d2YQglsjIvSHsSbHIb8PA";
         this.apiMock.setAuthorization(authorization);
 
         JSONObject resultJson = this.apiMock.perform("/token/get", new JSONObject());

@@ -112,9 +112,11 @@ public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
         String refreshTokenDuration = env.getProperty(ApiConstants.PROPERTY_API_JWT_REFRESH_TOKEN_DURATION, "P30D");
         Duration refreshDuration = Duration.parse(refreshTokenDuration);
 
+        String password = env.getProperty(ApiConstants.PROPERTY_API_JWT_PASSWORD, "siyukio");
+
         log.info("init TokenProvider, accessTokenDuration:{} refreshTokenDuration:{}", accessTokenDuration, refreshTokenDuration);
 
-        return new TokenProvider(publicKey, privateKey, accessDuration, refreshDuration);
+        return new TokenProvider(publicKey, privateKey, accessDuration, refreshDuration, password);
     }
 
     @Bean
