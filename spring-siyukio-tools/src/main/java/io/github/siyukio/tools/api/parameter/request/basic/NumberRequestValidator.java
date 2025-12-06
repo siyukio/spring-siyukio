@@ -8,26 +8,16 @@ import io.github.siyukio.tools.api.parameter.request.AbstractRequestValidator;
  */
 public class NumberRequestValidator extends AbstractRequestValidator {
 
-    private long maximum = -1;
+    private final Long maximum;
 
-    private long minimum = -1;
+    private final Long minimum;
 
-    private boolean numLimit = false;
-
-    public NumberRequestValidator(String name, boolean required, long maximum, long minimum, String parent, String error) {
+    public NumberRequestValidator(String name, Boolean required,
+                                  Long maximum, Long minimum,
+                                  String parent, String error) {
         super(name, required, parent, error);
         this.maximum = maximum;
         this.minimum = minimum;
-        if (minimum != -1) {
-            this.numLimit = true;
-        }
-        if (maximum != -1) {
-            this.numLimit = true;
-        }
-        if (minimum != -1 && maximum != -1) {
-            this.maximum = Math.max(maximum, minimum);
-            this.minimum = Math.min(maximum, minimum);
-        }
     }
 
     @Override
@@ -41,24 +31,20 @@ public class NumberRequestValidator extends AbstractRequestValidator {
             try {
                 num = Double.parseDouble(v);
             } catch (NumberFormatException e) {
-                throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_REQUIRED_NUMBER_FORMAT);
+                throw this.createApiException(ApiConstants.ERROR_PARAMETER_REQUIRED_NUMBER_FORMAT);
             }
         } else if (value instanceof Number) {
             num = ((Number) value).doubleValue();
         } else {
-            throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_REQUIRED_NUMBER_FORMAT);
+            throw this.createApiException(ApiConstants.ERROR_PARAMETER_REQUIRED_NUMBER_FORMAT);
         }
 
-        if (this.numLimit) {
-            boolean isValid = this.maximum == -1 || !(num > this.maximum);
-            if (isValid) {
-                if (this.minimum != -1 && num < this.minimum) {
-                    isValid = false;
-                }
-            }
-            if (!isValid) {
-                throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_REQUIRED_NUMBER_LIMIT_FORMAT, this.toNumLimitString(this.minimum), this.toNumLimitString(this.maximum));
-            }
+        if (this.maximum != null && num > this.maximum) {
+            throw this.createApiException(ApiConstants.ERROR_PARAMETER_REQUIRED_NUMBER_MAX_FORMAT, this.maximum);
+        }
+
+        if (this.minimum != null && num < this.minimum) {
+            throw this.createApiException(ApiConstants.ERROR_PARAMETER_REQUIRED_NUMBER_MIN_FORMAT, this.minimum);
         }
         return num;
     }

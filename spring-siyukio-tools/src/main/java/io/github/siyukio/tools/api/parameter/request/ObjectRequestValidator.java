@@ -18,9 +18,11 @@ public class ObjectRequestValidator extends AbstractRequestValidator {
     private final boolean additionalProperties;
     private final Map<String, RequestValidator> requestValidatorMap = new HashMap<>();
 
-    public ObjectRequestValidator(String name, boolean required, Map<String, RequestValidator> requestValidatorMap, boolean additionalProperties, String parentPath, String message) {
-        super(name, required, parentPath, message);
-        this.additionalProperties = additionalProperties;
+    public ObjectRequestValidator(String name, Boolean required,
+                                  Map<String, RequestValidator> requestValidatorMap,
+                                  Boolean additionalProperties, String parentPath, String error) {
+        super(name, required, parentPath, error);
+        this.additionalProperties = additionalProperties != null && additionalProperties;
         this.requestValidatorMap.putAll(requestValidatorMap);
     }
 
@@ -41,7 +43,7 @@ public class ObjectRequestValidator extends AbstractRequestValidator {
             try {
                 value = XDataUtils.parseObject(str);
             } catch (RuntimeException ex) {
-                throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_PARSE_OBJECT_FORMAT);
+                throw this.createApiException(ApiConstants.ERROR_PARAMETER_PARSE_OBJECT_FORMAT);
             }
         }
         if (value instanceof JSONObject data) {
@@ -78,7 +80,7 @@ public class ObjectRequestValidator extends AbstractRequestValidator {
             }
             result = data;
         } else {
-            throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_REQUIRED_OBJECT_FORMAT);
+            throw this.createApiException(ApiConstants.ERROR_PARAMETER_REQUIRED_OBJECT_FORMAT);
         }
         return result;
     }

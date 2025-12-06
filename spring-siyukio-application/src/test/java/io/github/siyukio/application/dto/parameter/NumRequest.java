@@ -20,7 +20,10 @@ public record NumRequest(
         double doubleNum,
 
         @ApiParameter(required = false, minimum = 1000, maximum = 99999)
-        BigDecimal bigNum
+        BigDecimal bigNum,
+
+        @ApiParameter(required = false)
+        int defaultNum
 ) {
 
 }

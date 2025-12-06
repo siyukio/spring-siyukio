@@ -1,7 +1,6 @@
 package io.github.siyukio.tools.api.definition;
 
 import lombok.Builder;
-import org.json.JSONArray;
 
 import java.util.List;
 
@@ -21,8 +20,8 @@ public record ApiDefinition(
         boolean authorization,
         boolean signature,
         boolean mcpTool,
-        JSONArray requestParameters,
-        JSONArray responseParameters,
+        ApiRequestParameter requestBodyParameter,
+        ApiResponseParameter responseBodyParameter,
         Class<?> returnType,
         Class<?> realReturnType
 ) {

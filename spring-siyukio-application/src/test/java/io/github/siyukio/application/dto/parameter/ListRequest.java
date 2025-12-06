@@ -47,12 +47,11 @@ public record ListRequest(
                 })
         JSONArray objectArray,
 
-        @ApiParameter(required = false, minItems = 3, maxItems = 6,
+        @ApiParameter(required = false,
                 examples = {
                         @Example(value = """
                                 [{"id":""}, {"id":""}]
-                                """,
-                                summary = "json object list")
+                                """)
                 })
         List<JSONObject> objectList
 ) {

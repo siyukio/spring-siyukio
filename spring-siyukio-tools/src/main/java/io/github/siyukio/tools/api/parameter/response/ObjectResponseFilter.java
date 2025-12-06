@@ -16,9 +16,9 @@ public class ObjectResponseFilter implements ResponseFilter {
     private final boolean additionalProperties;
     private final Map<String, ResponseFilter> responseFilterMap = new HashMap<>();
 
-    public ObjectResponseFilter(String name, boolean additionalProperties, Map<String, ResponseFilter> responseFilterMap) {
+    public ObjectResponseFilter(String name, Boolean additionalProperties, Map<String, ResponseFilter> responseFilterMap) {
         this.name = name;
-        this.additionalProperties = additionalProperties;
+        this.additionalProperties = additionalProperties != null && additionalProperties;
         this.responseFilterMap.putAll(responseFilterMap);
     }
 

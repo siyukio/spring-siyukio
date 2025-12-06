@@ -5,7 +5,6 @@ import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.api.ApiHandler;
 import io.github.siyukio.tools.api.definition.ApiDefinition;
 import io.github.siyukio.tools.api.token.Token;
-import io.github.siyukio.tools.util.OpenApiUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
@@ -62,12 +61,9 @@ public class MethodToolCallback {
             description = title;
         }
 
-        JSONObject inputSchemaJson = OpenApiUtils.createObjectRequest(apiDefinition.requestParameters());
-        McpSchema.JsonSchema inputSchema = XDataUtils.copy(inputSchemaJson, McpSchema.JsonSchema.class);
+        McpSchema.JsonSchema inputSchema = XDataUtils.copy(apiDefinition.requestBodyParameter().schema(), McpSchema.JsonSchema.class);
 
-        JSONObject outputSchemaJson = OpenApiUtils.createObjectResponse(apiDefinition.responseParameters());
-        Map<String, Object> outputSchema = XDataUtils.copy(outputSchemaJson, Map.class, String.class, Object.class);
-
+        Map<String, Object> outputSchema = XDataUtils.copy(apiDefinition.responseBodyParameter().schema(), Map.class, String.class, Object.class);
 
         MethodToolCallback toolCallback = new MethodToolCallback(apiHandler, name);
 

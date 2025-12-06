@@ -1,10 +1,10 @@
 package io.github.siyukio.tools.api.parameter.request;
 
-import io.github.siyukio.tools.api.constants.ApiConstants;
 import io.github.siyukio.tools.api.definition.ApiDefinition;
+import io.github.siyukio.tools.api.definition.ApiRequestParameter;
+import io.github.siyukio.tools.api.definition.ApiSchema;
 import io.github.siyukio.tools.api.parameter.request.basic.*;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
@@ -18,136 +18,145 @@ import java.util.Map;
 
 public interface RequestValidator {
 
-    private static RequestValidator createObjectRequestValidator(String paramName, boolean required, JSONArray requestParamArray, boolean additionalProperties, String parent, String error) {
+    private static RequestValidator createObjectRequestValidator(ApiRequestParameter apiRequestParameter, String parent) {
         Map<String, RequestValidator> subRequestValidatorMap = new HashMap<>();
         //
-        RequestValidator requestValidator;
-        JSONObject requestParam;
-        String type;
-        String name;
-        String currentPath = StringUtils.hasText(parent) ? parent + "." + paramName : paramName;
-        for (int index = 0; index < requestParamArray.length(); index++) {
-            requestParam = requestParamArray.getJSONObject(index);
-            type = requestParam.getString("type");
-            switch (type) {
-                case ApiConstants.TYPE_ARRAY:
-                    requestValidator = createCollectionRequestValidator(requestParam, currentPath);
-                    break;
-                case ApiConstants.TYPE_OBJECT:
-                    JSONArray childArray = requestParam.getJSONArray("childArray");
-                    name = requestParam.getString("name");
-                    requestValidator = createObjectRequestValidator(name, requestParam.optBoolean("required"), childArray,
-                            requestParam.optBoolean("additionalProperties"), currentPath, requestParam.optString("error", ""));
-                    break;
-                default:
-                    Object defaultValue = requestParam.opt("default");
-                    RequestValidator typeRequestValidator = createTypeRequestValidator(requestParam, currentPath);
-                    requestValidator = new BasicRequestValidator(typeRequestValidator, defaultValue, currentPath, requestParam.optString("error", ""));
-                    break;
+        if (!CollectionUtils.isEmpty(apiRequestParameter.properties())) {
+            RequestValidator requestValidator;
+            String currentPath = StringUtils.hasText(parent) ? parent + "." + apiRequestParameter.name() : apiRequestParameter.name();
+            for (ApiRequestParameter childApiRequestParameter : apiRequestParameter.properties()) {
+                switch (childApiRequestParameter.schema().type()) {
+                    case ARRAY:
+                        requestValidator = createCollectionRequestValidator(childApiRequestParameter, currentPath);
+                        break;
+                    case OBJECT:
+                        requestValidator = createObjectRequestValidator(childApiRequestParameter, currentPath);
+                        break;
+                    default:
+                        Object defaultValue = childApiRequestParameter.schema().defaultValue();
+                        RequestValidator typeRequestValidator = createTypeRequestValidator(childApiRequestParameter, currentPath);
+                        requestValidator = new BasicRequestValidator(typeRequestValidator, defaultValue,
+                                currentPath, childApiRequestParameter.error());
+                        break;
+                }
+                subRequestValidatorMap.put(requestValidator.getName(), requestValidator);
             }
-            subRequestValidatorMap.put(requestValidator.getName(), requestValidator);
         }
-        return new ObjectRequestValidator(paramName, required, subRequestValidatorMap, additionalProperties, parent, error);
+        return new ObjectRequestValidator(apiRequestParameter.name()
+                , apiRequestParameter.required(),
+                subRequestValidatorMap,
+                apiRequestParameter.schema().additionalProperties(),
+                parent, apiRequestParameter.error());
     }
 
-    private static RequestValidator createCollectionRequestValidator(JSONObject requestParam, String parent) {
+    private static RequestValidator createCollectionRequestValidator(ApiRequestParameter apiRequestParameter, String parent) {
         RequestValidator requestValidator;
-        String name = requestParam.getString("name");
-        JSONObject items = requestParam.getJSONObject("items");
-        String itemType = items.getString("type");
-        boolean additionalProperties = items.optBoolean("additionalProperties", false);
-        int maxItems = requestParam.optInt("maxItems");
-        int minItems = requestParam.optInt("minItems");
-        String error = requestParam.optString("error", "");
-        if (itemType.equals(ApiConstants.TYPE_OBJECT)) {
-            JSONArray childArray = items.getJSONArray("childArray");
-            requestValidator = createObjectRequestValidator(name, false, childArray, additionalProperties, parent, error);
+        assert apiRequestParameter.items() != null;
+        ApiSchema.Type itemsType = apiRequestParameter.items().schema().type();
+        parent = parent + "." + apiRequestParameter.name();
+        if (itemsType == ApiSchema.Type.OBJECT) {
+            requestValidator = createObjectRequestValidator(apiRequestParameter.items(), parent);
         } else {
-            RequestValidator typeRequestValidator = createArrayItemRequestValidator(name, items, requestParam, parent);
-            requestValidator = new BasicRequestValidator(typeRequestValidator, null, parent, error);
+            RequestValidator typeRequestValidator = createArrayItemRequestValidator(apiRequestParameter.items(), parent);
+            requestValidator = new BasicRequestValidator(typeRequestValidator, null,
+                    parent, apiRequestParameter.error());
         }
-        return new ArrayRequestValidator(name, requestParam.optBoolean("required"), requestValidator, maxItems, minItems, parent, error);
+        return new ArrayRequestValidator(apiRequestParameter.name(),
+                apiRequestParameter.required(),
+                requestValidator,
+                apiRequestParameter.schema().maxItems(),
+                apiRequestParameter.schema().minItems(),
+                parent,
+                apiRequestParameter.error());
     }
 
-    private static RequestValidator createArrayItemRequestValidator(String name, JSONObject items, JSONObject requestParam, String parent) {
-        String itemName = name + ".item";
-        boolean required = false;
-        String itemType = items.getString("type");
-        long maximum = items.optLong("maximum", -1);
-        long minimum = items.optLong("minimum", -1);
-        int maxLength = items.optInt("maxLength", -1);
-        int minLength = items.optInt("minLength", -1);
-        String pattern = items.optString("pattern", "");
-        String error = requestParam.optString("error", "");
+    private static RequestValidator createArrayItemRequestValidator(ApiRequestParameter apiRequestParameter, String parent) {
+        ApiSchema apiSchema = apiRequestParameter.schema();
+
         RequestValidator requestValidator;
-        switch (itemType) {
-            case ApiConstants.TYPE_BOOLEAN:
-                requestValidator = new BooleanRequestValidator(itemName, required, parent, error);
+        switch (apiSchema.type()) {
+            case BOOLEAN:
+                requestValidator = new BooleanRequestValidator(apiRequestParameter.name(),
+                        apiRequestParameter.required(),
+                        parent, apiRequestParameter.error());
                 break;
-            case ApiConstants.TYPE_INTEGER:
-                requestValidator = new IntegerRequestValidator(itemName, required, maximum, minimum, parent, error);
+            case INTEGER:
+                requestValidator = new IntegerRequestValidator(apiRequestParameter.name(),
+                        apiRequestParameter.required(),
+                        apiSchema.maximum(), apiSchema.minimum(), parent,
+                        apiRequestParameter.error());
                 break;
-            case ApiConstants.TYPE_NUMBER:
-                requestValidator = new NumberRequestValidator(itemName, required, maximum, minimum, parent, error);
-                break;
-            case ApiConstants.TYPE_DATE:
-                requestValidator = new DateRequestValidator(itemName, required, parent, error);
+            case NUMBER:
+                requestValidator = new NumberRequestValidator(apiRequestParameter.name(),
+                        apiRequestParameter.required(),
+                        apiSchema.maximum(), apiSchema.minimum(), parent,
+                        apiRequestParameter.error());
                 break;
             default:
-                if (pattern.isEmpty()) {
-                    requestValidator = new StringRequestValidator(itemName, required, maxLength, minLength, parent, error);
+                if (StringUtils.hasText(apiSchema.pattern())) {
+                    requestValidator = new PatternRequestValidator(apiRequestParameter.name(),
+                            apiRequestParameter.required(),
+                            apiSchema.pattern(), parent,
+                            apiRequestParameter.error());
+                } else if (StringUtils.hasText(apiSchema.format()) && apiSchema.format().equals("date-time")) {
+                    requestValidator = new DateRequestValidator(apiRequestParameter.name(),
+                            apiRequestParameter.required(), parent,
+                            apiRequestParameter.error());
                 } else {
-                    requestValidator = new PatternRequestValidator(itemName, required, pattern, parent, error);
+                    requestValidator = new StringRequestValidator(apiRequestParameter.name(),
+                            apiRequestParameter.required(),
+                            apiSchema.maxLength(), apiSchema.minLength(),
+                            parent, apiRequestParameter.error());
                 }
                 break;
         }
         return requestValidator;
     }
 
-    private static RequestValidator createTypeRequestValidator(JSONObject requestParam, String parent) {
-        String type = requestParam.optString("type");
-        String name = requestParam.optString("name");
-        boolean required = requestParam.optBoolean("required");
-        long max = requestParam.optLong("maximum", -1);
-        long min = requestParam.optLong("minimum", -1);
-        int maxLength = requestParam.optInt("maxLength", -1);
-        int minLength = requestParam.optInt("minLength", -1);
-        String pattern = requestParam.optString("pattern", "");
-        String error = requestParam.optString("error", "");
+    private static RequestValidator createTypeRequestValidator(ApiRequestParameter apiRequestParameter, String parent) {
+        ApiSchema apiSchema = apiRequestParameter.schema();
         RequestValidator requestValidator;
-        switch (type) {
-            case ApiConstants.TYPE_BOOLEAN:
-                requestValidator = new BooleanRequestValidator(name, required, parent, error);
+        switch (apiSchema.type()) {
+            case BOOLEAN:
+                requestValidator = new BooleanRequestValidator(apiRequestParameter.name(),
+                        apiRequestParameter.required(), parent, apiRequestParameter.error());
                 break;
-            case ApiConstants.TYPE_INTEGER:
-                requestValidator = new IntegerRequestValidator(name, required, max, min, parent, error);
+            case INTEGER:
+                requestValidator = new IntegerRequestValidator(apiRequestParameter.name(),
+                        apiRequestParameter.required(),
+                        apiSchema.maximum(), apiSchema.minimum(), parent, apiRequestParameter.error());
                 break;
-            case ApiConstants.TYPE_NUMBER:
-                requestValidator = new NumberRequestValidator(name, required, max, min, parent, error);
-                break;
-            case ApiConstants.TYPE_DATE:
-                requestValidator = new DateRequestValidator(name, required, parent, error);
+            case NUMBER:
+                requestValidator = new NumberRequestValidator(apiRequestParameter.name(),
+                        apiRequestParameter.required(),
+                        apiSchema.maximum(), apiSchema.minimum(), parent, apiRequestParameter.error());
                 break;
             default:
-                if (pattern.isEmpty()) {
-                    requestValidator = new StringRequestValidator(name, required, maxLength, minLength, parent, error);
+                if (StringUtils.hasText(apiSchema.pattern())) {
+                    requestValidator = new PatternRequestValidator(apiRequestParameter.name(),
+                            apiRequestParameter.required(),
+                            apiSchema.pattern(), parent, apiRequestParameter.error());
+                } else if (StringUtils.hasText(apiSchema.format()) && apiSchema.format().equals("date-time")) {
+                    requestValidator = new DateRequestValidator(apiRequestParameter.name(),
+                            apiRequestParameter.required(), parent, apiRequestParameter.error());
                 } else {
-                    requestValidator = new PatternRequestValidator(name, required, pattern, parent, error);
+                    requestValidator = new StringRequestValidator(apiRequestParameter.name(),
+                            apiRequestParameter.required(),
+                            apiSchema.maxLength(), apiSchema.minLength(), parent, apiRequestParameter.error());
                 }
                 break;
         }
         return requestValidator;
     }
 
-    public static RequestValidator createRequestValidator(ApiDefinition apiDefinition) {
-        JSONArray requestParameters = apiDefinition.requestParameters();
-        return createObjectRequestValidator("", true, requestParameters, false, "", "");
+    static RequestValidator createRequestValidator(ApiDefinition apiDefinition) {
+        return createObjectRequestValidator(apiDefinition.requestBodyParameter(), "");
     }
 
-    public String getName();
+    String getName();
 
-    public boolean isRequired();
+    boolean isRequired();
 
-    public <T> T validate(T value);
+    <T> T validate(T value);
 
 }

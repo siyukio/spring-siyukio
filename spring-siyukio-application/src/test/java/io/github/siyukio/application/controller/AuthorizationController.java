@@ -4,7 +4,7 @@ import io.github.siyukio.application.dto.authorization.CreateAuthorizationReques
 import io.github.siyukio.application.dto.authorization.CreateResponseResponse;
 import io.github.siyukio.tools.api.annotation.ApiController;
 import io.github.siyukio.tools.api.annotation.ApiMapping;
-import io.github.siyukio.tools.api.model.TokenResponse;
+import io.github.siyukio.tools.api.dto.TokenResponse;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.XDataUtils;

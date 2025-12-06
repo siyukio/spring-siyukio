@@ -38,15 +38,13 @@ public @interface ApiParameter {
 
     /**
      * If the parameter is a number, sets the maximum allowed value for the parameter.
-     * Default is -1, which means no maximum value check.
      */
-    long maximum() default -1;
+    long maximum() default Long.MAX_VALUE;
 
     /**
      * If the parameter is a number, sets the minimum allowed value for the parameter.
-     * Default is -1, which means no minimum value check.
      */
-    long minimum() default -1;
+    long minimum() default Long.MIN_VALUE;
 
     /**
      * If the parameter is a String, sets the maximum length of the String.

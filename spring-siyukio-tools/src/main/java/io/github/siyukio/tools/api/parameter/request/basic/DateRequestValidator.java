@@ -11,7 +11,8 @@ import java.time.LocalDateTime;
  */
 public class DateRequestValidator extends AbstractRequestValidator {
 
-    public DateRequestValidator(String name, boolean required, String parent, String error) {
+    public DateRequestValidator(String name, Boolean required,
+                                String parent, String error) {
         super(name, required, parent, error);
     }
 
@@ -29,10 +30,10 @@ public class DateRequestValidator extends AbstractRequestValidator {
             //
             localDateTime = XDataUtils.parse(v);
         } catch (Exception ex) {
-            throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_REQUIRED_DATE_FORMAT);
+            throw this.createApiException(ApiConstants.ERROR_PARAMETER_REQUIRED_DATE_FORMAT);
         }
         if (localDateTime == null) {
-            throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_REQUIRED_DATE_FORMAT);
+            throw this.createApiException(ApiConstants.ERROR_PARAMETER_REQUIRED_DATE_FORMAT);
         }
         return localDateTime;
     }

@@ -22,11 +22,11 @@ public abstract class AbstractRequestValidator implements RequestValidator {
 
     protected final String errorReason;
 
-    public AbstractRequestValidator(String name, boolean required, String parent, String errorReason) {
+    public AbstractRequestValidator(String name, Boolean required, String parent, String errorReason) {
         this.name = name;
         this.parent = parent;
-        this.required = required;
-        this.errorReason = errorReason;
+        this.required = required == null || required;
+        this.errorReason = errorReason == null ? "" : errorReason;
     }
 
     @Override
@@ -55,9 +55,8 @@ public abstract class AbstractRequestValidator implements RequestValidator {
         return result;
     }
 
-    protected final ApiException createApiException(Object value, String format) {
+    protected final ApiException createApiException(String format) {
         ApiException apiException;
-        String fullName = this.getFullName();
         if (StringUtils.hasText(this.errorReason)) {
             apiException = ApiException.getInvalidApiException(this.errorReason);
         } else {
@@ -67,9 +66,8 @@ public abstract class AbstractRequestValidator implements RequestValidator {
         return apiException;
     }
 
-    protected final ApiException createApiException(Object value, String format, Object... values) {
+    protected final ApiException createApiException(String format, Object... values) {
         ApiException apiException;
-        String fullName = this.getFullName();
         if (StringUtils.hasText(this.errorReason)) {
             apiException = ApiException.getInvalidApiException(this.errorReason);
         } else {
@@ -84,7 +82,7 @@ public abstract class AbstractRequestValidator implements RequestValidator {
     protected final void assertRequired(Object value) {
         if (this.required) {
             if (JSONObject.NULL.equals(value) || value.toString().isEmpty()) {
-                throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_REQUIRED_FORMAT);
+                throw this.createApiException(ApiConstants.ERROR_PARAMETER_REQUIRED_FORMAT);
             }
         }
     }

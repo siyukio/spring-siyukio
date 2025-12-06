@@ -8,7 +8,8 @@ import io.github.siyukio.tools.api.parameter.request.AbstractRequestValidator;
  */
 public class BooleanRequestValidator extends AbstractRequestValidator {
 
-    public BooleanRequestValidator(String name, boolean required, String parent, String error) {
+    public BooleanRequestValidator(String name, Boolean required,
+                                   String parent, String error) {
         super(name, required, parent, error);
     }
 
@@ -18,7 +19,7 @@ public class BooleanRequestValidator extends AbstractRequestValidator {
         return switch (v) {
             case "true", "1" -> true;
             case "false", "", "0" -> false;
-            default -> throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_REQUIRED_BOOLEAN_FORMAT);
+            default -> throw this.createApiException(ApiConstants.ERROR_PARAMETER_REQUIRED_BOOLEAN_FORMAT);
         };
     }
 

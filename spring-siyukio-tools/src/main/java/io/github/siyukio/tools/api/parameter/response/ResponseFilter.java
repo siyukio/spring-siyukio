@@ -1,9 +1,9 @@
 package io.github.siyukio.tools.api.parameter.response;
 
-import io.github.siyukio.tools.api.constants.ApiConstants;
 import io.github.siyukio.tools.api.definition.ApiDefinition;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import io.github.siyukio.tools.api.definition.ApiResponseParameter;
+import io.github.siyukio.tools.api.definition.ApiSchema;
+import org.springframework.util.CollectionUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,57 +13,51 @@ import java.util.Map;
  */
 public interface ResponseFilter {
 
-    private static ResponseFilter createObjectResponseFilter(String paramName, boolean additionalProperties, JSONArray responseParamArray) {
+    private static ResponseFilter createObjectResponseFilter(ApiResponseParameter apiResponseParameter) {
         Map<String, ResponseFilter> subResponseFilterMap = new HashMap<>();
         //
-        ResponseFilter responseFilter;
-        JSONObject responseParam;
-        String type;
-        String name;
-        for (int index = 0; index < responseParamArray.length(); index++) {
-            responseParam = responseParamArray.getJSONObject(index);
-            type = responseParam.getString("type");
-            switch (type) {
-                case ApiConstants.TYPE_ARRAY:
-                    responseFilter = createCollectionResponseFilter(responseParam);
-                    break;
-                case ApiConstants.TYPE_OBJECT:
-                    name = responseParam.getString("name");
-                    JSONArray childArray = responseParam.getJSONArray("childArray");
-                    responseFilter = createObjectResponseFilter(name, responseParam.optBoolean("additionalProperties", false), childArray);
-                    break;
-                default:
-                    name = responseParam.getString("name");
-                    responseFilter = new BasicResponseFilter(name);
-                    break;
+        if (!CollectionUtils.isEmpty(apiResponseParameter.properties())) {
+            ResponseFilter responseFilter;
+            for (ApiResponseParameter childApiResponseParameter : apiResponseParameter.properties()) {
+                switch (childApiResponseParameter.schema().type()) {
+                    case ARRAY:
+                        responseFilter = createCollectionResponseFilter(childApiResponseParameter);
+                        break;
+                    case OBJECT:
+                        responseFilter = createObjectResponseFilter(childApiResponseParameter);
+                        break;
+                    default:
+                        responseFilter = new BasicResponseFilter(childApiResponseParameter.name());
+                        break;
+                }
+                subResponseFilterMap.put(responseFilter.getName(), responseFilter);
             }
-            subResponseFilterMap.put(responseFilter.getName(), responseFilter);
         }
-        return new ObjectResponseFilter(paramName, additionalProperties, subResponseFilterMap);
+        return new ObjectResponseFilter(apiResponseParameter.name(),
+                apiResponseParameter.schema().additionalProperties(),
+                subResponseFilterMap);
     }
 
-    private static ResponseFilter createCollectionResponseFilter(JSONObject responseParam) {
+    private static ResponseFilter createCollectionResponseFilter(ApiResponseParameter apiResponseParameter) {
         ResponseFilter responseFilter;
-        String name = responseParam.getString("name");
-        JSONObject items = responseParam.getJSONObject("items");
-        String itemType = items.getString("type");
-        if (itemType.equals(ApiConstants.TYPE_OBJECT)) {
-            JSONArray childArray = items.getJSONArray("childArray");
-            responseFilter = createObjectResponseFilter(name, responseParam.optBoolean("additionalProperties", false), childArray);
+        ApiResponseParameter items = apiResponseParameter.items();
+        assert items != null;
+        ApiSchema.Type itemsType = items.schema().type();
+        String itemsName = apiResponseParameter.name() + "." + items.name();
+        if (itemsType == ApiSchema.Type.OBJECT) {
+            responseFilter = createObjectResponseFilter(apiResponseParameter.items());
         } else {
-            responseFilter = new BasicResponseFilter(name + ".item");
+            responseFilter = new BasicResponseFilter(itemsName);
         }
-        return new ArrayResponseFilter(name, responseFilter);
+        return new ArrayResponseFilter(apiResponseParameter.name(), responseFilter);
     }
 
-    public static ResponseFilter createResponseFilter(ApiDefinition apiDefinition) {
-        JSONArray responseParameters = apiDefinition.responseParameters();
-        boolean additionalProperties = apiDefinition.realReturnType().isAssignableFrom(JSONObject.class);
-        return createObjectResponseFilter("ResponseBody", additionalProperties, responseParameters);
+    static ResponseFilter createResponseFilter(ApiDefinition apiDefinition) {
+        return createObjectResponseFilter(apiDefinition.responseBodyParameter());
     }
 
-    public String getName();
+    String getName();
 
-    public void filter(Object value);
+    void filter(Object value);
 
 }

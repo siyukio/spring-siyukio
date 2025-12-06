@@ -12,7 +12,8 @@ public final class BasicRequestValidator extends AbstractRequestValidator {
 
     private final RequestValidator typeRequestValidator;
 
-    public BasicRequestValidator(RequestValidator typeRequestValidator, Object defaultValue, String parent, String error) {
+    public BasicRequestValidator(RequestValidator typeRequestValidator,
+                                 Object defaultValue, String parent, String error) {
         super(typeRequestValidator.getName(), typeRequestValidator.isRequired(), parent, error);
         this.defaultValue = defaultValue;
         this.typeRequestValidator = typeRequestValidator;

@@ -21,8 +21,7 @@ public record FilterParam(
                 examples = {
                         @Example(value = """
                                 {"name":"", "value":""}
-                                """,
-                                summary = "json object")
+                                """)
                 })
         JSONObject json
 ) {

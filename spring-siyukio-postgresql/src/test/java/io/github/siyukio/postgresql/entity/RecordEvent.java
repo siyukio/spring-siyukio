@@ -1,5 +1,7 @@
 package io.github.siyukio.postgresql.entity;
 
+import com.fasterxml.jackson.databind.EnumNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.EnumNaming;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgColumn;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgEntity;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgIndex;
@@ -81,6 +83,7 @@ public record RecordEvent(
         long updatedAtTs
 ) {
 
+    @EnumNaming(value = EnumNamingStrategies.CamelCaseStrategy.class)
     public enum LoginType {
         USERNAME,
         PHONE,

@@ -1,5 +1,6 @@
 package io.github.siyukio.tools.entity.query;
 
+import io.github.siyukio.tools.util.XDataUtils;
 import lombok.Getter;
 import lombok.ToString;
 
@@ -27,7 +28,7 @@ public class TermsQueryBuilder implements QueryBuilder {
         this.valueSet = new LinkedHashSet<>(values.length);
         for (Object value : values) {
             if (value instanceof Enum<?> enumValue) {
-                value = enumValue.name();
+                value = XDataUtils.getEnumJsonValue(enumValue);
             }
             this.valueSet.add(value);
         }

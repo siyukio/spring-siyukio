@@ -1,5 +1,8 @@
 package io.github.siyukio.tools.util;
 
+import com.fasterxml.jackson.databind.EnumNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.EnumNaming;
+import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -70,12 +73,11 @@ public class XDataUtilsTest {
 
     @Test
     void testEnum() {
-        String text = """
-                {
-                  "loginType": "USERNAME"
-                }
-                """;
-        EnumRequest enumRequest = XDataUtils.parse(text, EnumRequest.class);
+        EnumRequest enumRequest = EnumRequest.builder().loginType(LoginType.USERNAME).build();
+        JSONObject jsonRequest = XDataUtils.copy(enumRequest, JSONObject.class);
+
+        String text = XDataUtils.toPrettyJSONString(jsonRequest);
+        enumRequest = XDataUtils.parse(text, EnumRequest.class);
         log.info("{}", XDataUtils.toPrettyJSONString(enumRequest));
     }
 
@@ -85,6 +87,7 @@ public class XDataUtilsTest {
         log.info("testParseLocalDateTime: {}", localDateTime);
     }
 
+    @EnumNaming(EnumNamingStrategies.CamelCaseStrategy.class)
     public enum LoginType {
         USERNAME,
         PHONE,
@@ -93,6 +96,7 @@ public class XDataUtilsTest {
         APPLE
     }
 
+    @Builder
     public record EnumRequest(
             LoginType loginType
     ) {

@@ -14,20 +14,17 @@ public final class ArrayRequestValidator extends AbstractRequestValidator {
 
     private final RequestValidator requestValidator;
 
-    private int maxItems = 255;
-    private int minItems = 0;
+    private final Integer maxItems;
+    private final Integer minItems;
 
-    public ArrayRequestValidator(String name, boolean required, RequestValidator requestValidator, int maxItems, int minItems, String parent, String error) {
+    public ArrayRequestValidator(String name, Boolean required,
+                                 RequestValidator requestValidator,
+                                 Integer maxItems, Integer minItems,
+                                 String parent, String error) {
         super(name, required, parent, error);
         this.requestValidator = requestValidator;
-        if (minItems < 0) {
-            minItems = 0;
-        }
-        if (maxItems <= 0) {
-            maxItems = 255;
-        }
-        this.maxItems = Math.max(maxItems, minItems);
-        this.minItems = Math.min(maxItems, minItems);
+        this.maxItems = maxItems;
+        this.minItems = minItems;
     }
 
     @Override
@@ -45,7 +42,7 @@ public final class ArrayRequestValidator extends AbstractRequestValidator {
             try {
                 value = XDataUtils.parseArray(str);
             } catch (RuntimeException ex) {
-                throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_PARSE_ARRAY_FORMAT);
+                throw this.createApiException(ApiConstants.ERROR_PARAMETER_PARSE_ARRAY_FORMAT);
             }
         }
         //
@@ -92,11 +89,15 @@ public final class ArrayRequestValidator extends AbstractRequestValidator {
             }
         } else {
 
-            throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_REQUIRED_ARRAY_FORMAT);
+            throw this.createApiException(ApiConstants.ERROR_PARAMETER_REQUIRED_ARRAY_FORMAT);
         }
         //
-        if (result.length() > this.maxItems || result.length() < this.minItems) {
-            throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_REQUIRED_ARRAY_LIMIT_FORMAT, this.minItems, this.maxItems);
+        if (this.maxItems != null && result.length() > this.maxItems) {
+            throw this.createApiException(ApiConstants.ERROR_PARAMETER_REQUIRED_ARRAY_MAX_FORMAT, this.maxItems);
+        }
+
+        if (this.minItems != null && result.length() < this.minItems) {
+            throw this.createApiException(ApiConstants.ERROR_PARAMETER_REQUIRED_ARRAY_MIN_FORMAT, this.minItems);
         }
         return result;
     }

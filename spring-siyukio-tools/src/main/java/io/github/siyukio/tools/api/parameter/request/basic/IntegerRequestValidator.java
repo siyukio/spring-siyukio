@@ -10,26 +10,16 @@ import java.math.BigInteger;
  */
 public class IntegerRequestValidator extends AbstractRequestValidator {
 
-    private long maximum = -1;
+    private final Long maximum;
 
-    private long minimum = -1;
+    private final Long minimum;
 
-    private boolean numLimit = false;
-
-    public IntegerRequestValidator(String name, boolean required, long maximum, long minimum, String parent, String error) {
+    public IntegerRequestValidator(String name, Boolean required,
+                                   Long maximum, Long minimum,
+                                   String parent, String error) {
         super(name, required, parent, error);
         this.maximum = maximum;
         this.minimum = minimum;
-        if (minimum != -1) {
-            this.numLimit = true;
-        }
-        if (maximum != -1) {
-            this.numLimit = true;
-        }
-        if (minimum != -1 && maximum != -1) {
-            this.maximum = Math.max(maximum, minimum);
-            this.minimum = Math.min(maximum, minimum);
-        }
     }
 
     @Override
@@ -43,32 +33,28 @@ public class IntegerRequestValidator extends AbstractRequestValidator {
             try {
                 num = Long.parseLong(v);
             } catch (NumberFormatException e) {
-                throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_REQUIRED_INTEGER_FORMAT);
+                throw this.createApiException(ApiConstants.ERROR_PARAMETER_REQUIRED_INTEGER_FORMAT);
             }
         } else if (value instanceof Number) {
             if (value instanceof BigInteger) {
-                throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_REQUIRED_INTEGER_LIMIT_FORMAT, this.toNumLimitString(this.minimum), Integer.MAX_VALUE);
+                throw this.createApiException(ApiConstants.ERROR_PARAMETER_REQUIRED_INTEGER_MAX_FORMAT, Long.MAX_VALUE);
             } else if (value instanceof Double) {
-                throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_REQUIRED_INTEGER_FORMAT);
+                throw this.createApiException(ApiConstants.ERROR_PARAMETER_REQUIRED_INTEGER_FORMAT);
             } else {
                 num = ((Number) value).longValue();
             }
         } else {
-            throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_REQUIRED_INTEGER_FORMAT);
+            throw this.createApiException(ApiConstants.ERROR_PARAMETER_REQUIRED_INTEGER_FORMAT);
         }
 
-        if (this.numLimit) {
-            boolean isValid = this.maximum == -1 || num <= this.maximum;
-            if (isValid) {
-                if (this.minimum != -1 && num < this.minimum) {
-                    isValid = false;
-                }
-            }
-            if (!isValid) {
-                throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_REQUIRED_INTEGER_LIMIT_FORMAT, this.toNumLimitString(this.minimum), this.toNumLimitString(this.maximum));
-            }
+        if (this.maximum != null && num > this.maximum) {
+            throw this.createApiException(ApiConstants.ERROR_PARAMETER_REQUIRED_INTEGER_MAX_FORMAT, this.maximum);
         }
-        //
+
+        if (this.minimum != null && num < this.minimum) {
+            throw this.createApiException(ApiConstants.ERROR_PARAMETER_REQUIRED_INTEGER_MIN_FORMAT, this.minimum);
+        }
+
         return num;
     }
 

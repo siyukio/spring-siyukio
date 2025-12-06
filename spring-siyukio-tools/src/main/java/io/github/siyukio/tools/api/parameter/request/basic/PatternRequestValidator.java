@@ -15,7 +15,8 @@ public class PatternRequestValidator extends AbstractRequestValidator {
 
     private Pattern pattern = null;
 
-    public PatternRequestValidator(String key, boolean required, String regex, String parent, String message) {
+    public PatternRequestValidator(String key, Boolean required,
+                                   String regex, String parent, String message) {
         super(key, required, parent, message);
         this.regex = regex;
     }
@@ -32,7 +33,7 @@ public class PatternRequestValidator extends AbstractRequestValidator {
         }
         Matcher matcher = this.pattern.matcher(v);
         if (!matcher.matches()) {
-            throw this.createApiException(value, ApiConstants.ERROR_PARAMETER_REQUIRED_REGEX_FORMAT, this.regex);
+            throw this.createApiException(ApiConstants.ERROR_PARAMETER_REQUIRED_REGEX_FORMAT, this.regex);
         }
         return value;
     }

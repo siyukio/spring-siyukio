@@ -1,4 +1,4 @@
-package io.github.siyukio.tools.api.model;
+package io.github.siyukio.tools.api.dto;
 
 import io.github.siyukio.tools.api.annotation.ApiParameter;
 import lombok.Builder;
@@ -12,7 +12,7 @@ import java.util.List;
 @Builder
 @With
 public record TokenResponse(
-        
+
         @ApiParameter
         String uid,
 

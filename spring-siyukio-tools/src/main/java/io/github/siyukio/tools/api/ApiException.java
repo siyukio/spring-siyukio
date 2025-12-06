@@ -1,12 +1,17 @@
 package io.github.siyukio.tools.api;
 
-import io.github.siyukio.tools.api.constants.ApiConstants;
+import io.github.siyukio.tools.api.definition.ApiResponseParameter;
+import io.github.siyukio.tools.api.definition.ApiSchema;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Defines an API execution exception.
@@ -64,28 +69,37 @@ public final class ApiException extends RuntimeException {
         return new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.value(), message);
     }
 
-    public static JSONObject getErrorSchema() {
-        JSONObject codeParameter = new JSONObject();
-        codeParameter.put("name", "code");
-        codeParameter.put("description", "The error type that occurred");
-        codeParameter.put("type", ApiConstants.TYPE_INTEGER);
+    public static ApiResponseParameter getErrorResponseParameter() {
+        List<ApiResponseParameter> subResponseParameters = new ArrayList<>();
+        subResponseParameters.add(ApiResponseParameter.builder()
+                .name("code")
+                .schema(ApiSchema.builder()
+                        .type(ApiSchema.Type.INTEGER)
+                        .description("The error type that occurred")
+                        .build())
+                .build());
 
-        JSONObject messageParameter = new JSONObject();
-        messageParameter.put("name", "message");
-        messageParameter.put("description", "A short description of the error. The message SHOULD be limited to a concise single sentence");
-        messageParameter.put("type", ApiConstants.TYPE_STRING);
+        subResponseParameters.add(ApiResponseParameter.builder()
+                .name("message")
+                .schema(ApiSchema.builder()
+                        .type(ApiSchema.Type.STRING)
+                        .description("A short description of the error.")
+                        .build())
+                .build());
 
-        JSONArray childArray = new JSONArray();
-        childArray.put(codeParameter);
-        childArray.put(messageParameter);
+        Map<String, ApiSchema> map = new LinkedHashMap<>();
+        for (ApiResponseParameter apiResponseParameter : subResponseParameters) {
+            map.put(apiResponseParameter.name(), apiResponseParameter.schema());
+        }
 
-        JSONObject errorParameter = new JSONObject();
-        errorParameter.put("name", "error");
-        errorParameter.put("description", "Error information if the request failed");
-        errorParameter.put("type", ApiConstants.TYPE_OBJECT);
-        errorParameter.put("additionalProperties", false);
-        errorParameter.put("childArray", childArray);
-        return errorParameter;
+        return ApiResponseParameter.builder()
+                .name("error")
+                .schema(ApiSchema.builder()
+                        .type(ApiSchema.Type.OBJECT)
+                        .properties(map)
+                        .build())
+                .properties(subResponseParameters)
+                .build();
     }
 
     public JSONObject toJson() {

@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.StringUtils;
 
 import java.util.Map;
 import java.util.SortedMap;
@@ -20,25 +19,6 @@ public abstract class OpenApiUtils {
 
     @Autowired
     private ApiDefinitionManager apiDefinitionManager;
-
-    public static JSONObject createArrayResponse(JSONObject arrayParamJson) {
-        JSONObject requestParamJson = new JSONObject();
-        //type
-        requestParamJson.put("type", "array");
-        //items
-        JSONObject itemsJson;
-        JSONObject arrayItemJson = arrayParamJson.optJSONObject("items");
-        String itemType = arrayItemJson.optString("type");
-        if (itemType.equals("object")) {
-            JSONArray itemsChildArray = arrayItemJson.optJSONArray("childArray");
-            itemsJson = createObjectResponse(itemsChildArray);
-        } else {
-            itemsJson = new JSONObject();
-            itemsJson.put("type", itemType);
-        }
-        requestParamJson.put("items", itemsJson);
-        return requestParamJson;
-    }
 
     public static JSONObject createOpenApi(String host, SortedMap<String, ApiDefinition> sortedMap) {
         //OpenApi
@@ -136,131 +116,8 @@ public abstract class OpenApiUtils {
         requestBodyContentJson.put("application/json", applicationJson);
 
         //content.application/json.schema
-        JSONObject schemaJson = createObjectRequest(apiDefinition.requestParameters());
-        applicationJson.put("schema", schemaJson);
+        applicationJson.put("schema", apiDefinition.requestBodyParameter().schema());
         return requestBodyJson;
-    }
-
-    public static JSONObject createObjectRequest(JSONArray requestParameters) {
-        JSONObject requestParamJson = new JSONObject();
-        if (requestParameters.isEmpty()) {
-            requestParamJson.put("additionalProperties", true);
-            requestParamJson.put("type", "object");
-            return requestParamJson;
-        }
-        //type
-        requestParamJson.put("type", "object");
-        //required
-        JSONArray requiredArray = new JSONArray();
-        if (!requiredArray.isEmpty()) {
-            requestParamJson.put("required", requiredArray);
-        }
-        //properties
-        JSONObject propertiesJson = new JSONObject();
-        requestParamJson.put("properties", propertiesJson);
-        //
-        JSONObject childParam;
-        String type;
-        boolean required;
-        String name;
-        String description;
-        JSONObject propJson;
-        JSONArray itemsChildArray;
-        for (int index = 0; index < requestParameters.length(); index++) {
-            childParam = requestParameters.getJSONObject(index);
-            type = childParam.optString("type");
-            required = childParam.optBoolean("required");
-            name = childParam.optString("name");
-            description = childParam.optString("description");
-            if (required) {
-                requiredArray.put(name);
-            }
-            switch (type) {
-                case "object":
-                    itemsChildArray = childParam.optJSONArray("childArray");
-                    propJson = createObjectRequest(itemsChildArray);
-                    if (childParam.has("example")) {
-                        propJson.put("example", childParam.opt("example"));
-                    }
-                    if (childParam.has("examples")) {
-                        propJson.put("examples", childParam.opt("examples"));
-                    }
-                    break;
-                case "array":
-                    propJson = createArrayRequest(childParam);
-                    break;
-                default:
-                    propJson = new JSONObject();
-                    if (type.equals("date")) {
-                        propJson.put("type", "string");
-                    } else {
-                        propJson.put("type", type);
-                    }
-                    if (childParam.has("minimum")) {
-                        propJson.put("minimum", childParam.opt("minimum"));
-                    }
-                    if (childParam.has("maximum")) {
-                        propJson.put("maximum", childParam.opt("maximum"));
-                    }
-                    if (childParam.has("format")) {
-                        propJson.put("format", childParam.opt("format"));
-                    }
-                    if (childParam.has("pattern")) {
-                        propJson.put("pattern", childParam.opt("pattern"));
-                    }
-                    if (childParam.has("maxLength")) {
-                        propJson.put("maxLength", childParam.opt("maxLength"));
-                    }
-                    if (childParam.has("minLength")) {
-                        propJson.put("minLength", childParam.opt("minLength"));
-                    }
-                    if (childParam.has("example")) {
-                        propJson.put("example", childParam.opt("example"));
-                    }
-                    if (childParam.has("examples")) {
-                        propJson.put("examples", childParam.opt("examples"));
-                    }
-                    if (childParam.has("default")) {
-                        propJson.put("default", childParam.opt("default"));
-                    }
-                    break;
-            }
-            if (StringUtils.hasText(description)) {
-                propJson.put("description", description);
-            }
-            propertiesJson.put(name, propJson);
-        }
-        return requestParamJson;
-    }
-
-    public static JSONObject createArrayRequest(JSONObject arrayParamJson) {
-        JSONObject requestParamJson = new JSONObject();
-        //type
-        requestParamJson.put("type", "array");
-        //items
-        JSONObject itemsJson;
-        JSONObject arrayItemJson = arrayParamJson.optJSONObject("items");
-        String itemType = arrayItemJson.optString("type");
-        if (itemType.equals("object")) {
-            JSONArray itemsChildArray = arrayItemJson.optJSONArray("childArray");
-            itemsJson = createObjectRequest(itemsChildArray);
-        } else {
-            itemsJson = arrayItemJson;
-        }
-        requestParamJson.put("items", itemsJson);
-        if (arrayParamJson.has("example")) {
-            requestParamJson.put("example", arrayParamJson.opt("example"));
-        }
-        if (arrayParamJson.has("examples")) {
-            requestParamJson.put("examples", arrayParamJson.opt("examples"));
-        }
-        if (arrayParamJson.has("maxItems")) {
-            requestParamJson.put("maxItems", arrayParamJson.opt("maxItems"));
-        }
-        if (arrayParamJson.has("minItems")) {
-            requestParamJson.put("minItems", arrayParamJson.opt("minItems"));
-        }
-        return requestParamJson;
     }
 
     public static JSONObject createResponses(ApiDefinition apiDefinition) {
@@ -279,65 +136,8 @@ public abstract class OpenApiUtils {
         requestBodyContentJson.put("application/json", applicationJson);
 
         //content.application/json.schema
-        JSONObject schemaJson = createObjectResponse(apiDefinition.responseParameters());
-        applicationJson.put("schema", schemaJson);
+        applicationJson.put("schema", apiDefinition.responseBodyParameter().schema());
         return responseJson;
-    }
-
-    public static JSONObject createObjectResponse(JSONArray responseParamArray) {
-        JSONObject responseParamJson = new JSONObject();
-        if (responseParamArray.isEmpty()) {
-            responseParamJson.put("additionalProperties", true);
-            responseParamJson.put("type", "object");
-            return responseParamJson;
-        }
-        //type
-        responseParamJson.put("type", "object");
-        //required
-        JSONArray requiredArray = new JSONArray();
-        if (!requiredArray.isEmpty()) {
-            responseParamJson.put("required", requiredArray);
-        }
-        //properties
-        JSONObject propertiesJson = new JSONObject();
-        responseParamJson.put("properties", propertiesJson);
-        //
-        JSONObject childParam;
-        String type;
-        String name;
-        String description;
-        JSONObject propJson;
-        JSONArray itemsChildArray;
-
-        for (int index = 0; index < responseParamArray.length(); index++) {
-            childParam = responseParamArray.getJSONObject(index);
-            type = childParam.optString("type");
-            name = childParam.optString("name");
-            description = childParam.optString("description");
-            switch (type) {
-                case "object":
-                    itemsChildArray = childParam.optJSONArray("childArray");
-                    propJson = createObjectResponse(itemsChildArray);
-                    break;
-                case "array":
-                    propJson = createArrayResponse(childParam);
-                    break;
-                default:
-                    propJson = new JSONObject();
-                    if (type.equals("date")) {
-                        propJson.put("type", "string");
-                        propJson.put("format", "date-time");
-                    } else {
-                        propJson.put("type", type);
-                    }
-                    break;
-            }
-            if (StringUtils.hasText(description)) {
-                propJson.put("description", description);
-            }
-            propertiesJson.put(name, propJson);
-        }
-        return responseParamJson;
     }
 
 }

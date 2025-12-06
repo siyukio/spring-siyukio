@@ -64,7 +64,7 @@ class ParameterControllerTests {
     @Test
     void testEnumError() {
         JSONObject requestJson = new JSONObject();
-        requestJson.put("loginType", "username");
+        requestJson.put("loginType", "USERNAME");
         JSONObject resultJson = this.apiMock.perform("/enum/test", requestJson);
         log.info("{}", requestJson);
         log.info("{}", resultJson);

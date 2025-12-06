@@ -2,8 +2,10 @@ package io.github.siyukio.tools.util;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.annotation.EnumNaming;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -13,8 +15,10 @@ import org.json.JSONObject;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -48,7 +52,7 @@ public abstract class XDataUtils {
     );
 
     static {
-        // Supports LocalDateTime
+        // LocalDateTime
         JavaTimeModule javaTimeModule = new JavaTimeModule();
         javaTimeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSmartSerializer());
         javaTimeModule.addDeserializer(LocalDateTime.class, new MultiFormatLocalDateTimeDeserializer());
@@ -65,11 +69,11 @@ public abstract class XDataUtils {
         // Others...
         OBJECT_MAPPER.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         OBJECT_MAPPER.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-//        OBJECT_MAPPER.disable(MapperFeature.DEFAULT_VIEW_INCLUSION);
 
-        OBJECT_MAPPER.getFactory().enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION.mappedFeature());
+        OBJECT_MAPPER.enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION.mappedFeature());
 
-        OBJECT_MAPPER.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+        OBJECT_MAPPER.enable(JsonReadFeature.ALLOW_JAVA_COMMENTS.mappedFeature());
+        OBJECT_MAPPER.enable(JsonReadFeature.ALLOW_TRAILING_COMMA.mappedFeature());
 
         // Config xml
         XML_MAPPER.registerModule(javaTimeModule);
@@ -297,6 +301,48 @@ public abstract class XDataUtils {
             return XML_MAPPER.reader().readValue(xml, JSONObject.class);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
+        }
+    }
+
+    public static String getEnumPattern(Class<?> typeClass) {
+        Object[] values = typeClass.getEnumConstants();
+        List<String> items;
+        if (typeClass.isAnnotationPresent(EnumNaming.class)) {
+            EnumNaming enumNaming = typeClass.getAnnotation(EnumNaming.class);
+            if (enumNaming.value() == EnumNamingStrategies.CamelCaseStrategy.class) {
+                items = Arrays.stream(values).map(item -> EnumNamingStrategies.CamelCaseStrategy.INSTANCE.convertEnumToExternalName(String.valueOf(item))).toList();
+            } else {
+                try {
+                    EnumNamingStrategy enumNamingStrategy = enumNaming.value().getDeclaredConstructor().newInstance();
+                    items = Arrays.stream(values).map(item -> enumNamingStrategy.convertEnumToExternalName(String.valueOf(item))).toList();
+                } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                         NoSuchMethodException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        } else {
+            items = Arrays.stream(values).map(String::valueOf).toList();
+        }
+        return String.join("|", items);
+    }
+
+    public static <T extends Enum<?>> String getEnumJsonValue(T enumValue) {
+        Class<?> typeClass = enumValue.getClass();
+        if (typeClass.isAnnotationPresent(EnumNaming.class)) {
+            EnumNaming enumNaming = typeClass.getAnnotation(EnumNaming.class);
+            if (enumNaming.value() == EnumNamingStrategies.CamelCaseStrategy.class) {
+                return EnumNamingStrategies.CamelCaseStrategy.INSTANCE.convertEnumToExternalName(String.valueOf(enumValue));
+            } else {
+                try {
+                    EnumNamingStrategy enumNamingStrategy = enumNaming.value().getDeclaredConstructor().newInstance();
+                    return enumNamingStrategy.convertEnumToExternalName(String.valueOf(enumValue));
+                } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                         NoSuchMethodException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        } else {
+            return String.valueOf(enumValue);
         }
     }
 
