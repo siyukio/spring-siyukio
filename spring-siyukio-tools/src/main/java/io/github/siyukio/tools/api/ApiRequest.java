@@ -13,7 +13,9 @@ import java.util.Map;
 @With
 public record ApiRequest(
 
-        Map<String, String> parameterMap,
+        Map<String, String> parameters,
+
+        Map<String, String> headers,
 
         String ip,
 

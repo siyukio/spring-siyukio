@@ -21,6 +21,7 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -49,6 +50,15 @@ public final class RequestArgumentResolver implements HandlerMethodArgumentResol
             simpleParameterMap.put(entry.getKey(), entry.getValue()[0]);
         }
 
+        //headers
+        Map<String, String> headerMap = new HashMap<>();
+        Enumeration<String> enumeration = httpServletRequest.getHeaderNames();
+        String headerName;
+        while (enumeration.hasMoreElements()) {
+            headerName = enumeration.nextElement();
+            headerMap.put(headerName, httpServletRequest.getHeader(headerName));
+        }
+
         String body = String.valueOf(httpServletRequest.getAttribute(ApiConstants.ATTRIBUTE_REQUEST_BODY));
         String ip = httpServletRequest.getHeader("X-FORWARDED-FOR");
         if (!StringUtils.hasText(ip)) {
@@ -66,7 +76,7 @@ public final class RequestArgumentResolver implements HandlerMethodArgumentResol
         if (userAgent == null) {
             userAgent = "";
         }
-        return new ApiRequest(simpleParameterMap, ip, body, userAgent);
+        return new ApiRequest(headerMap, simpleParameterMap, ip, body, userAgent);
     }
 
     private String getRequestBody(HttpServletRequest httpServletRequest) throws IOException {
