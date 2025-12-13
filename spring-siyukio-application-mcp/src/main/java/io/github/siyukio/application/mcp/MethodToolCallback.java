@@ -152,7 +152,10 @@ public class MethodToolCallback {
 
         this.apiHandler.responseFilter().filter(resultJson);
 
-        return new McpSchema.CallToolResult(List.of(), false, resultJson.toMap());
+        // CallToolResult content collection cannot be empty,
+        // otherwise it will automatically convert structuredContent to content during output,
+        // causing duplicate JSON output
+        return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("")), false, resultJson.toMap());
     }
 
     private Token getToken(McpSyncServerExchange exchange) {
