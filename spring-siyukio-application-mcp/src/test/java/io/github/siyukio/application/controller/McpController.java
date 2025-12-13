@@ -1,7 +1,9 @@
 package io.github.siyukio.application.controller;
 
 import io.github.siyukio.application.dto.authorization.CreateAuthorizationRequest;
-import io.github.siyukio.application.dto.authorization.CreateResponseResponse;
+import io.github.siyukio.application.dto.authorization.CreateAuthorizationResponse;
+import io.github.siyukio.application.dto.authorization.RefreshAuthorizationRequest;
+import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.api.annotation.ApiController;
 import io.github.siyukio.tools.api.annotation.ApiMapping;
 import io.github.siyukio.tools.api.dto.TokenResponse;
@@ -35,21 +37,39 @@ public class McpController {
                     A utility tool that authenticates with the target service and returns a valid JWT token for subsequent API requests.
                     """
     )
-    public CreateResponseResponse createAuthorization(CreateAuthorizationRequest createAuthorizationRequest) {
+    public CreateAuthorizationResponse createAuthorization(CreateAuthorizationRequest createAuthorizationRequest) {
         log.info("{}", XDataUtils.toPrettyJSONString(createAuthorizationRequest));
-        Token token = Token.builder().uid(createAuthorizationRequest.uid())
-                .name(createAuthorizationRequest.name())
-                .roles(createAuthorizationRequest.roles())
-                .refresh(false).build();
-        String authorization = this.tokenProvider.createAuthorization(token);
-        return CreateResponseResponse.builder()
-                .authorization(authorization)
+        Token refreshToken = Token.builder()
+                .uid(createAuthorizationRequest.uid()).name(createAuthorizationRequest.name()).roles(List.of()).refresh(true)
+                .build();
+        String refreshTokenAuth = this.tokenProvider.createAuthorization(refreshToken);
+
+        Token accessToken = refreshToken.createAccessToken();
+        String accessTokenAuth = this.tokenProvider.createAuthorization(accessToken);
+
+        return CreateAuthorizationResponse.builder()
+                .accessToken(accessTokenAuth)
+                .refreshToken(refreshTokenAuth)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
+    @ApiMapping(path = "/authorization/refresh", authorization = false, mcpTool = true)
+    public CreateAuthorizationResponse refreshAuthorization(RefreshAuthorizationRequest refreshAuthorizationRequest) {
+        Token refreshToken = this.tokenProvider.verifyToken(refreshAuthorizationRequest.refreshToken());
+        if (refreshToken == null || !refreshToken.refresh()) {
+            throw new ApiException("Invalid refresh token");
+        }
+        Token accessToken = refreshToken.createAccessToken();
+        String authorization = this.tokenProvider.createAuthorization(accessToken);
+        return CreateAuthorizationResponse.builder()
+                .accessToken(authorization)
                 .createdAt(LocalDateTime.now())
                 .build();
     }
 
     @ApiMapping(path = "/mock/simulateRandomResponse", authorization = false, mcpTool = true)
-    public CreateResponseResponse simulateRandomResponse(CreateAuthorizationRequest createAuthorizationRequest) {
+    public CreateAuthorizationResponse simulateRandomResponse(CreateAuthorizationRequest createAuthorizationRequest) {
         log.info("{},{}", createAuthorizationRequest.uid(), "start");
         Token token = Token.builder().uid(createAuthorizationRequest.uid())
                 .name(createAuthorizationRequest.name())
@@ -64,8 +84,8 @@ public class McpController {
         }
         log.info("{},{}", createAuthorizationRequest.uid(), "finished");
 
-        return CreateResponseResponse.builder()
-                .authorization(authorization).build();
+        return CreateAuthorizationResponse.builder()
+                .accessToken(authorization).build();
     }
 
     @ApiMapping(path = "/token/get", mcpTool = true)

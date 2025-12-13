@@ -4,19 +4,15 @@ import io.github.siyukio.tools.api.annotation.ApiParameter;
 import lombok.Builder;
 import lombok.With;
 
-import java.time.LocalDateTime;
-
 /**
- * @author Buddy
+ * @author Bugee
  */
 @Builder
 @With
-public record CreateResponseResponse(
+public record RefreshAuthorizationRequest(
 
         @ApiParameter
-        String authorization,
-
-        @ApiParameter
-        LocalDateTime createdAt
+        String refreshToken
 ) {
+
 }

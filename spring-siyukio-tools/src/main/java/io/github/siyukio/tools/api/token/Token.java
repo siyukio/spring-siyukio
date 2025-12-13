@@ -38,7 +38,7 @@ public record Token(
         boolean refresh
 ) {
 
-    public Token toAccessToken() {
+    public Token createAccessToken() {
         if (!this.refresh) {
             throw new IllegalStateException("Only refresh token can be converted to access token.");
         }
