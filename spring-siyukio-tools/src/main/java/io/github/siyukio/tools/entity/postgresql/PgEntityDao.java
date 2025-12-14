@@ -166,8 +166,8 @@ public interface PgEntityDao<T> {
      * @param queryBuilder query criteria (may be {@code null} for no filter)
      * @param sort         sorting specification (may be {@code null})
      * @param page         one-based page index (implementation may use zero-based internally)
-     * @param pageSize     number of items per page
+     * @param size         number of items per page
      * @return a {@link Page} containing the requested page of entities and metadata
      */
-    Page<T> queryPage(QueryBuilder queryBuilder, SortBuilder sort, int page, int pageSize);
+    Page<T> queryPage(QueryBuilder queryBuilder, SortBuilder sort, int page, int size);
 }

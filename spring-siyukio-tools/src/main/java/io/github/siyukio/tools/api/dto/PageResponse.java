@@ -13,10 +13,10 @@ import java.util.List;
 @With
 public record PageResponse<T>(
 
-        @ApiParameter(description = "total number of records")
+        @ApiParameter(description = "Total number of items")
         int total,
 
-        @ApiParameter(description = "data items")
+        @ApiParameter(description = "List of items")
         List<T> items
 ) {
 }

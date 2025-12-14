@@ -9,13 +9,13 @@ import reactor.util.annotation.Nullable;
 @With
 public record PageRequest<T>(
 
-        @ApiParameter(description = "page number", minimum = 1, maximum = 1000, required = false, defaultValue = "1")
+        @ApiParameter(description = "Page number", minimum = 1, maximum = 1000, required = false, defaultValue = "1")
         Integer page,
 
-        @ApiParameter(description = "number of records per page.", minimum = 1, maximum = 1000, required = false, defaultValue = "20")
-        Integer pageSize,
+        @ApiParameter(description = "Number of items per page", minimum = 1, maximum = 1000, required = false, defaultValue = "20")
+        Integer size,
 
-        @ApiParameter(description = "data filter", required = false)
+        @ApiParameter(description = "Query parameters", required = false)
         @Nullable
         T filter
 ) {
