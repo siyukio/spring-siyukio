@@ -1,8 +1,8 @@
 package io.github.siyukio.application.controller;
 
-import io.github.siyukio.application.dto.authorization.CreateAuthorizationRequest;
-import io.github.siyukio.application.dto.authorization.CreateAuthorizationResponse;
-import io.github.siyukio.application.dto.authorization.RefreshAuthorizationRequest;
+import io.github.siyukio.application.dto.CreateAuthorizationRequest;
+import io.github.siyukio.application.dto.CreateAuthorizationResponse;
+import io.github.siyukio.application.dto.RefreshAuthorizationRequest;
 import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.api.annotation.ApiController;
 import io.github.siyukio.tools.api.annotation.ApiMapping;
@@ -122,6 +122,7 @@ public class McpController {
             exchange.progressNotification(progressNotification);
 
         }
-        return TokenResponse.builder().build();
+        return TokenResponse.builder()
+                .name("ok").build();
     }
 }

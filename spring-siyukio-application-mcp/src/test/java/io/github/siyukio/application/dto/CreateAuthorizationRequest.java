@@ -1,10 +1,9 @@
-package io.github.siyukio.application.dto.authorization;
+package io.github.siyukio.application.dto;
 
 import io.github.siyukio.tools.api.annotation.ApiParameter;
 import lombok.Builder;
 import lombok.With;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -21,10 +20,7 @@ public record CreateAuthorizationRequest(
         String name,
 
         @ApiParameter(required = false)
-        List<String> roles,
-
-        @ApiParameter(required = false)
-        LocalDateTime requestAt
+        List<String> roles
 ) {
 
 }

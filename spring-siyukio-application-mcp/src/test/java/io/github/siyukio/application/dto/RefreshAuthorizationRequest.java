@@ -1,4 +1,4 @@
-package io.github.siyukio.application.dto.authorization;
+package io.github.siyukio.application.dto;
 
 import io.github.siyukio.tools.api.annotation.ApiParameter;
 import lombok.Builder;

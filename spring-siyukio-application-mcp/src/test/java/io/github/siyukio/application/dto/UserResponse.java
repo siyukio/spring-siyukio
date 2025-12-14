@@ -1,23 +1,22 @@
-package io.github.siyukio.application.dto.authorization;
+package io.github.siyukio.application.dto;
 
 import io.github.siyukio.tools.api.annotation.ApiParameter;
 import lombok.Builder;
-import lombok.With;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
-/**
- * @author Buddy
- */
 @Builder
-@With
-public record CreateAuthorizationResponse(
+public record UserResponse(
 
         @ApiParameter
-        String accessToken,
+        String id,
 
         @ApiParameter
-        String refreshToken,
+        String nickname,
+
+        @ApiParameter
+        List<String> roles,
 
         @ApiParameter
         LocalDateTime createdAt

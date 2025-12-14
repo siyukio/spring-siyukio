@@ -1,6 +1,6 @@
 package io.github.siyukio.application.test;
 
-import io.github.siyukio.application.dto.authorization.CreateAuthorizationRequest;
+import io.github.siyukio.application.dto.CreateAuthorizationRequest;
 import io.github.siyukio.tools.api.ApiMock;
 import io.github.siyukio.tools.api.token.Token;
 import lombok.extern.slf4j.Slf4j;
