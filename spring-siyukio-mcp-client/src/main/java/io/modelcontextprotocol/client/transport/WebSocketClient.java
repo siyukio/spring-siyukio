@@ -6,7 +6,6 @@ import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
-import reactor.core.scheduler.Schedulers;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -110,16 +109,17 @@ public class WebSocketClient {
     }
 
     private void handleText(String text) {
-        Mono.fromRunnable(() -> {
-            log.debug("handleText: {}", text);
-            WebSocketMessage websocketMessage = XDataUtils.parse(text, WebSocketMessage.class);
-            CompletableFuture<WebSocketMessage> future = this.pendingMap.remove(websocketMessage.id());
-            if (future == null) {
-                this.incomingSink.tryEmitNext(websocketMessage);
-            } else {
-                future.complete(websocketMessage);
+        WebSocketMessage websocketMessage = XDataUtils.parse(text, WebSocketMessage.class);
+        CompletableFuture<WebSocketMessage> future = this.pendingMap.remove(websocketMessage.id());
+        if (future == null) {
+            log.debug("tryEmitNext webSocketMessage: {}", text);
+            Sinks.EmitResult result = this.incomingSink.tryEmitNext(websocketMessage);
+            if (result != Sinks.EmitResult.OK) {
+                log.error("tryEmitNext webSocketMessage error: {}", text);
             }
-        }).subscribeOn(Schedulers.boundedElastic()).subscribe();
+        } else {
+            future.complete(websocketMessage);
+        }
     }
 
     private boolean sendTextMessage(String text) {

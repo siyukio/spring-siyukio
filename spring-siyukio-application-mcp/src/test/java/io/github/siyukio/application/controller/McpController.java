@@ -112,14 +112,16 @@ public class McpController {
         if (exchange != null) {
             log.info("getTokenByProgress exchange: {}", exchange.getClientInfo());
 
-            JSONObject messageJson = new JSONObject();
-            messageJson.put("data", "hello");
-            McpSchema.ProgressNotification progressNotification = new McpSchema.ProgressNotification(
-                    "",
-                    0d, 0d,
-                    XDataUtils.toJSONString(messageJson)
-            );
-            exchange.progressNotification(progressNotification);
+            for (int i = 0; i < 3; i++) {
+                JSONObject messageJson = new JSONObject();
+                messageJson.put("data", i);
+                McpSchema.ProgressNotification progressNotification = new McpSchema.ProgressNotification(
+                        "",
+                        0d, 0d,
+                        XDataUtils.toJSONString(messageJson)
+                );
+                exchange.progressNotification(progressNotification);
+            }
 
         }
         return TokenResponse.builder()
