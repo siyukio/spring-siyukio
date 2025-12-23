@@ -3,6 +3,7 @@ package io.modelcontextprotocol.server.transport;
 import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
+import io.github.siyukio.tools.util.AsyncUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -147,7 +148,7 @@ public class WebSocketHandler extends TextWebSocketHandler implements HandshakeH
                     webSocketStreamableServerTransportProvider.handlePost(webSocketServerSession, websocketMessage);
                 }
             }
-        }).subscribeOn(Schedulers.boundedElastic()).subscribe();
+        }).subscribeOn(Schedulers.fromExecutor(AsyncUtils.VIRTUAL_EXECUTOR_SERVICE)).subscribe();
     }
 
     @Override

@@ -12,11 +12,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public abstract class AsyncUtils {
 
     private final static String ASYNC_THREAD_PREFIX = "siyukio-task-";
-
-    private final static ScheduledExecutorService SCHEDULED_EXECUTOR_SERVICE = Executors.newSingleThreadScheduledExecutor();
-    private final static ExecutorService VIRTUAL_EXECUTOR_SERVICE = Executors.newThreadPerTaskExecutor(Thread.ofVirtual()
+    public final static ExecutorService VIRTUAL_EXECUTOR_SERVICE = Executors.newThreadPerTaskExecutor(Thread.ofVirtual()
             .name(ASYNC_THREAD_PREFIX, 0)
             .factory());
+    private final static ScheduledExecutorService SCHEDULED_EXECUTOR_SERVICE = Executors.newSingleThreadScheduledExecutor();
     private final static AtomicInteger ATOMIC_INTEGER = new AtomicInteger(0);
 
     public static boolean isAsyncThread() {
