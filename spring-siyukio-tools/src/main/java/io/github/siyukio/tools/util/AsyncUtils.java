@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public abstract class AsyncUtils {
 
-    private final static String ASYNC_THREAD_PREFIX = "siyukio-task-";
+    private final static String ASYNC_THREAD_PREFIX = "siyukio-virtual-";
     public final static ExecutorService VIRTUAL_EXECUTOR_SERVICE = Executors.newThreadPerTaskExecutor(Thread.ofVirtual()
             .name(ASYNC_THREAD_PREFIX, 0)
             .factory());
