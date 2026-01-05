@@ -46,6 +46,16 @@ public class MethodToolCallback {
         return Collections.unmodifiableList(SYNC_TOOL_SPECIFICATIONS_CACHES);
     }
 
+    private static McpSchema.CallToolResult createCallToolResult(Boolean isError, JSONObject responseJson) {
+        // CallToolResult content collection cannot be empty,
+        // otherwise it will automatically convert structuredContent to content during output,
+        // causing duplicate JSON output.
+        // see StructuredOutputCallToolHandler.java
+        return McpSchema.CallToolResult.builder().isError(isError)
+                .structuredContent(responseJson.toMap())
+                .addTextContent("").build();
+    }
+
     public static McpServerFeatures.SyncToolSpecification toSyncToolSpecification(String path, ApiHandler apiHandler) {
         String name = path;
         if (name.startsWith("/")) {
@@ -83,12 +93,12 @@ public class MethodToolCallback {
                     } catch (ApiException ex) {
                         JSONObject responseJson = ex.toJson();
                         String text = XDataUtils.toJSONString(responseJson);
-                        return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(text)), true);
+                        return new McpSchema.CallToolResult(text, true);
                     } catch (Exception e) {
                         ApiException apiException = ApiException.getUnknownApiException(e);
                         JSONObject responseJson = apiException.toJson();
                         String text = XDataUtils.toJSONString(responseJson);
-                        return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(text)), true);
+                        return new McpSchema.CallToolResult(text, true);
                     }
                 }).build();
     }
@@ -101,7 +111,7 @@ public class MethodToolCallback {
         if (apiDefinition.authorization()) {
             if (token == null) {
                 ApiException exception = new ApiException(HttpStatus.UNAUTHORIZED);
-                return new McpSchema.CallToolResult(List.of(), true, exception.toJson().toMap());
+                return createCallToolResult(true, exception.toJson());
             }
 
             //validate authorization
@@ -113,7 +123,7 @@ public class MethodToolCallback {
                 }
                 if (roleSet.isEmpty()) {
                     ApiException exception = new ApiException(HttpStatus.FORBIDDEN);
-                    return new McpSchema.CallToolResult(List.of(), true, exception.toJson().toMap());
+                    return createCallToolResult(true, exception.toJson());
                 }
             }
         }
@@ -134,28 +144,25 @@ public class MethodToolCallback {
         } catch (IllegalAccessException | IllegalArgumentException ex) {
             log.error("callTool error:{}, {}", this.name, ex.getMessage());
             ApiException exception = ApiException.getUnknownApiException(ex);
-            return new McpSchema.CallToolResult(List.of(), true, exception.toJson().toMap());
+            return createCallToolResult(true, exception.toJson());
         } catch (InvocationTargetException ex) {
             Throwable throwable = ex.getTargetException();
             log.error("callTool error: {}, {}", this.name, throwable.getMessage());
             ApiException exception = ApiException.getUnknownApiException(ex);
-            return new McpSchema.CallToolResult(List.of(), true, exception.toJson().toMap());
+            return createCallToolResult(true, exception.toJson());
         }
         //
         Class<?> returnType = apiDefinition.realReturnType();
         //
         if (returnType == void.class) {
-            return new McpSchema.CallToolResult(List.of(), false, Map.of());
+            return createCallToolResult(false, new JSONObject());
         }
 
         JSONObject resultJson = XDataUtils.copy(resultValue, JSONObject.class);
 
         this.apiHandler.responseFilter().filter(resultJson);
 
-        // CallToolResult content collection cannot be empty,
-        // otherwise it will automatically convert structuredContent to content during output,
-        // causing duplicate JSON output
-        return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("")), false, resultJson.toMap());
+        return createCallToolResult(false, resultJson);
     }
 
     private Token getToken(McpSyncServerExchange exchange) {
