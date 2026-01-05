@@ -93,7 +93,10 @@ public class McpController {
         if (exchange != null) {
             log.info("getToken exchange: {}", exchange.getClientInfo());
             Map<String, Object> metadata = XDataUtils.copy(token, Map.class, String.class, Object.class);
+            // Starting from version 0.14.1, maxToken needs to be manually set to a default value,
+            // otherwise the client will return a parameter validation error and interrupt the request
             McpSchema.CreateMessageRequest request = McpSchema.CreateMessageRequest.builder()
+                    .maxTokens(0)
                     .metadata(metadata)
                     .messages(List.of())
                     .build();
