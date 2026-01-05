@@ -29,7 +29,7 @@ public record WebSocketMessage(
     }
 
     public McpSchema.JSONRPCMessage deserializeJsonRpcMessage() {
-        ObjectMapper objectMapper = XDataUtils.getObjectMapper();
+        ObjectMapper objectMapper = XDataUtils.OBJECT_MAPPER;
         // Determine message type based on specific JSON structure
         if (this.body.has("method") && this.body.has("id")) {
             return objectMapper.convertValue(this.body, McpSchema.JSONRPCRequest.class);

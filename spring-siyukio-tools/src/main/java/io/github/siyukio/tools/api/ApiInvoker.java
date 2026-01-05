@@ -56,7 +56,7 @@ public class ApiInvoker {
                 if (subType == null) {
                     obj = XDataUtils.copy(requestBody, parameter.getType());
                 } else {
-                    JavaType javaType = XDataUtils.getObjectMapper().getTypeFactory().constructParametricType(parameter.getType(), subType);
+                    JavaType javaType = XDataUtils.OBJECT_MAPPER.getTypeFactory().constructParametricType(parameter.getType(), subType);
                     obj = XDataUtils.copy(requestBody, javaType);
                 }
             } else {

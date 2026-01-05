@@ -108,7 +108,7 @@ public class ApiMock {
 
     public <O, I, T> T perform(String path, Object request, Class<O> outerClass, final Class<I> innerClass) {
         JSONObject responseJson = this.perform(path, request);
-        JavaType type = XDataUtils.getObjectMapper().getTypeFactory().constructParametricType(outerClass, innerClass);
+        JavaType type = XDataUtils.OBJECT_MAPPER.getTypeFactory().constructParametricType(outerClass, innerClass);
         return XDataUtils.copy(responseJson, type);
     }
 
@@ -119,7 +119,7 @@ public class ApiMock {
 
     public <O, I, T> T perform(String path, String subPath, Object request, Class<O> outerClass, final Class<I> innerClass) {
         JSONObject responseJson = this.perform(path + subPath, request);
-        JavaType type = XDataUtils.getObjectMapper().getTypeFactory().constructParametricType(outerClass, innerClass);
+        JavaType type = XDataUtils.OBJECT_MAPPER.getTypeFactory().constructParametricType(outerClass, innerClass);
         return XDataUtils.copy(responseJson, type);
     }
 }

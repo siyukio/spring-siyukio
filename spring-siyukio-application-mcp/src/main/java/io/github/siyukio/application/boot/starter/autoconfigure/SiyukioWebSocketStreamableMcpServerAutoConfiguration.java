@@ -63,7 +63,7 @@ public class SiyukioWebSocketStreamableMcpServerAutoConfiguration implements Web
             }
             return McpTransportContext.create(metadata);
         };
-        return new WebSocketStreamableServerTransportProvider(XDataUtils.getObjectMapper(), webSocketStreamableContext,
+        return new WebSocketStreamableServerTransportProvider(XDataUtils.MCP_JSON_MAPPER, webSocketStreamableContext,
                 siyukioMcpServerProperties.getMcpEndpoint() + "/ws", contextExtractor, Duration.ofSeconds(20));
     }
 

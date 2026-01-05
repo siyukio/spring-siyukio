@@ -177,7 +177,7 @@ public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
             converter = converters.get(index);
             if (converter instanceof MappingJackson2HttpMessageConverter) {
                 log.info("override MappingJackson2HttpMessageConverter support JsonOrgModule,JavaTimeModule");
-                converters.set(index, new MappingJackson2HttpMessageConverter(XDataUtils.getObjectMapper()));
+                converters.set(index, new MappingJackson2HttpMessageConverter(XDataUtils.OBJECT_MAPPER));
             }
         }
     }

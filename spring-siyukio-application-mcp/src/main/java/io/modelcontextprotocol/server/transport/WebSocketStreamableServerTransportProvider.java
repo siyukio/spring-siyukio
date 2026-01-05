@@ -4,11 +4,11 @@
 
 package io.modelcontextprotocol.server.transport;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.util.AsyncUtils;
 import io.modelcontextprotocol.common.McpTransportContext;
+import io.modelcontextprotocol.json.McpJsonMapper;
+import io.modelcontextprotocol.json.TypeRef;
 import io.modelcontextprotocol.server.McpTransportContextExtractor;
 import io.modelcontextprotocol.spec.*;
 import io.modelcontextprotocol.util.Assert;
@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @Slf4j
 public class WebSocketStreamableServerTransportProvider implements McpStreamableServerTransportProvider {
 
-    private final ObjectMapper objectMapper;
+    private final McpJsonMapper mcpJsonMapper;
 
     private final WebSocketStreamableContext webSocketStreamableContext;
 
@@ -45,14 +45,14 @@ public class WebSocketStreamableServerTransportProvider implements McpStreamable
     private volatile boolean isClosing = false;
 
 
-    public WebSocketStreamableServerTransportProvider(ObjectMapper objectMapper, WebSocketStreamableContext webSocketStreamableContext, String mcpEndpoint,
+    public WebSocketStreamableServerTransportProvider(McpJsonMapper mcpJsonMapper, WebSocketStreamableContext webSocketStreamableContext, String mcpEndpoint,
                                                       McpTransportContextExtractor<WebSocketServerSession> contextExtractor,
                                                       Duration keepAliveInterval) {
-        Assert.notNull(objectMapper, "ObjectMapper must not be null");
+        Assert.notNull(mcpJsonMapper, "McpJsonMapper must not be null");
         Assert.notNull(mcpEndpoint, "MCP endpoint must not be null");
         Assert.notNull(contextExtractor, "McpTransportContextExtractor must not be null");
 
-        this.objectMapper = objectMapper;
+        this.mcpJsonMapper = mcpJsonMapper;
         this.mcpEndpoint = mcpEndpoint;
         this.contextExtractor = contextExtractor;
 
@@ -71,7 +71,8 @@ public class WebSocketStreamableServerTransportProvider implements McpStreamable
 
     @Override
     public List<String> protocolVersions() {
-        return List.of(ProtocolVersions.MCP_2024_11_05, ProtocolVersions.MCP_2025_03_26);
+        return List.of(ProtocolVersions.MCP_2024_11_05, ProtocolVersions.MCP_2025_03_26,
+                ProtocolVersions.MCP_2025_06_18);
     }
 
     @Override
@@ -145,8 +146,8 @@ public class WebSocketStreamableServerTransportProvider implements McpStreamable
             // Handle initialization request
             if (message instanceof McpSchema.JSONRPCRequest jsonrpcRequest
                     && jsonrpcRequest.method().equals(McpSchema.METHOD_INITIALIZE)) {
-                McpSchema.InitializeRequest initializeRequest = objectMapper.convertValue(jsonrpcRequest.params(),
-                        new TypeReference<McpSchema.InitializeRequest>() {
+                McpSchema.InitializeRequest initializeRequest = this.mcpJsonMapper.convertValue(jsonrpcRequest.params(),
+                        new TypeRef<McpSchema.InitializeRequest>() {
                         });
                 McpStreamableServerSession.McpStreamableServerSessionInit init = this.sessionFactory
                         .startSession(initializeRequest);
@@ -311,8 +312,8 @@ public class WebSocketStreamableServerTransportProvider implements McpStreamable
         }
 
         @Override
-        public <T> T unmarshalFrom(Object data, TypeReference<T> typeRef) {
-            return objectMapper.convertValue(data, typeRef);
+        public <T> T unmarshalFrom(Object data, TypeRef<T> typeRef) {
+            return mcpJsonMapper.convertValue(data, typeRef);
         }
 
         @Override
@@ -322,6 +323,7 @@ public class WebSocketStreamableServerTransportProvider implements McpStreamable
 
         @Override
         public void close() {
+            this.lock.lock();
             try {
                 if (this.closed) {
                     log.debug("Mcp websocket session transport {} already closed", this.mcpSessionId);
@@ -332,6 +334,8 @@ public class WebSocketStreamableServerTransportProvider implements McpStreamable
                 log.debug("Successfully completed for mcp websocket session {}", this.mcpSessionId);
             } catch (Exception e) {
                 log.warn("Failed to complete for mcp websocket  session {}: {}", this.mcpSessionId, e.getMessage());
+            } finally {
+                this.lock.unlock();
             }
         }
     }

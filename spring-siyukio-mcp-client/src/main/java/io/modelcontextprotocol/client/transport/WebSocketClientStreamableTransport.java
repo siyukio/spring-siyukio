@@ -1,19 +1,19 @@
 package io.modelcontextprotocol.client.transport;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import io.github.siyukio.tools.util.XDataUtils;
 import io.modelcontextprotocol.common.McpTransportContext;
+import io.modelcontextprotocol.json.McpJsonMapper;
+import io.modelcontextprotocol.json.TypeRef;
 import io.modelcontextprotocol.spec.*;
 import io.modelcontextprotocol.util.Utils;
+import lombok.extern.slf4j.Slf4j;
 import org.reactivestreams.Publisher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -25,9 +25,10 @@ import java.util.function.Function;
  */
 
 
+@Slf4j
 public class WebSocketClientStreamableTransport implements McpClientTransport {
 
-    private static final Logger logger = LoggerFactory.getLogger(WebSocketClientStreamableTransport.class);
+    private final McpJsonMapper jsonMapper;
 
     private final Map<String, String> headerMap;
 
@@ -43,7 +44,8 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
 
     private final WebSocketClient webSocketClient;
 
-    public WebSocketClientStreamableTransport(Map<String, String> headerMap, String baseUri, String endpoint) {
+    public WebSocketClientStreamableTransport(McpJsonMapper jsonMapper, Map<String, String> headerMap, String baseUri, String endpoint) {
+        this.jsonMapper = jsonMapper;
         this.headerMap = headerMap;
         this.baseUri = URI.create(baseUri);
         this.endpoint = endpoint;
@@ -53,6 +55,12 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
 
     private static String sessionIdOrPlaceholder(McpTransportSession<?> transportSession) {
         return transportSession.sessionId().orElse("[missing_session_id]");
+    }
+
+    @Override
+    public List<String> protocolVersions() {
+        return List.of(ProtocolVersions.MCP_2024_11_05, ProtocolVersions.MCP_2025_03_26,
+                ProtocolVersions.MCP_2025_06_18);
     }
 
     @Override
@@ -81,15 +89,15 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
 
     @Override
     public void setExceptionHandler(Consumer<Throwable> handler) {
-        logger.debug("Exception handler registered");
+        log.debug("Exception handler registered");
         this.exceptionHandler.set(handler);
     }
 
     private void handleException(Throwable t) {
-        logger.debug("Handling exception for session {}", sessionIdOrPlaceholder(this.activeSession.get()), t);
+        log.debug("Handling exception for session {}", sessionIdOrPlaceholder(this.activeSession.get()), t);
         if (t instanceof McpTransportSessionNotFoundException) {
             McpTransportSession<?> invalidSession = this.activeSession.getAndSet(createTransportSession());
-            logger.warn("Server does not recognize session {}. Invalidating.", invalidSession.sessionId());
+            log.warn("Server does not recognize session {}. Invalidating.", invalidSession.sessionId());
             invalidSession.close();
         }
         Consumer<Throwable> handler = this.exceptionHandler.get();
@@ -101,7 +109,7 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
     @Override
     public Mono<Void> closeGracefully() {
         return Mono.defer(() -> {
-            logger.debug("Graceful close triggered");
+            log.debug("Graceful close triggered");
             DefaultMcpTransportSession currentSession = this.activeSession.getAndSet(createTransportSession());
             if (currentSession != null) {
                 return currentSession.closeGracefully();
@@ -153,7 +161,7 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
     public Mono<Void> sendMessage(McpSchema.JSONRPCMessage sentMessage) {
 
         return Mono.create(deliveredSink -> {
-            logger.debug("Sending message {}", sentMessage);
+            log.debug("Sending message {}", sentMessage);
 
             final AtomicReference<Disposable> disposableRef = new AtomicReference<>();
             final McpTransportSession<Disposable> transportSession = this.activeSession.get();
@@ -190,7 +198,7 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
 
                         String sessionRepresentation = sessionIdOrPlaceholder(transportSession);
                         if (responseMessage.body() == null || responseMessage.body().isEmpty()) {
-                            logger.debug("No content type returned for websocket request in session {}", sessionRepresentation);
+                            log.debug("No content type returned for websocket request in session {}", sessionRepresentation);
                             // No content type means no response body, so we can just
                             // return
                             // an empty stream
@@ -221,7 +229,7 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
                         return true;
                     })
                     .doFinally(s -> {
-                        logger.debug("SendMessage finally: {}", s);
+                        log.debug("SendMessage finally: {}", s);
                         Disposable ref = disposableRef.getAndSet(null);
                         if (ref != null) {
                             transportSession.removeConnection(ref);
@@ -236,7 +244,8 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
     }
 
     @Override
-    public <T> T unmarshalFrom(Object data, TypeReference<T> typeRef) {
-        return XDataUtils.getObjectMapper().convertValue(data, typeRef);
+    public <T> T unmarshalFrom(Object data, TypeRef<T> typeRef) {
+        return this.jsonMapper.convertValue(data, typeRef);
     }
+
 }

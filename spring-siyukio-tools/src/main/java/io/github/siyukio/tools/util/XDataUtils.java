@@ -10,6 +10,8 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.siyukio.tools.api.constants.ApiConstants;
+import io.modelcontextprotocol.json.McpJsonMapper;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.util.StringUtils;
@@ -30,6 +32,8 @@ import java.util.List;
 public abstract class XDataUtils {
 
     public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    public static final McpJsonMapper MCP_JSON_MAPPER = new JacksonMcpJsonMapper(OBJECT_MAPPER);
 
     private static final DateTimeFormatter DEFAULT_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -82,10 +86,6 @@ public abstract class XDataUtils {
         XML_MAPPER.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         XML_MAPPER.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         XML_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-    }
-
-    public static ObjectMapper getObjectMapper() {
-        return OBJECT_MAPPER;
     }
 
     public static void checkType(Class<?> clazz, Class<?> type) {

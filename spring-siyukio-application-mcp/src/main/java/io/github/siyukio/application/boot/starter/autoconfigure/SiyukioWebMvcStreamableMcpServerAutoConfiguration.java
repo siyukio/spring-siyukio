@@ -42,7 +42,7 @@ public class SiyukioWebMvcStreamableMcpServerAutoConfiguration implements Applic
     public WebMvcStreamableServerTransportProvider webMvcStreamableServerTransportProvider(SiyukioMcpServerProperties siyukioMcpServerProperties) {
         TokenProvider tokenProvider = this.applicationContext.getBean(TokenProvider.class);
         return WebMvcStreamableServerTransportProvider.builder()
-                .objectMapper(XDataUtils.getObjectMapper())
+                .jsonMapper(XDataUtils.MCP_JSON_MAPPER)
                 .mcpEndpoint(siyukioMcpServerProperties.getMcpEndpoint())
                 .keepAliveInterval(Duration.ofSeconds(20))
 //                .disallowDelete(true)

@@ -143,7 +143,7 @@ public class McpSyncClient {
 
         final McpClientTransport transport;
         if (this.webSocket) {
-            transport = new WebSocketClientStreamableTransport(headerMap, targetUri, targetMcpEndpoint);
+            transport = new WebSocketClientStreamableTransport(XDataUtils.MCP_JSON_MAPPER, headerMap, targetUri, targetMcpEndpoint);
         } else {
 
             HttpRequest.Builder httpRequestBuilder = HttpRequest.newBuilder();
@@ -155,7 +155,7 @@ public class McpSyncClient {
             transport = HttpClientStreamableHttpTransport
                     .builder(targetUri)
                     .endpoint(targetMcpEndpoint)
-                    .objectMapper(XDataUtils.getObjectMapper())
+                    .jsonMapper(XDataUtils.MCP_JSON_MAPPER)
                     .requestBuilder(httpRequestBuilder)
                     .build();
         }
