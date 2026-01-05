@@ -23,7 +23,7 @@
     <properties>
         <siyukio.version>3.4.12-SNAPSHOT</siyukio.version>
         <java.version>21</java.version>
-        <spring.ai.version>1.0.3</spring.ai.version>
+        <spring.ai.version>1.1.2</spring.ai.version>
         <mcp.version>0.16.0</mcp.version>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
