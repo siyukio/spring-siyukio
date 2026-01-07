@@ -93,7 +93,14 @@ public final class TokenProvider {
     }
 
     public String createAuthorization(Token token) {
-        Duration duration = token.refresh() ? this.refreshTokenDuration : this.accessTokenDuration;
+        return this.createAuthorization(token, null);
+    }
+
+    public String createAuthorization(Token token, Duration duration) {
+        if (duration == null) {
+            duration = token.refresh() ? this.refreshTokenDuration : this.accessTokenDuration;
+        }
+
         Instant issuedAt = Instant.now();
         Instant expiresAt = issuedAt.plusMillis(duration.toMillis());
 
