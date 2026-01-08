@@ -69,7 +69,7 @@ public class PostgresqlEntityRegistrar extends AbstractCommonRegistrar implement
         } else {
             //bind spring.datasource.postgres-multi
             Map<String, MultiDataSourceProperties> groupMap = XDataUtils.safeBind(
-                    "spring.datasource.postgres-multi",
+                    MultiDataSourceProperties.MULTI_CONFIG_PREFIX,
                     Bindable.mapOf(String.class, MultiDataSourceProperties.class), this.environment);
             if (groupMap != null) {
                 for (Map.Entry<String, MultiDataSourceProperties> entry : groupMap.entrySet()) {
