@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
+import javax.crypto.Mac;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
@@ -13,12 +13,25 @@ import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Buddy
  */
 @Slf4j
 public abstract class CryptoUtils {
+
+    private static final GcmIvGenerator GCM_IV_GENERATOR = new GcmIvGenerator();
+
+    private static final ThreadLocal<Cipher> TL_AES_GCM_ENCRYPT =
+            ThreadLocal.withInitial(() -> {
+                try {
+                    return Cipher.getInstance("AES/GCM/NoPadding");
+                } catch (GeneralSecurityException e) {
+                    throw new RuntimeException(e);
+                }
+            });
 
     public static PrivateKey getPrivateKeyFromPem(String pem) throws Exception {
         String privateKeyPEM = pem
@@ -136,11 +149,9 @@ public abstract class CryptoUtils {
             SecretKeySpec key = new SecretKeySpec(keyBytes, "AES");
 
             // Generate 12-byte IV for GCM
-            byte[] iv = new byte[12];
-            SecureRandom random = new SecureRandom();
-            random.nextBytes(iv);
+            byte[] iv = GCM_IV_GENERATOR.nextIv();
 
-            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            Cipher cipher = TL_AES_GCM_ENCRYPT.get();
             GCMParameterSpec spec = new GCMParameterSpec(128, iv);
             cipher.init(Cipher.ENCRYPT_MODE, key, spec);
 
@@ -152,7 +163,7 @@ public abstract class CryptoUtils {
             System.arraycopy(cipherBytes, 0, out, iv.length, cipherBytes.length);
 
             return Base64.getEncoder().encodeToString(out);
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
+        } catch (NoSuchAlgorithmException | InvalidKeyException |
                  InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
             throw new RuntimeException("AES-GCM encryption failed", e);
         }
@@ -185,7 +196,7 @@ public abstract class CryptoUtils {
             byte[] keyBytes = sha256.digest(password.getBytes(StandardCharsets.UTF_8));
             SecretKeySpec key = new SecretKeySpec(keyBytes, "AES");
 
-            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            Cipher cipher = TL_AES_GCM_ENCRYPT.get();
             GCMParameterSpec spec = new GCMParameterSpec(128, iv);
             cipher.init(Cipher.DECRYPT_MODE, key, spec);
 
@@ -195,6 +206,197 @@ public abstract class CryptoUtils {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("AES-GCM decryption failed", e);
+        }
+    }
+
+    /**
+     * Generate a random 256-bit master key for encryption.
+     * <p>
+     * Uses cryptographically secure random number generator to create
+     * a Base64-encoded key suitable for HMAC-SHA256 key derivation.
+     *
+     * @return Base64-encoded 256-bit random key
+     */
+    public static String randomMasterKey() {
+        SecureRandom secureRandom = new SecureRandom();
+        byte[] randomBytes = new byte[32]; // 256 bit
+        secureRandom.nextBytes(randomBytes);
+        return Base64.getEncoder().encodeToString(randomBytes);
+    }
+
+    /**
+     * Generate a random 128-bit salt for key derivation.
+     * <p>
+     * Uses cryptographically secure random number generator to create
+     * a Base64-encoded salt suitable for HMAC-SHA256 key derivation.
+     *
+     * @return Base64-encoded 128-bit random salt
+     */
+    public static String randomSalt() {
+        byte[] randomBytes = GCM_IV_GENERATOR.nextIv();
+        return Base64.getEncoder().encodeToString(randomBytes);
+    }
+
+    /**
+     * Derive a 256-bit encryption key using HMAC-SHA256.
+     * <p>
+     * Uses master key as HMAC key and salt combined with info as message
+     * to generate a cryptographically strong derived key. The info parameter
+     * provides context for the key derivation, enabling different keys for
+     * different purposes (e.g., encryption vs. authentication).
+     *
+     * @param masterKey Base64-encoded master key (256 bits)
+     * @param salt      Base64-encoded salt (any length)
+     * @param info      Contextual information for key derivation (UTF-8)
+     * @return 32-byte AES-256 key
+     * @throws IllegalArgumentException if keys are invalid
+     */
+    public static byte[] deriveKey(String masterKey, String salt, String info) {
+        try {
+            byte[] masterKeyBytes = Base64.getDecoder().decode(masterKey);
+            byte[] saltBytes = Base64.getDecoder().decode(salt);
+
+            if (masterKeyBytes.length < 16) {
+                throw new IllegalArgumentException("Master key must be at least 128 bits");
+            }
+
+            // Combine salt and info for context-specific key derivation
+            byte[] saltWithInfo = saltBytes;
+            if (info != null && !info.isEmpty()) {
+                byte[] infoBytes = info.getBytes(StandardCharsets.UTF_8);
+                saltWithInfo = new byte[saltBytes.length + infoBytes.length];
+                System.arraycopy(saltBytes, 0, saltWithInfo, 0, saltBytes.length);
+                System.arraycopy(infoBytes, 0, saltWithInfo, saltBytes.length, infoBytes.length);
+            }
+
+            Mac hmac = Mac.getInstance("HmacSHA256");
+            SecretKeySpec hmacKey = new SecretKeySpec(masterKeyBytes, "HmacSHA256");
+            hmac.init(hmacKey);
+
+            return hmac.doFinal(saltWithInfo);
+        } catch (Exception e) {
+            throw new RuntimeException("HMAC-SHA256 key derivation failed", e);
+        }
+    }
+
+    /**
+     * Encrypt plaintext using HMAC-SHA256 derived key with context info.
+     * <p>
+     * Derives the encryption key from master key, salt, and info using HMAC-SHA256,
+     * then encrypts the plaintext using AES-GCM.
+     *
+     * @param masterKey Base64-encoded master key (256 bits)
+     * @param salt      Base64-encoded salt
+     * @param info      Contextual information for key derivation (UTF-8)
+     * @param plaintext plaintext to encrypt (UTF-8)
+     * @return Base64-encoded ciphertext (iv || ciphertext+tag)
+     * @throws RuntimeException on encryption errors
+     */
+    public static String encrypt(String masterKey, String salt, String info, String plaintext) {
+        try {
+            byte[] keyBytes = deriveKey(masterKey, salt, info);
+            SecretKeySpec key = new SecretKeySpec(keyBytes, "AES");
+
+            // Generate 12-byte IV for GCM
+            byte[] iv = GCM_IV_GENERATOR.nextIv();
+
+            Cipher cipher = TL_AES_GCM_ENCRYPT.get();
+            GCMParameterSpec spec = new GCMParameterSpec(128, iv);
+            cipher.init(Cipher.ENCRYPT_MODE, key, spec);
+
+            byte[] cipherBytes = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
+
+            // Prepend IV to ciphertext (IV || ciphertextWithTag)
+            byte[] out = new byte[iv.length + cipherBytes.length];
+            System.arraycopy(iv, 0, out, 0, iv.length);
+            System.arraycopy(cipherBytes, 0, out, iv.length, cipherBytes.length);
+
+            return Base64.getEncoder().encodeToString(out);
+        } catch (InvalidKeyException |
+                 InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
+            throw new RuntimeException("AES-GCM encryption failed", e);
+        }
+    }
+
+    /**
+     * Decrypt ciphertext using HMAC-SHA256 derived key with context info.
+     * <p>
+     * Derives the encryption key from master key, salt, and info using HMAC-SHA256,
+     * then decrypts the AES-GCM ciphertext.
+     *
+     * @param masterKey        Base64-encoded master key (256 bits)
+     * @param salt             Base64-encoded salt
+     * @param info             Contextual information for key derivation (UTF-8)
+     * @param base64CipherText Base64-encoded ciphertext (iv || ciphertext+tag)
+     * @return decrypted plaintext (UTF-8)
+     * @throws IllegalArgumentException if input is invalid
+     * @throws RuntimeException         on decryption/authentication failure
+     */
+    public static String decrypt(String masterKey, String salt, String info, String base64CipherText) {
+        try {
+            byte[] keyBytes = deriveKey(masterKey, salt, info);
+            SecretKeySpec key = new SecretKeySpec(keyBytes, "AES");
+
+            byte[] all = Base64.getDecoder().decode(base64CipherText);
+            if (all.length < 12) {
+                throw new IllegalArgumentException("Invalid cipher text: too short to contain IV");
+            }
+
+            // Extract IV and ciphertext
+            byte[] iv = new byte[12];
+            System.arraycopy(all, 0, iv, 0, 12);
+            byte[] cipherBytes = new byte[all.length - 12];
+            System.arraycopy(all, 12, cipherBytes, 0, cipherBytes.length);
+
+            Cipher cipher = TL_AES_GCM_ENCRYPT.get();
+            GCMParameterSpec spec = new GCMParameterSpec(128, iv);
+            cipher.init(Cipher.DECRYPT_MODE, key, spec);
+
+            byte[] plain = cipher.doFinal(cipherBytes);
+            return new String(plain, StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("AES-GCM decryption failed", e);
+        }
+    }
+
+    public static class GcmIvGenerator {
+        private static final int THRESHOLD = Integer.MAX_VALUE - 10000000;
+        private final AtomicInteger counter = new AtomicInteger();
+        private final AtomicReference<byte[]> prefixRef = new AtomicReference<>(generateNewPrefix());
+
+        private static byte[] generateNewPrefix() {
+            byte[] p = new byte[8];
+            new SecureRandom().nextBytes(p);
+            return p;
+        }
+
+        public byte[] nextIv() {
+            int count = counter.getAndIncrement();
+
+            // check need to generate new prefix
+            if (count > THRESHOLD) {
+                // try to update prefix
+                byte[] oldPrefix = prefixRef.get();
+                byte[] newPrefix = generateNewPrefix();
+                if (prefixRef.compareAndSet(oldPrefix, newPrefix)) {
+                    counter.set(0);  // reset counter
+                    count = 0;
+                } else {
+                    // other thread has updated prefix, retry
+                    count = counter.get();
+                }
+            }
+
+            byte[] prefix = prefixRef.get();
+            byte[] iv = new byte[12];
+            System.arraycopy(prefix, 0, iv, 0, 8);
+            iv[8] = (byte) (count >>> 24);
+            iv[9] = (byte) (count >>> 16);
+            iv[10] = (byte) (count >>> 8);
+            iv[11] = (byte) (count);
+            return iv;
         }
     }
 }
