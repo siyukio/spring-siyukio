@@ -8,9 +8,6 @@ import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanNameGenerator;
-import org.springframework.boot.context.properties.bind.BindResult;
-import org.springframework.boot.context.properties.bind.Bindable;
-import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.context.ResourceLoaderAware;
 import org.springframework.context.annotation.ConfigurationClassPostProcessor;
@@ -34,10 +31,8 @@ import java.util.Set;
 public abstract class AbstractCommonRegistrar implements ImportBeanDefinitionRegistrar, ResourceLoaderAware, EnvironmentAware {
 
     private final static Set<String> basePackageSet = new HashSet<>();
-
+    protected Environment environment;
     private ResourceLoader resourceLoader;
-
-    private Environment environment;
 
     protected abstract String getTopic();
 
@@ -153,22 +148,6 @@ public abstract class AbstractCommonRegistrar implements ImportBeanDefinitionReg
         Assert.state(beanClassName != null, "No bean class name set");
         String shortClassName = ClassUtils.getShortName(beanClassName);
         return Introspector.decapitalize(shortClassName);
-    }
-
-    protected final <T> T safeBind(String bindName, Bindable<T> target) {
-        T t = null;
-        try {
-            Binder binder = Binder.get(this.environment);
-            BindResult<T> result =
-                    binder.bind(bindName, target);
-
-            if (result.isBound()) {
-                t = result.get();
-                log.info("Bootstrapping find properties: {}", bindName);
-            }
-        } catch (Exception ignored) {
-        }
-        return t;
     }
 
 }

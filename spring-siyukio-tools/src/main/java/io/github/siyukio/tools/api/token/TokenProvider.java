@@ -56,7 +56,7 @@ public final class TokenProvider {
             }
         } else {
             try {
-                initVerifier = new MACVerifier("siyukio");
+                initVerifier = new MACVerifier("siyukio-siyukio-siyukio-siyukio!");
             } catch (JOSEException e) {
                 throw new RuntimeException(e);
             }
@@ -78,7 +78,7 @@ public final class TokenProvider {
             }
         } else {
             try {
-                initSigner = new MACSigner("siyukio");
+                initSigner = new MACSigner("siyukio-siyukio-siyukio-siyukio!");
             } catch (JOSEException e) {
                 throw new RuntimeException(e);
             }

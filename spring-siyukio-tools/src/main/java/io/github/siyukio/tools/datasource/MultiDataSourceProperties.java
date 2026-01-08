@@ -12,6 +12,8 @@ import java.util.List;
 @Data
 public class MultiDataSourceProperties {
 
+    public static final String CONFIG_PREFIX = "spring.datasource.postgres";
+
     private HikariConfig hikari;
 
     private DbNode master;

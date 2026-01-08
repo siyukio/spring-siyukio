@@ -6,7 +6,8 @@ import io.github.siyukio.application.interceptor.ValidateSignatureInterceptor;
 import io.github.siyukio.application.method.*;
 import io.github.siyukio.tools.api.AipHandlerManager;
 import io.github.siyukio.tools.api.ApiMock;
-import io.github.siyukio.tools.api.constants.ApiConstants;
+import io.github.siyukio.tools.api.ApiProfiles;
+import io.github.siyukio.tools.api.ApiProperties;
 import io.github.siyukio.tools.api.definition.ApiDefinitionManager;
 import io.github.siyukio.tools.api.signature.SignatureProvider;
 import io.github.siyukio.tools.api.token.TokenProvider;
@@ -18,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration;
+import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
@@ -83,11 +85,24 @@ public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
     }
 
     @Bean
-    public TokenProvider tokenProvider() {
+    public ApiProperties apiProperties() {
         assert this.getApplicationContext() != null;
         Environment env = this.getApplicationContext().getEnvironment();
+        ApiProperties apiProperties = XDataUtils.safeBind(ApiProperties.CONFIG_PREFIX, Bindable.of(ApiProperties.class), env);
+        if (apiProperties == null) {
+            apiProperties = new ApiProperties();
+        }
+        ApiProfiles.ACTIVE = apiProperties.getProfiles().getActive();
+        log.info("ApiProfiles active: {}", ApiProfiles.ACTIVE);
 
-        String publicKeyText = env.getProperty(ApiConstants.PROPERTY_API_JWT_PUBLIC, "");
+        ApiProfiles.DOCS = apiProperties.getProfiles().getDocs();
+        log.info("ApiProfiles docs: {}", ApiProfiles.DOCS);
+        return apiProperties;
+    }
+
+    @Bean
+    public TokenProvider tokenProvider(ApiProperties apiProperties) {
+        String publicKeyText = apiProperties.getJwt().getPublicKey();
         PublicKey publicKey = null;
         if (StringUtils.hasText(publicKeyText)) {
             try {
@@ -97,7 +112,7 @@ public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
             }
         }
 
-        String privateKeyText = env.getProperty(ApiConstants.PROPERTY_API_JWT_PRIVATE, "");
+        String privateKeyText = apiProperties.getJwt().getPrivateKey();
         PrivateKey privateKey = null;
         if (StringUtils.hasText(publicKeyText)) {
             try {
@@ -106,13 +121,13 @@ public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
                 log.error("getPrivateKeyFromPem error: {}", privateKey, e);
             }
         }
-        String accessTokenDuration = env.getProperty(ApiConstants.PROPERTY_API_JWT_ACCESS_TOKEN_DURATION, "PT15M");
+        String accessTokenDuration = apiProperties.getJwt().getAccessTokenDuration();
         Duration accessDuration = Duration.parse(accessTokenDuration);
 
-        String refreshTokenDuration = env.getProperty(ApiConstants.PROPERTY_API_JWT_REFRESH_TOKEN_DURATION, "P30D");
+        String refreshTokenDuration = apiProperties.getJwt().getRefreshTokenDuration();
         Duration refreshDuration = Duration.parse(refreshTokenDuration);
 
-        String password = env.getProperty(ApiConstants.PROPERTY_API_JWT_PASSWORD, "siyukio");
+        String password = apiProperties.getJwt().getPassword();
 
         log.info("init TokenProvider, accessTokenDuration:{} refreshTokenDuration:{}", accessTokenDuration, refreshTokenDuration);
 
@@ -120,11 +135,8 @@ public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
     }
 
     @Bean
-    public SignatureProvider signatureProvider() {
-        assert this.getApplicationContext() != null;
-        Environment env = this.getApplicationContext().getEnvironment();
-
-        String salt = env.getProperty(ApiConstants.PROPERTY_API_SIGNATURE_SALT, "");
+    public SignatureProvider signatureProvider(ApiProperties apiProperties) {
+        String salt = apiProperties.getSignature().getSalt();
         log.info("init SignatureProvider, salt:{}", salt);
         return new SignatureProvider(salt);
     }

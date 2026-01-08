@@ -8,6 +8,7 @@ import io.github.siyukio.tools.datasource.MultiDataSourceProperties;
 import io.github.siyukio.tools.entity.postgresql.PgEntityDao;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgEntity;
 import io.github.siyukio.tools.registrar.AbstractCommonRegistrar;
+import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.context.EnvironmentAware;
@@ -62,14 +63,14 @@ public class PostgresqlEntityRegistrar extends AbstractCommonRegistrar implement
     protected HikariDataSource createDataSource() {
         HikariDataSource masterDataSource = null;
         //bind spring.datasource.postgres
-        MultiDataSourceProperties multiDataSourceProperties = this.safeBind("spring.datasource.postgres", Bindable.of(MultiDataSourceProperties.class));
+        MultiDataSourceProperties multiDataSourceProperties = XDataUtils.safeBind(MultiDataSourceProperties.CONFIG_PREFIX, Bindable.of(MultiDataSourceProperties.class), this.environment);
         if (multiDataSourceProperties != null) {
             masterDataSource = this.createMultiJdbcTemplate("", multiDataSourceProperties);
         } else {
             //bind spring.datasource.postgres-multi
-            Map<String, MultiDataSourceProperties> groupMap = this.safeBind(
+            Map<String, MultiDataSourceProperties> groupMap = XDataUtils.safeBind(
                     "spring.datasource.postgres-multi",
-                    Bindable.mapOf(String.class, MultiDataSourceProperties.class));
+                    Bindable.mapOf(String.class, MultiDataSourceProperties.class), this.environment);
             if (groupMap != null) {
                 for (Map.Entry<String, MultiDataSourceProperties> entry : groupMap.entrySet()) {
                     if (masterDataSource == null) {

@@ -41,7 +41,7 @@ public class SiyukioMcpClientCommonProperties {
      * <p>
      * This version is reported to clients and used for compatibility checks.
      */
-    private String version = "0.12.1";
+    private String version = "0.16.0";
 
     /**
      * The timeout duration for MCP client requests.

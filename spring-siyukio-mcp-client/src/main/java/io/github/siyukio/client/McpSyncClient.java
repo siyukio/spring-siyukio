@@ -240,7 +240,7 @@ public class McpSyncClient {
         private String authorization = "";
         private Duration requestTimeout = Duration.ofSeconds(60);
         private String name = "mcp-client";
-        private String version = "0.12.1";
+        private String version = "0.16.0";
         private Supplier<String> tokenSupplier;
 
         private Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult> samplingHandler = null;

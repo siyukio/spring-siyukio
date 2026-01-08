@@ -3,7 +3,6 @@ package io.github.siyukio.application.boot.starter.autoconfigure;
 import io.github.siyukio.tools.api.AipHandlerManager;
 import io.github.siyukio.tools.api.ApiProfiles;
 import io.github.siyukio.tools.api.annotation.ApiController;
-import io.github.siyukio.tools.api.constants.ApiConstants;
 import io.github.siyukio.tools.api.definition.ApiDefinition;
 import io.github.siyukio.tools.api.definition.ApiDefinitionManager;
 import jakarta.annotation.PostConstruct;
@@ -73,16 +72,6 @@ public class SiyukioApplicationAutoConfiguration {
             ApiProfiles.CONTEXT_PATH = contextPath;
         }
         log.info("ApiProfiles contextPath: {}", ApiProfiles.CONTEXT_PATH);
-
-        ApiProfiles.ACTIVE = this.env.getProperty(ApiConstants.PROPERTY_API_PROFILES_ACTIVE, "");
-        log.info("ApiProfiles active: {}", ApiProfiles.ACTIVE);
-
-        Boolean docs = this.env.getProperty(ApiConstants.PROPERTY_API_PROFILES_DOCS, Boolean.class);
-        if (docs != null) {
-            ApiProfiles.DOCS = docs;
-        }
-        log.info("ApiProfiles docs: {}", ApiProfiles.DOCS);
-
         this.initApi();
     }
 

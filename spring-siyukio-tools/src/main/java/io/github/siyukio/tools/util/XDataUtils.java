@@ -12,8 +12,13 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.siyukio.tools.api.constants.ApiConstants;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.boot.context.properties.bind.BindResult;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.core.env.Environment;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
@@ -29,6 +34,7 @@ import java.util.List;
  *
  * @author Buddy
  */
+@Slf4j
 public abstract class XDataUtils {
 
     public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -344,6 +350,23 @@ public abstract class XDataUtils {
         } else {
             return String.valueOf(enumValue);
         }
+    }
+
+    public static <T> T safeBind(String bindName, Bindable<T> target, Environment environment) {
+        T t = null;
+        try {
+            Binder binder = Binder.get(environment);
+            BindResult<T> result =
+                    binder.bind(bindName, target);
+
+            if (result.isBound()) {
+                t = result.get();
+                log.info("find properties: {}", bindName);
+            }
+        } catch (Exception ex) {
+            log.info("find properties error: {}", bindName, ex);
+        }
+        return t;
     }
 
     public static class MultiFormatLocalDateTimeDeserializer extends JsonDeserializer<LocalDateTime> {
