@@ -366,10 +366,27 @@ public abstract class CryptoUtils {
         private final AtomicInteger counter = new AtomicInteger();
         private final AtomicReference<byte[]> prefixRef = new AtomicReference<>(generateNewPrefix());
 
+        public GcmIvGenerator() {
+            counter.set(generateRandomCounterStart());
+        }
+
         private static byte[] generateNewPrefix() {
             byte[] p = new byte[8];
             new SecureRandom().nextBytes(p);
             return p;
+        }
+
+        /**
+         * Generate a random starting counter value within a reasonable range.
+         * <p>
+         * Divides int range into segments and picks a random start position
+         * to avoid starting from 0 every time, reducing the risk of IV collision
+         * when the prefix is updated.
+         *
+         * @return random counter value between 0 and THRESHOLD
+         */
+        private static int generateRandomCounterStart() {
+            return new SecureRandom().nextInt(THRESHOLD);
         }
 
         public byte[] nextIv() {
@@ -381,8 +398,8 @@ public abstract class CryptoUtils {
                 byte[] oldPrefix = prefixRef.get();
                 byte[] newPrefix = generateNewPrefix();
                 if (prefixRef.compareAndSet(oldPrefix, newPrefix)) {
-                    counter.set(0);  // reset counter
-                    count = 0;
+                    counter.set(generateRandomCounterStart());  // reset counter with random start
+                    count = counter.get();
                 } else {
                     // other thread has updated prefix, retry
                     count = counter.get();
