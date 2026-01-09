@@ -12,6 +12,8 @@ import java.util.List;
  */
 public interface EntityExecutor {
 
+    String getMasterKey();
+
     EntityDefinition getEntityDefinition();
 
     JSONObject insert(JSONObject entityJson);

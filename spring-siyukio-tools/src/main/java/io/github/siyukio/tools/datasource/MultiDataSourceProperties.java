@@ -46,6 +46,15 @@ public class MultiDataSourceProperties {
      */
     private List<DbNode> slaves = new ArrayList<>();
 
+    /**
+     * Encryption masterKey for field-level data encryption.
+     * <p>
+     * Used as the first half of the encryption key. Combined with record-specific salt
+     * to form the complete AES-256 key for encrypting/decrypting sensitive fields.
+     * Must be configured via environment variable for security.
+     */
+    private String masterKey = "";
+
     public HikariConfig getHikari() {
         return hikari;
     }
@@ -71,6 +80,15 @@ public class MultiDataSourceProperties {
     public void setSlaves(List<DbNode> slaves) {
         Assert.notNull(slaves, "Slave database nodes must not be null");
         this.slaves = slaves;
+    }
+
+    public String getMasterKey() {
+        return masterKey;
+    }
+
+    public void setMasterKey(String masterKey) {
+        Assert.hasText(masterKey, "Encryption masterKey must not be empty");
+        this.masterKey = masterKey;
     }
 
     /**

@@ -61,6 +61,7 @@ public class RecordEventTests {
                 .item(item)
                 .items(List.of(item))
                 .loginType(RecordEvent.LoginType.USERNAME)
+                .teamId(IdUtils.getUniqueId())
                 .build();
     }
 
@@ -208,7 +209,7 @@ public class RecordEventTests {
         Date maxDate = new Date();
         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
         boolQueryBuilder.must(QueryBuilders.rangeQuery("createdAtTs").lte(maxDate.getTime()));
-        boolQueryBuilder.must(QueryBuilders.termQuery("loginType", RecordEvent.LoginType.USERNAME));
+        boolQueryBuilder.must(QueryBuilders.termQuery("teamId", "aH8Hr9eALDDxJMX1thF5J"));
 
         SortBuilder sortBuilder = SortBuilders.fieldSort("createdAtTs").order(SortOrder.DESC);
         Page<RecordEvent> page = this.recordEventPgEntityDao.queryPage(boolQueryBuilder, sortBuilder, 1, 1);

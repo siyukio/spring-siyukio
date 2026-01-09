@@ -146,26 +146,9 @@ public abstract class CryptoUtils {
             // Derive 256-bit key from password using SHA-256
             MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
             byte[] keyBytes = sha256.digest(password.getBytes(StandardCharsets.UTF_8));
-            SecretKeySpec key = new SecretKeySpec(keyBytes, "AES");
-
-            // Generate 12-byte IV for GCM
-            byte[] iv = GCM_IV_GENERATOR.nextIv();
-
-            Cipher cipher = TL_AES_GCM_ENCRYPT.get();
-            GCMParameterSpec spec = new GCMParameterSpec(128, iv);
-            cipher.init(Cipher.ENCRYPT_MODE, key, spec);
-
-            byte[] cipherBytes = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
-
-            // Prepend IV to ciphertext (IV || ciphertextWithTag)
-            byte[] out = new byte[iv.length + cipherBytes.length];
-            System.arraycopy(iv, 0, out, 0, iv.length);
-            System.arraycopy(cipherBytes, 0, out, iv.length, cipherBytes.length);
-
-            return Base64.getEncoder().encodeToString(out);
-        } catch (NoSuchAlgorithmException | InvalidKeyException |
-                 InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
-            throw new RuntimeException("AES-GCM encryption failed", e);
+            return encrypt(keyBytes, plaintext);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 failed", e);
         }
     }
 
@@ -180,32 +163,14 @@ public abstract class CryptoUtils {
      */
     public static String decrypt(String password, String base64CipherText) {
         try {
-            byte[] all = Base64.getDecoder().decode(base64CipherText);
-            if (all.length < 12) {
-                throw new IllegalArgumentException("Invalid cipher text: too short to contain IV");
-            }
-
-            // Extract IV and ciphertext
-            byte[] iv = new byte[12];
-            System.arraycopy(all, 0, iv, 0, 12);
-            byte[] cipherBytes = new byte[all.length - 12];
-            System.arraycopy(all, 12, cipherBytes, 0, cipherBytes.length);
-
             // Derive key
             MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
             byte[] keyBytes = sha256.digest(password.getBytes(StandardCharsets.UTF_8));
-            SecretKeySpec key = new SecretKeySpec(keyBytes, "AES");
-
-            Cipher cipher = TL_AES_GCM_ENCRYPT.get();
-            GCMParameterSpec spec = new GCMParameterSpec(128, iv);
-            cipher.init(Cipher.DECRYPT_MODE, key, spec);
-
-            byte[] plain = cipher.doFinal(cipherBytes);
-            return new String(plain, StandardCharsets.UTF_8);
+            return decrypt(keyBytes, base64CipherText);
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException("AES-GCM decryption failed", e);
+            throw new RuntimeException("SHA-256 failed", e);
         }
     }
 
@@ -235,6 +200,92 @@ public abstract class CryptoUtils {
     public static String randomSalt() {
         byte[] randomBytes = GCM_IV_GENERATOR.nextIv();
         return Base64.getEncoder().encodeToString(randomBytes);
+    }
+
+    /**
+     * Encrypt plaintext using AES-GCM with provided key bytes.
+     * <p>
+     * Uses the provided AES key directly without any derivation.
+     * IV: randomly generated 12-byte nonce (recommended for GCM).
+     * Output format: Base64( iv || ciphertextWithAuthTag )
+     *
+     * @param keyBytes  AES key bytes (16, 24, or 32 bytes for AES-128/192/256)
+     * @param plaintext plaintext to encrypt (UTF-8)
+     * @return Base64-encoded ciphertext (iv || ciphertext+tag)
+     * @throws IllegalArgumentException if key length is invalid
+     * @throws RuntimeException         on encryption errors
+     */
+    public static String encrypt(byte[] keyBytes, String plaintext) {
+        if (keyBytes == null || keyBytes.length < 16 || keyBytes.length > 32) {
+            throw new IllegalArgumentException("AES key must be 16, 24, or 32 bytes");
+        }
+
+        try {
+            SecretKeySpec key = new SecretKeySpec(keyBytes, "AES");
+
+            // Generate 12-byte IV for GCM
+            byte[] iv = GCM_IV_GENERATOR.nextIv();
+
+            Cipher cipher = TL_AES_GCM_ENCRYPT.get();
+            GCMParameterSpec spec = new GCMParameterSpec(128, iv);
+            cipher.init(Cipher.ENCRYPT_MODE, key, spec);
+
+            byte[] cipherBytes = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
+
+            // Prepend IV to ciphertext (IV || ciphertextWithTag)
+            byte[] out = new byte[iv.length + cipherBytes.length];
+            System.arraycopy(iv, 0, out, 0, iv.length);
+            System.arraycopy(cipherBytes, 0, out, iv.length, cipherBytes.length);
+
+            return Base64.getEncoder().encodeToString(out);
+        } catch (InvalidKeyException |
+                 InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
+            throw new RuntimeException("AES-GCM encryption failed", e);
+        }
+    }
+
+    /**
+     * Decrypt ciphertext using AES-GCM with provided key bytes.
+     * <p>
+     * Uses the provided AES key directly without any derivation.
+     * Input format: Base64( iv || ciphertextWithAuthTag )
+     *
+     * @param keyBytes         AES key bytes (16, 24, or 32 bytes for AES-128/192/256)
+     * @param base64CipherText Base64-encoded ciphertext (iv || ciphertext+tag)
+     * @return decrypted plaintext (UTF-8)
+     * @throws IllegalArgumentException if key length is invalid or input is invalid
+     * @throws RuntimeException         on decryption/authentication failure
+     */
+    public static String decrypt(byte[] keyBytes, String base64CipherText) {
+        if (keyBytes == null || keyBytes.length < 16 || keyBytes.length > 32) {
+            throw new IllegalArgumentException("AES key must be 16, 24, or 32 bytes");
+        }
+
+        try {
+            byte[] all = Base64.getDecoder().decode(base64CipherText);
+            if (all.length < 12) {
+                throw new IllegalArgumentException("Invalid cipher text: too short to contain IV");
+            }
+
+            // Extract IV and ciphertext
+            byte[] iv = new byte[12];
+            System.arraycopy(all, 0, iv, 0, 12);
+            byte[] cipherBytes = new byte[all.length - 12];
+            System.arraycopy(all, 12, cipherBytes, 0, cipherBytes.length);
+
+            SecretKeySpec key = new SecretKeySpec(keyBytes, "AES");
+
+            Cipher cipher = TL_AES_GCM_ENCRYPT.get();
+            GCMParameterSpec spec = new GCMParameterSpec(128, iv);
+            cipher.init(Cipher.DECRYPT_MODE, key, spec);
+
+            byte[] plain = cipher.doFinal(cipherBytes);
+            return new String(plain, StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("AES-GCM decryption failed", e);
+        }
     }
 
     /**
@@ -293,29 +344,8 @@ public abstract class CryptoUtils {
      * @throws RuntimeException on encryption errors
      */
     public static String encrypt(String masterKey, String salt, String info, String plaintext) {
-        try {
-            byte[] keyBytes = deriveKey(masterKey, salt, info);
-            SecretKeySpec key = new SecretKeySpec(keyBytes, "AES");
-
-            // Generate 12-byte IV for GCM
-            byte[] iv = GCM_IV_GENERATOR.nextIv();
-
-            Cipher cipher = TL_AES_GCM_ENCRYPT.get();
-            GCMParameterSpec spec = new GCMParameterSpec(128, iv);
-            cipher.init(Cipher.ENCRYPT_MODE, key, spec);
-
-            byte[] cipherBytes = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
-
-            // Prepend IV to ciphertext (IV || ciphertextWithTag)
-            byte[] out = new byte[iv.length + cipherBytes.length];
-            System.arraycopy(iv, 0, out, 0, iv.length);
-            System.arraycopy(cipherBytes, 0, out, iv.length, cipherBytes.length);
-
-            return Base64.getEncoder().encodeToString(out);
-        } catch (InvalidKeyException |
-                 InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
-            throw new RuntimeException("AES-GCM encryption failed", e);
-        }
+        byte[] keyBytes = deriveKey(masterKey, salt, info);
+        return encrypt(keyBytes, plaintext);
     }
 
     /**
@@ -333,32 +363,8 @@ public abstract class CryptoUtils {
      * @throws RuntimeException         on decryption/authentication failure
      */
     public static String decrypt(String masterKey, String salt, String info, String base64CipherText) {
-        try {
-            byte[] keyBytes = deriveKey(masterKey, salt, info);
-            SecretKeySpec key = new SecretKeySpec(keyBytes, "AES");
-
-            byte[] all = Base64.getDecoder().decode(base64CipherText);
-            if (all.length < 12) {
-                throw new IllegalArgumentException("Invalid cipher text: too short to contain IV");
-            }
-
-            // Extract IV and ciphertext
-            byte[] iv = new byte[12];
-            System.arraycopy(all, 0, iv, 0, 12);
-            byte[] cipherBytes = new byte[all.length - 12];
-            System.arraycopy(all, 12, cipherBytes, 0, cipherBytes.length);
-
-            Cipher cipher = TL_AES_GCM_ENCRYPT.get();
-            GCMParameterSpec spec = new GCMParameterSpec(128, iv);
-            cipher.init(Cipher.DECRYPT_MODE, key, spec);
-
-            byte[] plain = cipher.doFinal(cipherBytes);
-            return new String(plain, StandardCharsets.UTF_8);
-        } catch (IllegalArgumentException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException("AES-GCM decryption failed", e);
-        }
+        byte[] keyBytes = deriveKey(masterKey, salt, info);
+        return decrypt(keyBytes, base64CipherText);
     }
 
     public static class GcmIvGenerator {

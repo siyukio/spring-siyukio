@@ -72,6 +72,11 @@ public class PgEntityExecutor implements EntityExecutor {
     }
 
     @Override
+    public String getMasterKey() {
+        return this.multiJdbcTemplate.getMasterKey();
+    }
+
+    @Override
     public EntityDefinition getEntityDefinition() {
         return this.entityDefinition;
     }

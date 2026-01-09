@@ -35,6 +35,12 @@ public record RecordEvent(
         @PgColumn
         String content,
 
+        @PgColumn(encrypted = true)
+        String encryptContent,
+
+        @PgColumn
+        String salt,
+
         @PgColumn
         boolean error,
 

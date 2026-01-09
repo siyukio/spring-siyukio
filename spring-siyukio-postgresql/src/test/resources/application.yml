@@ -1,6 +1,7 @@
 spring:
   datasource:
     postgres:
+      master-key: 06CVrBQL+6VZzbXYhxfXYIm40I/cS4Ern2DW7beR5JU=
       hikari:
         maximum-pool-size: 20
         minimum-idle: 2

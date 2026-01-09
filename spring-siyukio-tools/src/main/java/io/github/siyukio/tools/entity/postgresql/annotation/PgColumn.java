@@ -18,4 +18,14 @@ public @interface PgColumn {
     String defaultValue() default "";
 
     String comment() default "";
+
+    /**
+     * Flag to indicate whether the column value should be encrypted when stored.
+     * <p>
+     * When true, the column value will be encrypted before persisting to database
+     * and decrypted when reading from database. Default is false.
+     *
+     * @return true if encryption is enabled, false otherwise
+     */
+    boolean encrypted() default false;
 }

@@ -21,6 +21,12 @@ public class CryptoUtilsTest {
     }
 
     @Test
+    void testCreateMasterKey() throws Exception {
+        String masterKey = CryptoUtils.randomMasterKey();
+        log.info("masterKey: {}", masterKey);
+    }
+
+    @Test
     void testEncryptSha256() throws Exception {
         String password = CryptoUtils.randomMasterKey();
         String encryptedText = CryptoUtils.encrypt(password, "hello");

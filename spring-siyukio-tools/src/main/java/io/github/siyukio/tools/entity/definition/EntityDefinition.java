@@ -13,6 +13,8 @@ public record EntityDefinition(
         boolean createTableAuto,
         boolean addColumnAuto,
         boolean createIndexAuto,
+        boolean encrypted,
+        String keyInfo,
         KeyDefinition keyDefinition,
         List<ColumnDefinition> columnDefinitions,
         List<IndexDefinition> indexDefinitions

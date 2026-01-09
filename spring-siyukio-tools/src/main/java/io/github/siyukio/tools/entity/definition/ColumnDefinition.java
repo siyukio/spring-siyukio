@@ -10,6 +10,7 @@ public record ColumnDefinition(
         String columnName,
         ColumnType type,
         Object defaultValue,
+        boolean encrypted,
         String comment
 ) {
 }

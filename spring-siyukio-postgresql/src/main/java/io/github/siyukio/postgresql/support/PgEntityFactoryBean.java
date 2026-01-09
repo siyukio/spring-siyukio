@@ -3,10 +3,12 @@ package io.github.siyukio.postgresql.support;
 import io.github.siyukio.postgresql.registrar.PostgresqlEntityRegistrar;
 import io.github.siyukio.tools.entity.ColumnType;
 import io.github.siyukio.tools.entity.EntityConstants;
+import io.github.siyukio.tools.entity.EntityExecutor;
 import io.github.siyukio.tools.entity.definition.ColumnDefinition;
 import io.github.siyukio.tools.entity.definition.EntityDefinition;
 import io.github.siyukio.tools.entity.definition.IndexDefinition;
 import io.github.siyukio.tools.entity.definition.KeyDefinition;
+import io.github.siyukio.tools.entity.executor.CryptoEntityExecutor;
 import io.github.siyukio.tools.entity.postgresql.PgEntityDao;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgColumn;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgEntity;
@@ -75,7 +77,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
     }
 
     @Override
-    public void afterPropertiesSet() throws Exception {
+    public void afterPropertiesSet() {
         this.repository = Lazy.of(this::newInstance);
         if (!this.lazyInit) {
             this.repository.get();
@@ -122,7 +124,15 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
                 case ColumnType.DATETIME -> XDataUtils.parse(defaultValueStr);
             };
         }
-        return new ColumnDefinition(fieldName, columnName, columnType, defaultValue, pgColumn.comment());
+        boolean encrypted = pgColumn.encrypted();
+        if (fieldName.equals(EntityConstants.SALT_COLUMN)) {
+            columnType = ColumnType.TEXT;
+            defaultValue = "";
+            encrypted = false;
+        }
+
+        return new ColumnDefinition(fieldName, columnName, columnType, defaultValue,
+                encrypted, pgColumn.comment());
     }
 
     private KeyDefinition getKeyDefinition(RecordComponent recordComponent) {
@@ -176,17 +186,30 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         KeyDefinition keyDefinition = null;
         List<ColumnDefinition> columnDefinitions = new ArrayList<>();
         RecordComponent[] recordComponents = this.entityClass.getRecordComponents();
+        boolean encrypted = false;
+        ColumnDefinition columnDefinition;
         for (RecordComponent recordComponent : recordComponents) {
             XDataUtils.checkType(this.entityClass, recordComponent.getType());
             if (recordComponent.isAnnotationPresent(PgKey.class)) {
                 keyDefinition = this.getKeyDefinition(recordComponent);
             } else if (recordComponent.isAnnotationPresent(PgColumn.class)) {
-                columnDefinitions.add(this.getColumnDefinition(recordComponent));
+                columnDefinition = this.getColumnDefinition(recordComponent);
+                if (columnDefinition.encrypted()) {
+                    encrypted = true;
+                }
+                columnDefinitions.add(columnDefinition);
             }
         }
 
-        Assert.notNull(keyDefinition, String.format(EntityConstants.ERROR_KEY_IS_NULL_FORMAT, "PgKey"));
-        Assert.notEmpty(columnDefinitions, String.format(EntityConstants.ERROR_COLUMNS_IS_EMPTY_FORMAT, "PgColumn"));
+        if (encrypted) {
+            List<ColumnDefinition> items = columnDefinitions.stream()
+                    .filter(item -> item.fieldName().equals(EntityConstants.SALT_COLUMN))
+                    .toList();
+            Assert.notEmpty(items, String.format(EntityConstants.ERROR_SALT_COLUMN_MISSING_FORMAT, this.entityClass.getSimpleName(), EntityConstants.SALT_COLUMN));
+        }
+
+        Assert.notNull(keyDefinition, String.format(EntityConstants.ERROR_KEY_IS_NULL_FORMAT, this.entityClass.getSimpleName()));
+        Assert.notEmpty(columnDefinitions, String.format(EntityConstants.ERROR_COLUMNS_IS_EMPTY_FORMAT, this.entityClass.getSimpleName()));
 
         PgEntity pgEntity = this.entityClass.getAnnotation(PgEntity.class);
 
@@ -212,9 +235,15 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
 
         EntityUtils.isSafe(table);
 
+        String keyInfo = pgEntity.keyInfo();
+        if (!StringUtils.hasText(keyInfo)) {
+            keyInfo = this.entityClass.getSimpleName();
+        }
+
         List<IndexDefinition> indexDefinitions = this.getIndexDefinitions(table, pgEntity.indexes());
         return new EntityDefinition(dbName, schema, table, pgEntity.comment(),
                 pgEntity.createTableAuto(), pgEntity.addColumnAuto(), pgEntity.createIndexAuto(),
+                encrypted, keyInfo,
                 keyDefinition, columnDefinitions, indexDefinitions);
     }
 
@@ -386,8 +415,10 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         MultiJdbcTemplate multiJdbcTemplate = PostgresqlEntityRegistrar.getMultiJdbcTemplate(entityDefinition.dbName());
         this.checkTable(entityDefinition, multiJdbcTemplate.getMaster());
 
-        PgEntityExecutor pgEntityExecutor = new PgEntityExecutor(entityDefinition, multiJdbcTemplate);
-
-        return new PgEntityDaoImpl<>(this.entityClass, pgEntityExecutor);
+        EntityExecutor entityExecutor = new PgEntityExecutor(entityDefinition, multiJdbcTemplate);
+        if (entityDefinition.encrypted()) {
+            entityExecutor = new CryptoEntityExecutor(entityExecutor);
+        }
+        return new PgEntityDaoImpl<>(this.entityClass, entityExecutor);
     }
 }

@@ -110,7 +110,7 @@ public class PostgresqlEntityRegistrar extends AbstractCommonRegistrar implement
                 slaveDataSources.add(this.buildDataSource(dbName, slave, dbProps.getHikari(), "slave"));
             }
         }
-        MultiJdbcTemplate multiJdbcTemplate = new MultiJdbcTemplate(masterDataSource, slaveDataSources);
+        MultiJdbcTemplate multiJdbcTemplate = new MultiJdbcTemplate(masterDataSource, slaveDataSources, dbProps.getMasterKey());
         JDBC_TEMPLATE_MAP.put(dbName, multiJdbcTemplate);
         return masterDataSource;
     }
