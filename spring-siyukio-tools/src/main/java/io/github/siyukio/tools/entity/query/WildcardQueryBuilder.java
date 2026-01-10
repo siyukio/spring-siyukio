@@ -8,7 +8,7 @@ import lombok.ToString;
  */
 @ToString
 @Getter
-public class WildcardQueryBuilder {
+public class WildcardQueryBuilder implements QueryBuilder {
 
     private final String fieldName;
 

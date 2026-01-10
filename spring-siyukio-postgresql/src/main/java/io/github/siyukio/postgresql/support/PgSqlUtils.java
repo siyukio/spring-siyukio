@@ -437,7 +437,7 @@ public abstract class PgSqlUtils {
         }
         String value = "?";
         if (wildcardQueryBuilder.isPrefix()) {
-            value = value + " || '%";
+            value = value + " || '%'";
         }
         if (wildcardQueryBuilder.isSuffix()) {
             value = "'%' || " + value;
