@@ -24,7 +24,7 @@ import java.util.List;
 })
 @Builder
 @With
-public record RecordEvent(
+public record RecordEventEntity(
 
         @PgKey
         String id,

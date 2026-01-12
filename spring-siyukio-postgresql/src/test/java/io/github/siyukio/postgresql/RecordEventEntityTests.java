@@ -1,6 +1,6 @@
 package io.github.siyukio.postgresql;
 
-import io.github.siyukio.postgresql.entity.RecordEvent;
+import io.github.siyukio.postgresql.entity.RecordEventEntity;
 import io.github.siyukio.tools.entity.page.Page;
 import io.github.siyukio.tools.entity.postgresql.PgEntityDao;
 import io.github.siyukio.tools.entity.query.BoolQueryBuilder;
@@ -29,14 +29,14 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @SpringBootTest
-public class RecordEventTests {
+public class RecordEventEntityTests {
 
     private final String id = "test";
 
     @Autowired
-    private PgEntityDao<RecordEvent> recordEventPgEntityDao;
+    private PgEntityDao<RecordEventEntity> recordEventPgEntityDao;
 
-    private RecordEvent createRandom() {
+    private RecordEventEntity createRandom() {
         JSONObject metadataJson = new JSONObject();
         metadataJson.put("model", "gpt-5-chat");
 
@@ -46,11 +46,11 @@ public class RecordEventTests {
         messageJson.put("text", "hello");
         messages.put(messageJson);
 
-        RecordEvent.Item item = RecordEvent.Item.builder()
+        RecordEventEntity.Item item = RecordEventEntity.Item.builder()
                 .costMs(1000)
                 .build();
 
-        return RecordEvent.builder()
+        return RecordEventEntity.builder()
                 .error(false)
                 .costMs(1000)
                 .content("test")
@@ -60,83 +60,83 @@ public class RecordEventTests {
                 .messages(messages)
                 .item(item)
                 .items(List.of(item))
-                .loginType(RecordEvent.LoginType.USERNAME)
+                .loginType(RecordEventEntity.LoginType.USERNAME)
                 .teamId(IdUtils.getUniqueId())
                 .build();
     }
 
     @Test
     public void testInsert() {
-        RecordEvent recordEvent = this.createRandom();
-        recordEvent = this.recordEventPgEntityDao.insert(recordEvent);
-        log.info("{}", XDataUtils.toPrettyJSONString(recordEvent));
+        RecordEventEntity recordEventEntity = this.createRandom();
+        recordEventEntity = this.recordEventPgEntityDao.insert(recordEventEntity);
+        log.info("{}", XDataUtils.toPrettyJSONString(recordEventEntity));
     }
 
     @Test
     public void testInsertBatch() {
-        List<RecordEvent> recordEvents = new ArrayList<>();
-        recordEvents.add(this.createRandom());
-        int num = this.recordEventPgEntityDao.insertBatch(recordEvents);
+        List<RecordEventEntity> recordEventEntities = new ArrayList<>();
+        recordEventEntities.add(this.createRandom());
+        int num = this.recordEventPgEntityDao.insertBatch(recordEventEntities);
         log.info("{}", num);
     }
 
     @Test
     public void testInsertWithId() {
-        RecordEvent recordEvent = this.createRandom();
-        recordEvent = recordEvent.withId(this.id);
-        recordEvent = this.recordEventPgEntityDao.insert(recordEvent);
-        log.info("{}", XDataUtils.toPrettyJSONString(recordEvent));
+        RecordEventEntity recordEventEntity = this.createRandom();
+        recordEventEntity = recordEventEntity.withId(this.id);
+        recordEventEntity = this.recordEventPgEntityDao.insert(recordEventEntity);
+        log.info("{}", XDataUtils.toPrettyJSONString(recordEventEntity));
     }
 
     @Test
     public void testQueryWithId() {
-        RecordEvent recordEvent = this.recordEventPgEntityDao.queryById(this.id);
-        log.info("{}", XDataUtils.toPrettyJSONString(recordEvent));
+        RecordEventEntity recordEventEntity = this.recordEventPgEntityDao.queryById(this.id);
+        log.info("{}", XDataUtils.toPrettyJSONString(recordEventEntity));
     }
 
     @Test
     public void testQueryAndUpdate() {
-        RecordEvent recordEvent = this.recordEventPgEntityDao.queryById(this.id);
-        if (recordEvent == null) {
+        RecordEventEntity recordEventEntity = this.recordEventPgEntityDao.queryById(this.id);
+        if (recordEventEntity == null) {
             throw new RuntimeException("id not found");
         }
-        recordEvent = recordEvent.withContent("update")
+        recordEventEntity = recordEventEntity.withContent("update")
                 .withError(true);
-        recordEvent = this.recordEventPgEntityDao.update(recordEvent);
-        log.info("{}", XDataUtils.toPrettyJSONString(recordEvent));
+        recordEventEntity = this.recordEventPgEntityDao.update(recordEventEntity);
+        log.info("{}", XDataUtils.toPrettyJSONString(recordEventEntity));
     }
 
     @Test
     public void testUpdateBatch() {
-        List<RecordEvent> recordEvents = new ArrayList<>();
-        recordEvents.add(this.createRandom());
+        List<RecordEventEntity> recordEventEntities = new ArrayList<>();
+        recordEventEntities.add(this.createRandom());
 
-        recordEvents = recordEvents.stream()
-                .map(recordEvent -> recordEvent.withId(IdUtils.getUniqueId()))
+        recordEventEntities = recordEventEntities.stream()
+                .map(recordEventEntity -> recordEventEntity.withId(IdUtils.getUniqueId()))
                 .collect(Collectors.toCollection(ArrayList::new));
 
-        RecordEvent recordEvent = this.recordEventPgEntityDao.queryById(this.id);
-        if (recordEvent == null) {
+        RecordEventEntity recordEventEntity = this.recordEventPgEntityDao.queryById(this.id);
+        if (recordEventEntity == null) {
             throw new RuntimeException("id not found");
         }
-        recordEvent = recordEvent.withContent("update batch");
-        recordEvents.add(recordEvent);
-        int num = this.recordEventPgEntityDao.updateBatch(recordEvents);
+        recordEventEntity = recordEventEntity.withContent("update batch");
+        recordEventEntities.add(recordEventEntity);
+        int num = this.recordEventPgEntityDao.updateBatch(recordEventEntities);
         log.info("{}", num);
     }
 
     @Test
     public void testUpsertWithNewId() {
-        RecordEvent recordEvent = this.createRandom().withId(IdUtils.getUniqueId()).withType("upsert new id");
-        recordEvent = this.recordEventPgEntityDao.upsert(recordEvent);
-        log.info("{}", XDataUtils.toPrettyJSONString(recordEvent));
+        RecordEventEntity recordEventEntity = this.createRandom().withId(IdUtils.getUniqueId()).withType("upsert new id");
+        recordEventEntity = this.recordEventPgEntityDao.upsert(recordEventEntity);
+        log.info("{}", XDataUtils.toPrettyJSONString(recordEventEntity));
     }
 
     @Test
     public void testUpsertWithExistId() {
-        RecordEvent recordEvent = this.createRandom().withId(this.id).withType("upsert exist id");
-        recordEvent = this.recordEventPgEntityDao.upsert(recordEvent);
-        log.info("{}", XDataUtils.toPrettyJSONString(recordEvent));
+        RecordEventEntity recordEventEntity = this.createRandom().withId(this.id).withType("upsert exist id");
+        recordEventEntity = this.recordEventPgEntityDao.upsert(recordEventEntity);
+        log.info("{}", XDataUtils.toPrettyJSONString(recordEventEntity));
     }
 
 
@@ -148,11 +148,11 @@ public class RecordEventTests {
 
     @Test
     public void testDeleteEntity() {
-        RecordEvent recordEvent = this.recordEventPgEntityDao.queryById(this.id);
-        if (recordEvent == null) {
+        RecordEventEntity recordEventEntity = this.recordEventPgEntityDao.queryById(this.id);
+        if (recordEventEntity == null) {
             throw new RuntimeException("id not found");
         }
-        int num = this.recordEventPgEntityDao.delete(recordEvent);
+        int num = this.recordEventPgEntityDao.delete(recordEventEntity);
         log.info("{}", num);
     }
 
@@ -180,8 +180,8 @@ public class RecordEventTests {
 
     @Test
     public void testQuery() {
-        List<RecordEvent> recordEvents = this.recordEventPgEntityDao.query(0, 10);
-        log.info("{}", XDataUtils.toPrettyJSONString(recordEvents));
+        List<RecordEventEntity> recordEventEntities = this.recordEventPgEntityDao.query(0, 10);
+        log.info("{}", XDataUtils.toPrettyJSONString(recordEventEntities));
     }
 
     @Test
@@ -189,8 +189,8 @@ public class RecordEventTests {
         LocalDateTime maxCreatedAt = XDataUtils.parse("2025-09-08 11:35:35");
         long maxCreateAtTs = XDataUtils.toMills(maxCreatedAt);
         QueryBuilder queryBuilder = QueryBuilders.rangeQuery("createdAtTs").lt(maxCreateAtTs);
-        List<RecordEvent> recordEvents = this.recordEventPgEntityDao.query(queryBuilder, 0, 1);
-        log.info("{}", XDataUtils.toPrettyJSONString(recordEvents));
+        List<RecordEventEntity> recordEventEntities = this.recordEventPgEntityDao.query(queryBuilder, 0, 1);
+        log.info("{}", XDataUtils.toPrettyJSONString(recordEventEntities));
     }
 
     @Test
@@ -200,8 +200,8 @@ public class RecordEventTests {
         QueryBuilder queryBuilder = QueryBuilders.rangeQuery("createdAtTs").lte(maxCreateAtTs);
 
         SortBuilder sortBuilder = SortBuilders.fieldSort("createdAtTs").order(SortOrder.DESC);
-        List<RecordEvent> recordEvents = this.recordEventPgEntityDao.query(queryBuilder, sortBuilder, 0, 10);
-        log.info("{}", XDataUtils.toPrettyJSONString(recordEvents));
+        List<RecordEventEntity> recordEventEntities = this.recordEventPgEntityDao.query(queryBuilder, sortBuilder, 0, 10);
+        log.info("{}", XDataUtils.toPrettyJSONString(recordEventEntities));
     }
 
     @Test
@@ -212,7 +212,7 @@ public class RecordEventTests {
         boolQueryBuilder.must(QueryBuilders.termQuery("teamId", "aH8Hr9eALDDxJMX1thF5J"));
 
         SortBuilder sortBuilder = SortBuilders.fieldSort("createdAtTs").order(SortOrder.DESC);
-        Page<RecordEvent> page = this.recordEventPgEntityDao.queryPage(boolQueryBuilder, sortBuilder, 1, 1);
+        Page<RecordEventEntity> page = this.recordEventPgEntityDao.queryPage(boolQueryBuilder, sortBuilder, 1, 1);
         log.info("{}", XDataUtils.toPrettyJSONString(page));
     }
 }

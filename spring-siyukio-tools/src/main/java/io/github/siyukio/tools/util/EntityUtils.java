@@ -33,10 +33,9 @@ public abstract class EntityUtils {
     }
 
     public static String getTableName(Class<?> clazz) {
-        String tableName = clazz.getName();
-        int index = tableName.lastIndexOf(".");
-        if (index >= 0) {
-            tableName = tableName.substring(index + 1);
+        String tableName = clazz.getSimpleName();
+        if (tableName.endsWith("Entity")) {
+            tableName = tableName.substring(0, tableName.length() - "Entity".length());
         }
         return camelToSnake(tableName);
     }
