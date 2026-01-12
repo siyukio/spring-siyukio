@@ -162,7 +162,7 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
     }
 
     public T queryOne(QueryBuilder queryBuilder) {
-        List<T> list = this.query(queryBuilder, 0, 1);
+        List<T> list = this.queryList(queryBuilder, 0, 1);
         if (list.isEmpty()) {
             return null;
         }
@@ -170,7 +170,12 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
     }
 
     @Override
-    public List<T> query(QueryBuilder queryBuilder, SortBuilder sort, int from, int size) {
+    public List<T> queryList(QueryBuilder queryBuilder) {
+        return this.queryList(queryBuilder, null, 0, 100);
+    }
+
+    @Override
+    public List<T> queryList(QueryBuilder queryBuilder, SortBuilder sort, int from, int size) {
         if (from < 0) {
             from = 0;
         }
@@ -182,30 +187,30 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
     }
 
     @Override
-    public List<T> query(QueryBuilder queryBuilder, int from, int size) {
-        return this.query(queryBuilder, null, from, size);
+    public List<T> queryList(QueryBuilder queryBuilder, int from, int size) {
+        return this.queryList(queryBuilder, null, from, size);
     }
 
     @Override
-    public List<T> query(int from, int size) {
-        return this.query(null, null, from, size);
+    public List<T> queryList(int from, int size) {
+        return this.queryList(null, null, from, size);
     }
 
     @Override
-    public int count() {
+    public int queryCount() {
         return this.entityExecutor.count();
     }
 
     @Override
-    public int countByQuery(QueryBuilder queryBuilder) {
+    public int queryCount(QueryBuilder queryBuilder) {
         return this.entityExecutor.countByQuery(queryBuilder);
     }
 
     @Override
     public Page<T> queryPage(QueryBuilder queryBuilder, SortBuilder sort, int page, int size) {
-        int total = this.countByQuery(queryBuilder);
+        int total = this.queryCount(queryBuilder);
         int from = (page - 1) * size;
-        List<T> items = this.query(queryBuilder, sort, from, size);
+        List<T> items = this.queryList(queryBuilder, sort, from, size);
         return new Page<>(total, items);
     }
 }

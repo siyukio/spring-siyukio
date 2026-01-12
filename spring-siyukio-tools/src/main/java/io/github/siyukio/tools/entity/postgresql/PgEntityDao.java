@@ -113,6 +113,14 @@ public interface PgEntityDao<T> {
     T queryOne(QueryBuilder queryBuilder);
 
     /**
+     * Query a list of entities that match the provided query criteria.
+     *
+     * @param queryBuilder query criteria
+     * @return a list of matching entities (empty list if none)
+     */
+    List<T> queryList(QueryBuilder queryBuilder);
+
+    /**
      * Query a list of entities that match the provided criteria with sorting
      * and offset/limit pagination.
      *
@@ -122,7 +130,7 @@ public interface PgEntityDao<T> {
      * @param size         maximum number of results to return
      * @return a list of matching entities (empty list if none)
      */
-    List<T> query(QueryBuilder queryBuilder, SortBuilder sort, int from, int size);
+    List<T> queryList(QueryBuilder queryBuilder, SortBuilder sort, int from, int size);
 
     /**
      * Query a list of entities that match the provided criteria with
@@ -133,7 +141,7 @@ public interface PgEntityDao<T> {
      * @param size         maximum number of results to return
      * @return a list of matching entities (empty list if none)
      */
-    List<T> query(QueryBuilder queryBuilder, int from, int size);
+    List<T> queryList(QueryBuilder queryBuilder, int from, int size);
 
     /**
      * Query entities with pagination but without any filtering criteria.
@@ -142,14 +150,14 @@ public interface PgEntityDao<T> {
      * @param size maximum number of results to return
      * @return a list of entities from the requested page (empty list if none)
      */
-    List<T> query(int from, int size);
+    List<T> queryList(int from, int size);
 
     /**
      * Count all records in the underlying table for this entity type.
      *
      * @return the total number of records
      */
-    int count();
+    int queryCount();
 
     /**
      * Count the number of records that match the provided query criteria.
@@ -157,7 +165,7 @@ public interface PgEntityDao<T> {
      * @param queryBuilder query criteria
      * @return the number of matching records
      */
-    int countByQuery(QueryBuilder queryBuilder);
+    int queryCount(QueryBuilder queryBuilder);
 
     /**
      * Query a paged result set that contains both the list of entities and

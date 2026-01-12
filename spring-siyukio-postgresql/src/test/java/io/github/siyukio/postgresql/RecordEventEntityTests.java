@@ -165,7 +165,7 @@ public class RecordEventEntityTests {
 
     @Test
     public void testCount() {
-        int num = this.recordEventPgEntityDao.count();
+        int num = this.recordEventPgEntityDao.queryCount();
         log.info("{}", num);
     }
 
@@ -174,13 +174,13 @@ public class RecordEventEntityTests {
         LocalDateTime maxCreatedAt = XDataUtils.parse("2025-09-08 11:35:35");
         long maxCreateAtTs = XDataUtils.toMills(maxCreatedAt);
         QueryBuilder queryBuilder = QueryBuilders.rangeQuery("createdAtTs").lt(maxCreateAtTs);
-        int num = this.recordEventPgEntityDao.countByQuery(queryBuilder);
+        int num = this.recordEventPgEntityDao.queryCount(queryBuilder);
         log.info("{}", num);
     }
 
     @Test
     public void testQuery() {
-        List<RecordEventEntity> recordEventEntities = this.recordEventPgEntityDao.query(0, 10);
+        List<RecordEventEntity> recordEventEntities = this.recordEventPgEntityDao.queryList(0, 10);
         log.info("{}", XDataUtils.toPrettyJSONString(recordEventEntities));
     }
 
@@ -189,7 +189,7 @@ public class RecordEventEntityTests {
         LocalDateTime maxCreatedAt = XDataUtils.parse("2025-09-08 11:35:35");
         long maxCreateAtTs = XDataUtils.toMills(maxCreatedAt);
         QueryBuilder queryBuilder = QueryBuilders.rangeQuery("createdAtTs").lt(maxCreateAtTs);
-        List<RecordEventEntity> recordEventEntities = this.recordEventPgEntityDao.query(queryBuilder, 0, 1);
+        List<RecordEventEntity> recordEventEntities = this.recordEventPgEntityDao.queryList(queryBuilder, 0, 1);
         log.info("{}", XDataUtils.toPrettyJSONString(recordEventEntities));
     }
 
@@ -200,7 +200,7 @@ public class RecordEventEntityTests {
         QueryBuilder queryBuilder = QueryBuilders.rangeQuery("createdAtTs").lte(maxCreateAtTs);
 
         SortBuilder sortBuilder = SortBuilders.fieldSort("createdAtTs").order(SortOrder.DESC);
-        List<RecordEventEntity> recordEventEntities = this.recordEventPgEntityDao.query(queryBuilder, sortBuilder, 0, 10);
+        List<RecordEventEntity> recordEventEntities = this.recordEventPgEntityDao.queryList(queryBuilder, sortBuilder, 0, 10);
         log.info("{}", XDataUtils.toPrettyJSONString(recordEventEntities));
     }
 
