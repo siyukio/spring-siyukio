@@ -32,12 +32,20 @@ public abstract class EntityUtils {
         return result.toString();
     }
 
-    public static String getTableName(Class<?> clazz) {
-        String tableName = clazz.getSimpleName();
-        if (tableName.endsWith("Entity")) {
-            tableName = tableName.substring(0, tableName.length() - "Entity".length());
+    private static String removeSuffix(String input) {
+        if (input.endsWith("Entity")) {
+            input = input.substring(0, input.length() - "Entity".length());
         }
+        return input;
+    }
+
+    public static String getTableName(Class<?> clazz) {
+        String tableName = removeSuffix(clazz.getSimpleName());
         return camelToSnake(tableName);
+    }
+
+    public static String getKeyInfo(Class<?> clazz) {
+        return removeSuffix(clazz.getSimpleName());
     }
 
     public static String snakeToCamel(String input) {

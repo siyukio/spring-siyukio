@@ -237,7 +237,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
 
         String keyInfo = pgEntity.keyInfo();
         if (!StringUtils.hasText(keyInfo)) {
-            keyInfo = this.entityClass.getSimpleName();
+            keyInfo = EntityUtils.getKeyInfo(this.entityClass);
         }
 
         List<IndexDefinition> indexDefinitions = this.getIndexDefinitions(table, pgEntity.indexes());
