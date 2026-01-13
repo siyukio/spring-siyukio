@@ -121,11 +121,20 @@ public interface PgEntityDao<T> {
     List<T> queryList(QueryBuilder queryBuilder);
 
     /**
+     * Query a list of entities that match the provided query criteria with sorting.
+     *
+     * @param queryBuilder query criteria
+     * @param sort         sorting specification (maybe {@code null})
+     * @return a list of matching entities (empty list if none)
+     */
+    List<T> queryList(QueryBuilder queryBuilder, SortBuilder sort);
+
+    /**
      * Query a list of entities that match the provided criteria with sorting
      * and offset/limit pagination.
      *
      * @param queryBuilder query criteria
-     * @param sort         sorting specification (may be {@code null})
+     * @param sort         sorting specification (maybe {@code null})
      * @param from         zero-based offset of the first result to return
      * @param size         maximum number of results to return
      * @return a list of matching entities (empty list if none)
@@ -142,6 +151,24 @@ public interface PgEntityDao<T> {
      * @return a list of matching entities (empty list if none)
      */
     List<T> queryList(QueryBuilder queryBuilder, int from, int size);
+
+    /**
+     * Query all entities with sorting.
+     *
+     * @param sort sorting specification (may be {@code null})
+     * @return a list of matching entities (empty list if none)
+     */
+    List<T> queryList(SortBuilder sort);
+
+    /**
+     * Query entities with sorting and pagination but without any filtering criteria.
+     *
+     * @param sort sorting specification (may be {@code null})
+     * @param from zero-based offset of the first result to return
+     * @param size maximum number of results to return
+     * @return a list of entities from the requested page (empty list if none)
+     */
+    List<T> queryList(SortBuilder sort, int from, int size);
 
     /**
      * Query entities with pagination but without any filtering criteria.

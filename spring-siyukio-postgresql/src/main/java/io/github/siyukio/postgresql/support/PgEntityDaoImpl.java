@@ -175,6 +175,11 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
     }
 
     @Override
+    public List<T> queryList(QueryBuilder queryBuilder, SortBuilder sort) {
+        return this.queryList(queryBuilder, sort, 0, 100);
+    }
+
+    @Override
     public List<T> queryList(QueryBuilder queryBuilder, SortBuilder sort, int from, int size) {
         if (from < 0) {
             from = 0;
@@ -189,6 +194,16 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
     @Override
     public List<T> queryList(QueryBuilder queryBuilder, int from, int size) {
         return this.queryList(queryBuilder, null, from, size);
+    }
+
+    @Override
+    public List<T> queryList(SortBuilder sort) {
+        return this.queryList(null, sort);
+    }
+
+    @Override
+    public List<T> queryList(SortBuilder sort, int from, int size) {
+        return this.queryList(null, sort, from, size);
     }
 
     @Override
