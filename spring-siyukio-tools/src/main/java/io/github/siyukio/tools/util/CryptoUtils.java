@@ -129,6 +129,20 @@ public abstract class CryptoUtils {
         }
     }
 
+    public static String sha256(String input) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(input.getBytes());
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b & 0xff));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 algorithm not found");
+        }
+    }
+
     /**
      * Encrypt a plaintext string using AES-GCM with a key derived from the provided password.
      * <p>
