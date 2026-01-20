@@ -53,13 +53,13 @@ public interface RequestValidator {
         RequestValidator requestValidator;
         assert apiRequestParameter.items() != null;
         ApiSchema.Type itemsType = apiRequestParameter.items().schema().type();
-        parent = parent + "." + apiRequestParameter.name();
+        String itemParent = parent + "." + apiRequestParameter.name();
         if (itemsType == ApiSchema.Type.OBJECT) {
-            requestValidator = createObjectRequestValidator(apiRequestParameter.items(), parent);
+            requestValidator = createObjectRequestValidator(apiRequestParameter.items(), itemParent);
         } else {
-            RequestValidator typeRequestValidator = createArrayItemRequestValidator(apiRequestParameter.items(), parent);
+            RequestValidator typeRequestValidator = createArrayItemRequestValidator(apiRequestParameter.items(), itemParent);
             requestValidator = new BasicRequestValidator(typeRequestValidator, null,
-                    parent, apiRequestParameter.error());
+                    itemParent, apiRequestParameter.error());
         }
         return new ArrayRequestValidator(apiRequestParameter.name(),
                 apiRequestParameter.required(),

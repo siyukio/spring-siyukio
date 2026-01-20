@@ -2,6 +2,7 @@ package io.github.siyukio.tools.api.parameter.request;
 
 import io.github.siyukio.tools.api.constants.ApiConstants;
 import io.github.siyukio.tools.util.XDataUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -10,6 +11,7 @@ import java.util.List;
 /**
  * @author Buddy
  */
+@Slf4j
 public final class ArrayRequestValidator extends AbstractRequestValidator {
 
     private final RequestValidator requestValidator;
@@ -42,6 +44,7 @@ public final class ArrayRequestValidator extends AbstractRequestValidator {
             try {
                 value = XDataUtils.parseArray(str);
             } catch (RuntimeException ex) {
+                log.error("parseArray error: {}", ex.getMessage());
                 throw this.createApiException(ApiConstants.ERROR_PARAMETER_PARSE_ARRAY_FORMAT);
             }
         }

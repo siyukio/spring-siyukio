@@ -2,6 +2,7 @@ package io.github.siyukio.tools.api.parameter.request;
 
 import io.github.siyukio.tools.api.constants.ApiConstants;
 import io.github.siyukio.tools.util.XDataUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 
 import java.util.HashMap;
@@ -13,6 +14,7 @@ import java.util.Set;
 /**
  * @author Buddy
  */
+@Slf4j
 public class ObjectRequestValidator extends AbstractRequestValidator {
 
     private final boolean additionalProperties;
@@ -43,6 +45,7 @@ public class ObjectRequestValidator extends AbstractRequestValidator {
             try {
                 value = XDataUtils.parseObject(str);
             } catch (RuntimeException ex) {
+                log.error("parseObject error:{}", ex.getMessage());
                 throw this.createApiException(ApiConstants.ERROR_PARAMETER_PARSE_OBJECT_FORMAT);
             }
         }
