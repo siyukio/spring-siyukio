@@ -7,7 +7,7 @@ import io.github.siyukio.postgresql.support.PgEntityFactoryBean;
 import io.github.siyukio.tools.datasource.MultiDataSourceProperties;
 import io.github.siyukio.tools.entity.postgresql.PgEntityDao;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgEntity;
-import io.github.siyukio.tools.registrar.AbstractCommonRegistrar;
+import io.github.siyukio.tools.registrar.AbstractDataSourceRegistrar;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.bind.Bindable;
@@ -29,7 +29,7 @@ import java.util.Map;
  * @author Bugee
  */
 @Slf4j
-public class PostgresqlEntityRegistrar extends AbstractCommonRegistrar implements ImportBeanDefinitionRegistrar, ResourceLoaderAware, EnvironmentAware {
+public class PostgresqlEntityRegistrar extends AbstractDataSourceRegistrar implements ImportBeanDefinitionRegistrar, ResourceLoaderAware, EnvironmentAware {
 
     private final static Map<String, MultiJdbcTemplate> JDBC_TEMPLATE_MAP = new HashMap<>();
 

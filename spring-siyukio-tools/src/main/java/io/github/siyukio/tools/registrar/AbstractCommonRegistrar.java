@@ -1,6 +1,5 @@
 package io.github.siyukio.tools.registrar;
 
-import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -41,8 +40,6 @@ public abstract class AbstractCommonRegistrar implements ImportBeanDefinitionReg
     protected abstract Class<?> getBeanFactoryClass();
 
     protected abstract Class<?> getBeanClass();
-
-    protected abstract HikariDataSource createDataSource();
 
     @Override
     public void setResourceLoader(ResourceLoader resourceLoader) {
@@ -129,18 +126,6 @@ public abstract class AbstractCommonRegistrar implements ImportBeanDefinitionReg
             beanName = this.buildDefaultBeanName(scannedDefinition);
             registry.registerBeanDefinition(beanName, beanDefinition);
         }
-
-        HikariDataSource hikariDataSource = this.createDataSource();
-        if (registry.containsBeanDefinition("dataSource")) {
-            return;
-        }
-
-        BeanDefinition dataSourceBeanDefinition = BeanDefinitionBuilder
-                .genericBeanDefinition(com.zaxxer.hikari.HikariDataSource.class, () -> hikariDataSource)
-                .setPrimary(true)
-                .getBeanDefinition();
-        registry.registerBeanDefinition("dataSource", dataSourceBeanDefinition);
-        log.info("Bootstrapping set default HikariDataSource: {}", dataSourceBeanDefinition);
     }
 
     private String buildDefaultBeanName(BeanDefinition definition) {
