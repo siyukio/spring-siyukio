@@ -53,6 +53,20 @@ public record ListRequest(
                                 [{"id":""}, {"id":""}]
                                 """)
                 })
-        List<JSONObject> objectList
+        List<JSONObject> objectList,
+
+        @ApiParameter(required = false)
+        List<Item> itemList
+        
 ) {
+
+    record Item(
+            @ApiParameter
+            String id,
+
+            @ApiParameter
+            String name
+    ) {
+
+    }
 }

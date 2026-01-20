@@ -1,0 +1,28 @@
+logging:
+  level:
+    root: INFO
+    io:
+      github:
+        siyukio: DEBUG
+spring:
+  siyukio:
+    api-docs:
+      url: http://127.0.0.1:8080
+      authorization: test
+    jwt:
+      public-key: |
+        -----BEGIN PUBLIC KEY-----
+        MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEIvOb3WiWoNrQ1ggpeoYz44jxjY+S
+        jcIQ4NmtOvfRRYdq4YTTyN4IoMT2mfOO72GfmYYyXhhKP1KonShHvxmBXA==
+        -----END PUBLIC KEY-----
+      private-key: |
+        -----BEGIN PRIVATE KEY-----
+        MEECAQAwEwYHKoZIzj0CAQYIKoZIzj0DAQcEJzAlAgEBBCAhiWxwhbZlhG5K2f4Z
+        hCSvly9hfoK2z2UcpfAyD/n0KQ==
+        -----END PRIVATE KEY-----
+      password: siyukio
+    signature:
+      salt: siyukio
+    profiles:
+      docs: true
+      active: dev

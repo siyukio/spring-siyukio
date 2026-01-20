@@ -261,6 +261,19 @@ class ParameterControllerTests {
     }
 
     @Test
+    void testItemListSuccess() {
+        JSONObject listDto = new JSONObject();
+        listDto.put("itemList", """
+                [
+                    {"name":"test", "id":"123"}
+                ]
+                """);
+        JSONObject requestJson = this.apiMock.perform("/list/test", listDto);
+        log.info("{}", listDto);
+        log.info("{}", requestJson);
+    }
+
+    @Test
     void testPageSuccess() {
         JSONObject myPageRequest = new JSONObject();
 

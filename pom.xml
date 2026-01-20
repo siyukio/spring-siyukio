@@ -18,6 +18,7 @@
         <module>spring-siyukio-application-mcp</module>
         <module>spring-siyukio-mcp-client</module>
         <module>spring-siyukio-postgresql</module>
+        <module>spring-siyukio-http-client</module>
     </modules>
 
     <properties>

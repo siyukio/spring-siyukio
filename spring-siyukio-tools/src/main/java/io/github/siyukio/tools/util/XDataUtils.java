@@ -40,13 +40,9 @@ public abstract class XDataUtils {
     public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     public static final McpJsonMapper MCP_JSON_MAPPER = new JacksonMcpJsonMapper(OBJECT_MAPPER);
-
+    public static final XmlMapper XML_MAPPER = new XmlMapper();
     private static final DateTimeFormatter DEFAULT_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
     private static final DateTimeFormatter DEFAULT_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-    private static final XmlMapper XML_MAPPER = new XmlMapper();
-
     private static final List<DateTimeFormatter> DATE_TIME_FORMATTERS = List.of(
             DEFAULT_DATE_TIME_FORMATTER,
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"),
