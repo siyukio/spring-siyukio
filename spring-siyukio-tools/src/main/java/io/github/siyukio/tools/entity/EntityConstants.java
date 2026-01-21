@@ -35,4 +35,31 @@ public interface EntityConstants {
      * Thrown when encryption is required but the encryption key is not configured.
      */
     String ERROR_ENCRYPTION_KEY_MISSING = "Encryption key is not configured. Please set the encryption key in data source properties.";
+
+    /**
+     * Error message format for missing createdAtTs field in partitioned entity.
+     * <p>
+     * Thrown when an entity is configured with partitioning but lacks the required timestamp field.
+     */
+    String ERROR_PARTITION_TIMESTAMP_FIELD_MISSING_FORMAT = "Entity: '%s' with partition '%s' must include 'createdAtTs' field.";
+
+    /**
+     * Field name for creation timestamp (milliseconds).
+     */
+    String CREATED_AT_TS_FIELD = "createdAtTs";
+
+    /**
+     * Field name for creation date-time.
+     */
+    String CREATED_AT_FIELD = "createdAt";
+
+    /**
+     * Field name for update timestamp (milliseconds).
+     */
+    String UPDATED_AT_TS_FIELD = "updatedAtTs";
+
+    /**
+     * Field name for update date-time.
+     */
+    String UPDATED_AT_FIELD = "updatedAt";
 }

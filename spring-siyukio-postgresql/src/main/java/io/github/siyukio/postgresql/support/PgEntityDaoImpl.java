@@ -1,6 +1,7 @@
 package io.github.siyukio.postgresql.support;
 
 import io.github.siyukio.tools.entity.ColumnType;
+import io.github.siyukio.tools.entity.EntityConstants;
 import io.github.siyukio.tools.entity.EntityExecutor;
 import io.github.siyukio.tools.entity.definition.ColumnDefinition;
 import io.github.siyukio.tools.entity.definition.EntityDefinition;
@@ -58,10 +59,10 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
         //
         long createdAtTs = System.currentTimeMillis();
         String createdAtFormat = XDataUtils.formatMs(createdAtTs);
-        entityJson.put("createdAtTs", createdAtTs);
-        entityJson.put("createdAt", createdAtFormat);
-        entityJson.put("updatedAtTs", createdAtTs);
-        entityJson.put("updatedAt", createdAtFormat);
+        entityJson.put(EntityConstants.CREATED_AT_TS_FIELD, createdAtTs);
+        entityJson.put(EntityConstants.CREATED_AT_FIELD, createdAtFormat);
+        entityJson.put(EntityConstants.UPDATED_AT_TS_FIELD, createdAtTs);
+        entityJson.put(EntityConstants.UPDATED_AT_FIELD, createdAtFormat);
     }
 
     @Override
@@ -87,8 +88,8 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
     private void preUpdate(JSONObject entityJson) {
         long updatedAtTs = System.currentTimeMillis();
         String updatedAtFormat = XDataUtils.formatMs(updatedAtTs);
-        entityJson.put("updatedAtTs", updatedAtTs);
-        entityJson.put("updatedAt", updatedAtFormat);
+        entityJson.put(EntityConstants.UPDATED_AT_TS_FIELD, updatedAtTs);
+        entityJson.put(EntityConstants.UPDATED_AT_FIELD, updatedAtFormat);
     }
 
     @Override
@@ -114,10 +115,10 @@ public class PgEntityDaoImpl<T> implements PgEntityDao<T> {
     private void preUpsert(JSONObject entityJson) {
         long createdAtTs = System.currentTimeMillis();
         String createdAtFormat = XDataUtils.formatMs(createdAtTs);
-        entityJson.put("createdAtTs", createdAtTs);
-        entityJson.put("createdAt", createdAtFormat);
-        entityJson.put("updatedAtTs", createdAtTs);
-        entityJson.put("updatedAt", createdAtFormat);
+        entityJson.put(EntityConstants.CREATED_AT_TS_FIELD, createdAtTs);
+        entityJson.put(EntityConstants.CREATED_AT_FIELD, createdAtFormat);
+        entityJson.put(EntityConstants.UPDATED_AT_TS_FIELD, createdAtTs);
+        entityJson.put(EntityConstants.UPDATED_AT_FIELD, createdAtFormat);
     }
 
     @Override
