@@ -61,6 +61,12 @@
 
             <dependency>
                 <groupId>io.github.siyukio</groupId>
+                <artifactId>spring-siyukio-http-client</artifactId>
+                <version>${siyukio.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.github.siyukio</groupId>
                 <artifactId>spring-siyukio-postgresql</artifactId>
                 <version>${siyukio.version}</version>
             </dependency>
