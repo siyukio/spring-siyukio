@@ -2,11 +2,15 @@ package io.github.siyukio.tools.util;
 
 import io.github.siyukio.tools.entity.ColumnType;
 import io.github.siyukio.tools.entity.EntityConstants;
+import io.github.siyukio.tools.entity.definition.EntityDefinition;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.lang.reflect.RecordComponent;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 
 /**
@@ -140,5 +144,81 @@ public abstract class EntityUtils {
         if (!identifier.matches("[a-zA-Z0-9_]+")) {
             throw new IllegalArgumentException("Invalid entity identifier: " + identifier);
         }
+    }
+
+    private static LocalDateTime getPartitionEndDateTime(EntityDefinition.Partition partition, LocalDateTime startDateTime) {
+        return switch (partition) {
+            case YEAR -> startDateTime.plusYears(1);
+            case MONTH -> startDateTime.plusMonths(1);
+            case DAY -> startDateTime.plusDays(1);
+            case HOUR -> startDateTime.plusHours(1);
+            default -> throw new IllegalArgumentException("Unsupported partition type: " + partition);
+        };
+    }
+
+    private static String getPartitionSuffix(EntityDefinition.Partition partition, LocalDateTime startDateTime) {
+        return switch (partition) {
+            case YEAR -> startDateTime.format(DateTimeFormatter.ofPattern("yyyy"));
+            case MONTH -> startDateTime.format(DateTimeFormatter.ofPattern("yyyyMM"));
+            case DAY -> startDateTime.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+            case HOUR -> startDateTime.format(DateTimeFormatter.ofPattern("yyyyMMddHH"));
+            default -> throw new IllegalArgumentException("Unsupported partition type: " + partition);
+        };
+    }
+
+    /**
+     * Generate current partition table name based on main table name and partition type.
+     *
+     * @param entityDefinition the entity definition
+     * @return the current partition table name
+     */
+    public static PartitionTable getCurrentPartitionTable(EntityDefinition entityDefinition) {
+        long timestamp = System.currentTimeMillis();
+        ZoneId zone = ZoneId.systemDefault();
+        LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zone);
+        EntityDefinition.Partition partition = entityDefinition.partition();
+        LocalDateTime startDateTime = switch (partition) {
+            case YEAR -> dateTime.withDayOfYear(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            case MONTH -> dateTime.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            case DAY -> dateTime.withHour(0).withMinute(0).withSecond(0).withNano(0);
+            case HOUR -> dateTime.withMinute(0).withSecond(0).withNano(0);
+            default -> throw new IllegalArgumentException("Unsupported partition type: " + partition);
+        };
+
+        LocalDateTime endDateTime = getPartitionEndDateTime(partition, startDateTime);
+
+        long from = startDateTime.atZone(zone).toInstant().toEpochMilli();
+        long to = endDateTime.atZone(zone).toInstant().toEpochMilli();
+
+        String suffix = getPartitionSuffix(partition, startDateTime);
+
+        return new PartitionTable(
+                entityDefinition.table() + "_" + suffix,
+                from, to);
+    }
+
+    public static PartitionTable getNextPartitionTable(EntityDefinition entityDefinition) {
+        PartitionTable currentPartitionTable = getCurrentPartitionTable(entityDefinition);
+
+        ZoneId zone = ZoneId.systemDefault();
+        LocalDateTime startDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(currentPartitionTable.to()), zone);
+
+        LocalDateTime endDateTime = getPartitionEndDateTime(entityDefinition.partition(), startDateTime);
+
+        long from = startDateTime.atZone(zone).toInstant().toEpochMilli();
+        long to = endDateTime.atZone(zone).toInstant().toEpochMilli();
+
+        String suffix = getPartitionSuffix(entityDefinition.partition(), startDateTime);
+
+        return new PartitionTable(
+                entityDefinition.table() + "_" + suffix,
+                from, to);
+    }
+
+    public record PartitionTable(
+            String tableName,
+            long from,
+            long to
+    ) {
     }
 }

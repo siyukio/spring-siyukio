@@ -1,5 +1,7 @@
 package io.github.siyukio.tools.entity.postgresql.annotation;
 
+import io.github.siyukio.tools.entity.definition.EntityDefinition;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -60,6 +62,17 @@ public @interface PgEntity {
      * @return table name
      */
     String table() default "";
+
+    /**
+     * Table partitioning strategy.
+     * <p>
+     * Supports: NONE, YEAR, MONTH, DAY, HOUR.
+     * <p>
+     * NONE means no partitioning (default).
+     *
+     * @return partitioning strategy
+     */
+    EntityDefinition.Partition partition() default EntityDefinition.Partition.NONE;
 
     /**
      * Table comment/description.

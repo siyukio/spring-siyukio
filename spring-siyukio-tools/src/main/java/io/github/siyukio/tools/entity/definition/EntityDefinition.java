@@ -15,8 +15,38 @@ public record EntityDefinition(
         boolean createIndexAuto,
         boolean encrypted,
         String keyInfo,
+        Partition partition,
         KeyDefinition keyDefinition,
         List<ColumnDefinition> columnDefinitions,
         List<IndexDefinition> indexDefinitions
 ) {
+    /**
+     * Partitioning strategy for table partitioning.
+     */
+    public enum Partition {
+        /**
+         * No partitioning (default).
+         */
+        NONE,
+
+        /**
+         * Partition by year.
+         */
+        YEAR,
+
+        /**
+         * Partition by month.
+         */
+        MONTH,
+
+        /**
+         * Partition by day.
+         */
+        DAY,
+
+        /**
+         * Partition by hour.
+         */
+        HOUR
+    }
 }

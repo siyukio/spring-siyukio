@@ -67,9 +67,28 @@ public abstract class PgSqlUtils {
             );
             """;
 
+    private final static String CREATE_PARTITIONED_TABLE_TEMPLATE = """
+            CREATE TABLE IF NOT EXISTS %s.%s (
+                %s TEXT NOT NULL,
+                %s,
+                PRIMARY KEY (%s, %s)
+            )PARTITION BY RANGE (%s);
+            """;
+
+    private final static String CREATE_PARTITION_TABLE_TEMPLATE = """
+            CREATE TABLE IF NOT EXISTS %s.%s
+            PARTITION OF %s.%s
+            FOR VALUES FROM (%d) TO (%d);
+            """;
+
     private final static String CREATE_INDEX_TEMPLATE = "CREATE INDEX %s ON %s.%s ( %s ) ;";
 
     private final static String CREATE_UNIQUE_INDEX_TEMPLATE = "CREATE UNIQUE INDEX %s ON %s.%s ( %s ) ;";
+
+    private final static String CREATE_PARTITIONED_INDEX_TEMPLATE = "CREATE INDEX %s ON %s.%s ( %s ) INCLUDE (%s);";
+
+    private final static String CREATE_PARTITIONED_UNIQUE_INDEX_TEMPLATE = "CREATE UNIQUE INDEX %s ON %s.%s ( %s ) INCLUDE (%s);";
+
 
     private final static String INSERT_TEMPLATE = """
             INSERT INTO %s.%s ( %s )
@@ -251,6 +270,19 @@ public abstract class PgSqlUtils {
         return sqlList;
     }
 
+    public static String createPartitionedIndexSql(EntityDefinition entityDefinition, IndexDefinition indexDefinition) {
+        String schema = entityDefinition.schema();
+        String table = entityDefinition.table();
+        String indexName = indexDefinition.indexName();
+        KeyDefinition keyDefinition = entityDefinition.keyDefinition();
+        List<String> columnNameList = Arrays.stream(indexDefinition.columns()).map(EntityUtils::camelToSnake).toList();
+        String columns = String.join(", ", columnNameList);
+        if (indexDefinition.unique()) {
+            return String.format(CREATE_PARTITIONED_UNIQUE_INDEX_TEMPLATE, indexName, schema, table, columns, keyDefinition.columnName());
+        }
+        return String.format(CREATE_PARTITIONED_INDEX_TEMPLATE, indexName, schema, table, columns, keyDefinition.columnName());
+    }
+
     public static String createIndexSql(EntityDefinition entityDefinition, IndexDefinition indexDefinition) {
         String schema = entityDefinition.schema();
         String table = entityDefinition.table();
@@ -261,6 +293,57 @@ public abstract class PgSqlUtils {
             return String.format(CREATE_UNIQUE_INDEX_TEMPLATE, indexName, schema, table, columns);
         }
         return String.format(CREATE_INDEX_TEMPLATE, indexName, schema, table, columns);
+    }
+
+    public static List<String> createPartitionTableSql(EntityDefinition entityDefinition, String partitionTableName, long from, long to) {
+        List<String> sqlList = new ArrayList<>();
+
+        // create partition table
+        String schema = entityDefinition.schema();
+        String table = entityDefinition.table();
+        String createPartitionTableSql = String.format(CREATE_PARTITION_TABLE_TEMPLATE, schema, partitionTableName, schema, table, from, to);
+        sqlList.add(createPartitionTableSql);
+        return sqlList;
+    }
+
+    public static List<String> createPartitionedTableAndCommentSql(EntityDefinition entityDefinition, ColumnDefinition tsColumnDefinition) {
+        List<String> sqlList = new ArrayList<>();
+
+        //create partitioned table
+        String schema = entityDefinition.schema();
+        String table = entityDefinition.table();
+        List<String> columnDefinitionSqlList = new ArrayList<>();
+
+        for (ColumnDefinition columnDefinition : entityDefinition.columnDefinitions()) {
+            columnDefinitionSqlList.add(getColumnDefinitionSql(columnDefinition));
+        }
+
+        KeyDefinition keyDefinition = entityDefinition.keyDefinition();
+
+        String columnDefinitions = String.join("," + System.lineSeparator(), columnDefinitionSqlList);
+        String createTableSql = String.format(CREATE_PARTITIONED_TABLE_TEMPLATE, schema, table,
+                keyDefinition.columnName(),
+                columnDefinitions,
+                tsColumnDefinition.columnName(), keyDefinition.columnName(), tsColumnDefinition.columnName());
+        sqlList.add(createTableSql);
+
+        //comment
+        sqlList.add(String.format(TABLE_COMMENT_TEMPLATE, schema + "." + table, entityDefinition.comment()));
+
+        if (StringUtils.hasText(keyDefinition.comment())) {
+            sqlList.add(String.format(COLUMN_COMMENT_TEMPLATE,
+                    schema + "." + table + "." + keyDefinition.columnName(),
+                    keyDefinition.comment()));
+        }
+
+        for (ColumnDefinition columnDefinition : entityDefinition.columnDefinitions()) {
+            if (StringUtils.hasText(columnDefinition.comment())) {
+                sqlList.add(String.format(COLUMN_COMMENT_TEMPLATE,
+                        schema + "." + table + "." + columnDefinition.columnName(),
+                        columnDefinition.comment()));
+            }
+        }
+        return sqlList;
     }
 
     public static String insertAndReturnIdSql(EntityDefinition entityDefinition) {

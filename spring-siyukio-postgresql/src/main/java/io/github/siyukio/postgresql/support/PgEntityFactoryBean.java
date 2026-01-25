@@ -14,6 +14,7 @@ import io.github.siyukio.tools.entity.postgresql.annotation.PgColumn;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgEntity;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgIndex;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgKey;
+import io.github.siyukio.tools.util.AsyncUtils;
 import io.github.siyukio.tools.util.EntityUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.Getter;
@@ -41,6 +42,8 @@ import java.sql.Connection;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -182,6 +185,28 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         return indexDefinitions;
     }
 
+    private List<IndexDefinition> getPartitionedIndexDefinitions(String table, KeyDefinition keyDefinition, PgIndex[] pgIndexes) {
+        List<IndexDefinition> indexDefinitions = new ArrayList<>();
+
+        // Create index on logical primary key ID to accelerate logical component queries
+        String[] keyColumns = {keyDefinition.fieldName()};
+        String indexName = this.getIndexName(table, keyColumns, false);
+        EntityUtils.isSafe(indexName);
+        IndexDefinition indexDefinition = new IndexDefinition(indexName, keyColumns, false);
+        indexDefinitions.add(indexDefinition);
+
+        for (PgIndex pgIndex : pgIndexes) {
+            if (pgIndex.columns().length == 1 && pgIndex.columns()[0].equals(keyDefinition.fieldName())) {
+                continue;
+            }
+            indexName = this.getIndexName(table, pgIndex.columns(), pgIndex.unique());
+            EntityUtils.isSafe(indexName);
+            indexDefinition = new IndexDefinition(indexName, pgIndex.columns(), pgIndex.unique());
+            indexDefinitions.add(indexDefinition);
+        }
+        return indexDefinitions;
+    }
+
     public EntityDefinition getEntityDefinition() {
         KeyDefinition keyDefinition = null;
         List<ColumnDefinition> columnDefinitions = new ArrayList<>();
@@ -240,10 +265,16 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             keyInfo = EntityUtils.getKeyInfo(this.entityClass);
         }
 
-        List<IndexDefinition> indexDefinitions = this.getIndexDefinitions(table, pgEntity.indexes());
+        List<IndexDefinition> indexDefinitions;
+        if (pgEntity.partition() == EntityDefinition.Partition.NONE) {
+            indexDefinitions = this.getIndexDefinitions(table, pgEntity.indexes());
+        } else {
+            indexDefinitions = this.getPartitionedIndexDefinitions(table, keyDefinition, pgEntity.indexes());
+        }
+
         return new EntityDefinition(dbName, schema, table, pgEntity.comment(),
                 pgEntity.createTableAuto(), pgEntity.addColumnAuto(), pgEntity.createIndexAuto(),
-                encrypted, keyInfo,
+                encrypted, keyInfo, pgEntity.partition(),
                 keyDefinition, columnDefinitions, indexDefinitions);
     }
 
@@ -270,7 +301,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
                 ));
     }
 
-    private void createIndex(EntityDefinition entityDefinition, JdbcTemplate jdbcTemplate) {
+    private void checkIndex(EntityDefinition entityDefinition, JdbcTemplate jdbcTemplate) {
         if (!entityDefinition.createIndexAuto() || entityDefinition.indexDefinitions().isEmpty()) {
             return;
         }
@@ -278,7 +309,11 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         Map<String, InformationIndex> informationIndexMap = this.queryIndexes(entityDefinition, jdbcTemplate);
         for (IndexDefinition indexDefinition : entityDefinition.indexDefinitions()) {
             if (!informationIndexMap.containsKey(indexDefinition.indexName())) {
-                sqlList.add(PgSqlUtils.createIndexSql(entityDefinition, indexDefinition));
+                if (entityDefinition.partition() == EntityDefinition.Partition.NONE) {
+                    sqlList.add(PgSqlUtils.createIndexSql(entityDefinition, indexDefinition));
+                } else {
+                    sqlList.add(PgSqlUtils.createPartitionedIndexSql(entityDefinition, indexDefinition));
+                }
             }
         }
         if (!sqlList.isEmpty()) {
@@ -287,8 +322,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         }
     }
 
-    private Map<String, InformationColumn> queryColumns(EntityDefinition entityDefinition, JdbcTemplate jdbcTemplate) {
-        String schema = entityDefinition.schema();
+    private Map<String, InformationColumn> queryColumns(String schema, String table, JdbcTemplate jdbcTemplate) {
         if (!StringUtils.hasText(schema)) {
             schema = PgSqlUtils.DEFAULT_SCHEMA;
         }
@@ -301,7 +335,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
                 rowJson.put(resultSetMetaData.getColumnLabel(index), rs.getObject(index));
             }
             return XDataUtils.copy(rowJson, InformationColumn.class);
-        }, schema, entityDefinition.table());
+        }, schema, table);
 
         return informationColumns.stream()
                 .collect(Collectors.toMap(
@@ -388,17 +422,34 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         this.executeSqlScript("createTable", entityDefinition.dbName(), sqlList);
     }
 
-    private void checkTable(EntityDefinition entityDefinition, JdbcTemplate jdbcTemplate) {
+    private void createPartitionedTable(EntityDefinition entityDefinition, ColumnDefinition tsColumnDefinition) {
+        if (!entityDefinition.createTableAuto()) {
+            return;
+        }
+        List<String> sqlList = PgSqlUtils.createPartitionedTableAndCommentSql(entityDefinition, tsColumnDefinition);
+        log.info("createPartitionedTable: {}, {}", entityDefinition.schema(), sqlList);
+        this.executeSqlScript("createPartitionedTable", entityDefinition.dbName(), sqlList);
+    }
 
+    private void createPartition(EntityDefinition entityDefinition, String tableName, long from, long to) {
+        List<String> sqlList = PgSqlUtils.createPartitionTableSql(entityDefinition, tableName, from, to);
+        log.info("createPartition: {}, {}", entityDefinition.schema(), sqlList);
+        this.executeSqlScript("createPartition", entityDefinition.dbName(), sqlList);
+    }
+
+    private void checkTableSchema(EntityDefinition entityDefinition, JdbcTemplate jdbcTemplate) {
         if (StringUtils.hasText(entityDefinition.schema()) && !SCHEMA_SET.contains(entityDefinition.schema())) {
             String sql = PgSqlUtils.createSchemaIfNotExistsSql(entityDefinition.schema());
             log.info("checkSchema: {}", sql);
             jdbcTemplate.execute(sql);
             SCHEMA_SET.add(entityDefinition.schema());
         }
+    }
+
+    private void checkTable(EntityDefinition entityDefinition, JdbcTemplate jdbcTemplate) {
 
         if (entityDefinition.createTableAuto() || entityDefinition.addColumnAuto()) {
-            Map<String, InformationColumn> informationColumnMap = this.queryColumns(entityDefinition, jdbcTemplate);
+            Map<String, InformationColumn> informationColumnMap = this.queryColumns(entityDefinition.schema(), entityDefinition.table(), jdbcTemplate);
             if (informationColumnMap.isEmpty()) {
                 this.createTable(entityDefinition);
             } else {
@@ -406,19 +457,73 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             }
         }
 
-        this.createIndex(entityDefinition, jdbcTemplate);
+        this.checkIndex(entityDefinition, jdbcTemplate);
+    }
+
+    private void checkPartitionedTable(EntityDefinition entityDefinition, JdbcTemplate jdbcTemplate) {
+        // check partition timestamp field
+        List<ColumnDefinition> tsColumnDefinitions = entityDefinition.columnDefinitions().stream()
+                .filter(col -> col.fieldName().equals(EntityConstants.CREATED_AT_TS_FIELD))
+                .toList();
+        Assert.isTrue(tsColumnDefinitions.size() == 1,
+                String.format(EntityConstants.ERROR_PARTITION_TIMESTAMP_FIELD_MISSING_FORMAT,
+                        this.entityClass.getSimpleName(), entityDefinition.partition()));
+        ColumnDefinition tsColumnDefinition = tsColumnDefinitions.getFirst();
+
+        if (entityDefinition.createTableAuto() || entityDefinition.addColumnAuto()) {
+            Map<String, InformationColumn> informationColumnMap = this.queryColumns(entityDefinition.schema(), entityDefinition.table(), jdbcTemplate);
+            if (informationColumnMap.isEmpty()) {
+                this.createPartitionedTable(entityDefinition, tsColumnDefinition);
+            } else {
+                this.alterTable(entityDefinition, informationColumnMap);
+            }
+        }
+
+        // check index
+        this.checkIndex(entityDefinition, jdbcTemplate);
+    }
+
+    private void checkPartition(EntityDefinition entityDefinition, EntityUtils.PartitionTable partitionTable, JdbcTemplate jdbcTemplate) {
+        Map<String, InformationColumn> informationColumnMap = this.queryColumns(entityDefinition.schema(), partitionTable.tableName(), jdbcTemplate);
+        if (informationColumnMap.isEmpty()) {
+            this.createPartition(entityDefinition, partitionTable.tableName(), partitionTable.from(), partitionTable.to());
+        }
     }
 
     private PgEntityDao<?> newInstance() {
         EntityDefinition entityDefinition = this.getEntityDefinition();
         log.info("PgEntity: {}", entityDefinition.table());
         MultiJdbcTemplate multiJdbcTemplate = PostgresqlEntityRegistrar.getMultiJdbcTemplate(entityDefinition.dbName());
-        this.checkTable(entityDefinition, multiJdbcTemplate.getMaster());
+
+        this.checkTableSchema(entityDefinition, multiJdbcTemplate.getMaster());
 
         EntityExecutor entityExecutor = new PgEntityExecutor(entityDefinition, multiJdbcTemplate);
         if (entityDefinition.encrypted()) {
             entityExecutor = new CryptoEntityExecutor(entityExecutor);
         }
+
+        if (entityDefinition.partition() != EntityDefinition.Partition.NONE) {
+            // partitioned table
+            this.checkPartitionedTable(entityDefinition, multiJdbcTemplate.getMaster());
+
+            // check current partition
+            EntityUtils.PartitionTable currentPartitionTable = EntityUtils.getCurrentPartitionTable(entityDefinition);
+            this.checkPartition(entityDefinition, currentPartitionTable, multiJdbcTemplate.getMaster());
+
+            long initialDelay = ThreadLocalRandom.current().nextLong(1, 60);
+            AsyncUtils.scheduleWithFixedDelay(() -> {
+                // check next partition
+                EntityUtils.PartitionTable nextPartitionTable = EntityUtils.getNextPartitionTable(entityDefinition);
+                log.info("check nextPartitionTable: {}, {}", entityDefinition.table(), nextPartitionTable.tableName());
+                if (System.currentTimeMillis() + 18L * 60L * 1000L > nextPartitionTable.from()) {
+                    this.checkPartition(entityDefinition, nextPartitionTable, multiJdbcTemplate.getMaster());
+                }
+            }, initialDelay, 6L * 60L, TimeUnit.SECONDS);
+            return new PgPartitionedEntityDaoImpl<>(this.entityClass, entityExecutor);
+        }
+
+        // common table
+        this.checkTable(entityDefinition, multiJdbcTemplate.getMaster());
         return new PgEntityDaoImpl<>(this.entityClass, entityExecutor);
     }
 }
