@@ -161,6 +161,11 @@ public class WebSocketStreamableServerTransportProvider implements McpStreamable
                                     null));
                 } catch (Exception e) {
                     log.error("Failed to initialize websocket session: {}", e.getMessage());
+                    if (e instanceof WebSocketUnexpectedClosedException) {
+                        this.sessions.remove(init.session().getId());
+                        return;
+                    }
+
                     webSocketServerSession.sendError(sentMessage.id(), ApiException.getApiException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
                 }
                 return;
@@ -212,6 +217,10 @@ public class WebSocketStreamableServerTransportProvider implements McpStreamable
             webSocketServerSession.sendError(sentMessage.id(), ApiException.getApiException(HttpStatus.BAD_REQUEST, "Invalid message format"));
         } catch (Exception e) {
             log.error("Error handling websocket message: {}", e.getMessage());
+            if (e instanceof WebSocketUnexpectedClosedException) {
+                this.sessions.remove(sentMessage.mcpSessionId());
+                return;
+            }
             webSocketServerSession.sendError(sentMessage.id(), ApiException.getApiException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
         }
     }
@@ -303,8 +312,11 @@ public class WebSocketStreamableServerTransportProvider implements McpStreamable
                     this.sendWebSocketMessage(message);
                     log.debug("Message sent to mcp websocket session {} with ID {}", this.mcpSessionId, messageId);
                 } catch (Exception e) {
-                    //todo
                     log.error("Failed to send message to mcp websocket session {}: {}", this.mcpSessionId, e.getMessage());
+                    if (e instanceof WebSocketUnexpectedClosedException) {
+                        sessions.remove(this.mcpSessionId);
+                        this.closed = true;
+                    }
                 } finally {
                     this.lock.unlock();
                 }

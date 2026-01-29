@@ -55,11 +55,18 @@ public class WebSocketServerSession {
         }
     }
 
-    private void sendTextMessage(String text) throws IOException {
+    private void sendTextMessage(String text) {
         this.lock.lock();
         try {
             this.webSocketSession.sendMessage(new TextMessage(text, true));
             log.debug("sendTextMessage: {}", text);
+        } catch (IOException e) {
+            log.error("sendTextMessage io error, open: {}, message: {}", this.webSocketSession.isOpen(), e.getMessage());
+        } catch (RuntimeException e) {
+            log.error("sendTextMessage unexpected error, open: {}, message: {}", this.webSocketSession.isOpen(), e.getMessage());
+            if (!this.webSocketSession.isOpen()) {
+                throw new WebSocketUnexpectedClosedException(this.getId(), e);
+            }
         } finally {
             this.lock.unlock();
         }
@@ -72,10 +79,7 @@ public class WebSocketServerSession {
         JSONObject body = XDataUtils.copy(response, JSONObject.class);
         WebSocketMessage webSocketMessage = new WebSocketMessage(id, body);
         String text = XDataUtils.toJSONString(webSocketMessage);
-        try {
-            this.sendTextMessage(text);
-        } catch (IOException ignored) {
-        }
+        this.sendTextMessage(text);
     }
 
     public void sendResponse(String id, McpSchema.JSONRPCResponse response) {
@@ -86,10 +90,7 @@ public class WebSocketServerSession {
         JSONObject body = XDataUtils.copy(response, JSONObject.class);
         WebSocketMessage webSocketMessage = new WebSocketMessage(id, mcpSessionId, body);
         String text = XDataUtils.toJSONString(webSocketMessage);
-        try {
-            this.sendTextMessage(text);
-        } catch (IOException ignored) {
-        }
+        this.sendTextMessage(text);
     }
 
     public void sendRequestOrNotificationMessage(McpSchema.JSONRPCMessage message) {
@@ -97,18 +98,12 @@ public class WebSocketServerSession {
         JSONObject body = XDataUtils.copy(message, JSONObject.class);
         WebSocketMessage webSocketMessage = new WebSocketMessage(id, body);
         String text = XDataUtils.toJSONString(webSocketMessage);
-        try {
-            this.sendTextMessage(text);
-        } catch (IOException ignored) {
-        }
+        this.sendTextMessage(text);
     }
 
     public void sendAccepted(String id) {
         WebSocketMessage webSocketMessage = new WebSocketMessage(id);
         String text = XDataUtils.toJSONString(webSocketMessage);
-        try {
-            this.sendTextMessage(text);
-        } catch (IOException ignored) {
-        }
+        this.sendTextMessage(text);
     }
 }

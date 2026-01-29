@@ -130,4 +130,23 @@ public class McpController {
         return TokenResponse.builder()
                 .name("ok").build();
     }
+
+
+    @ApiMapping(path = "/testProgress", mcpTool = true)
+    public void testProgress(McpSyncServerExchange exchange) {
+        if (exchange != null) {
+            for (int i = 0; i < 100; i++) {
+                McpSchema.ProgressNotification progressNotification = new McpSchema.ProgressNotification(
+                        "",
+                        0d, 0d,
+                        String.valueOf(i)
+                );
+                exchange.progressNotification(progressNotification);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ignored) {
+                }
+            }
+        }
+    }
 }

@@ -178,10 +178,12 @@ public class WebSocketHandler extends TextWebSocketHandler implements HandshakeH
         WebSocketStreamableServerTransportProvider webSocketStreamableServerTransportProvider = this.webSocketStreamableContext.getWebSocketStreamableServerTransportProvider();
         for (String exceptionId : exceptionIdSet) {
             errorWebSocketServerSession = this.myWebSocketSessionMap.remove(exceptionId);
-            try {
-                errorWebSocketServerSession.close();
-                webSocketStreamableServerTransportProvider.onCloseWhenKeepAlive(errorWebSocketServerSession);
-            } catch (IOException ignored) {
+            if (errorWebSocketServerSession != null) {
+                try {
+                    errorWebSocketServerSession.close();
+                    webSocketStreamableServerTransportProvider.onCloseWhenKeepAlive(errorWebSocketServerSession);
+                } catch (IOException ignored) {
+                }
             }
         }
     }

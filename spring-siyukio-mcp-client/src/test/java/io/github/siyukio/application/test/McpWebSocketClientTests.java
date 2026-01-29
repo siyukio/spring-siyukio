@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -253,6 +254,24 @@ class McpWebSocketClientTests {
         } finally {
             asyncClient.close();
         }
+    }
+
+    @Test
+    void testProgress() throws InterruptedException {
+
+        Consumer<McpSchema.ProgressNotification> progressHandler = progressNotification -> {
+            log.info("testProgress:{}", progressNotification.message());
+        };
+
+        McpSyncClient client = McpSyncClient.builder()
+                .useWebsocket(true)
+                .useTokenSupplier(this.tokenSupplier)
+                .setMcpClientCommonProperties(this.siyukioMcpClientCommonProperties)
+                .setProgressHandler(progressHandler)
+                .setRequestTimeout(Duration.ofHours(1))
+                .build();
+
+        client.callTool("testProgress");
     }
 
 }

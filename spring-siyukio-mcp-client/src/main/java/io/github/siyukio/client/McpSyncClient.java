@@ -206,6 +206,20 @@ public class McpSyncClient {
         }
     }
 
+    public McpSchema.CallToolResult callTool(String toolName, Object params) {
+        Map<String, Object> arguments = XDataUtils.copy(params, Map.class, String.class, Object.class);
+        McpAsyncClient mcpAsyncClient = this.getMcpSyncClient();
+        try {
+            return mcpAsyncClient.callTool(new McpSchema.CallToolRequest(toolName, arguments)).block();
+        } finally {
+            mcpAsyncClient.close();
+        }
+    }
+
+    public McpSchema.CallToolResult callTool(String toolName) {
+        return this.callTool(toolName, Map.of());
+    }
+
     /**
      * Retrieves the list of all tools provided by the server.
      *
