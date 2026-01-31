@@ -1,6 +1,6 @@
 package io.modelcontextprotocol.client.transport;
 
-import io.github.siyukio.tools.util.AsyncUtils;
+import io.github.siyukio.tools.util.HttpClientUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
@@ -12,7 +12,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
-import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -42,11 +41,7 @@ public class WebSocketClient {
 
     public Mono<Void> connect(Map<String, String> headerMap, URI uri) {
         CompletableFuture<Void> future = new CompletableFuture<>();
-        HttpClient.Builder clientBuilder = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1);
-        HttpClient httpClient = clientBuilder
-                .connectTimeout(Duration.ofSeconds(12))
-                .executor(AsyncUtils.VIRTUAL_EXECUTOR_SERVICE)
-                .build();
+        HttpClient httpClient = HttpClientUtils.getHttpClient();
         WebSocket.Builder builder = httpClient.newWebSocketBuilder();
         for (Map.Entry<String, String> entry : headerMap.entrySet()) {
             builder.header(entry.getKey(), entry.getValue());

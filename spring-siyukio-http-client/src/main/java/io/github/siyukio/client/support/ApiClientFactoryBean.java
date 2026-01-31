@@ -3,7 +3,7 @@ package io.github.siyukio.client.support;
 import io.github.siyukio.client.interceptor.GzipResponseInterceptor;
 import io.github.siyukio.client.interceptor.UnifiedErrorResponseInterceptor;
 import io.github.siyukio.tools.api.annotation.client.ApiClient;
-import io.github.siyukio.tools.util.AsyncUtils;
+import io.github.siyukio.tools.util.HttpClientUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.Getter;
 import lombok.Setter;
@@ -69,16 +69,7 @@ public class ApiClientFactoryBean implements FactoryBean<Object>, InitializingBe
     private Object newInstance() {
         ApiClient apiClient = this.beanClass.getAnnotation(ApiClient.class);
 
-        int connectTimeout = apiClient.connectTimeout();
-        if (connectTimeout <= 0) {
-            connectTimeout = 6;
-        }
-        HttpClient httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(connectTimeout))
-                .executor(AsyncUtils.VIRTUAL_EXECUTOR_SERVICE)
-                .version(apiClient.version())
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .build();
+        HttpClient httpClient = HttpClientUtils.getHttpClient(apiClient.version());
 
         int readTimeout = apiClient.readTimeout();
         if (readTimeout <= 0) {

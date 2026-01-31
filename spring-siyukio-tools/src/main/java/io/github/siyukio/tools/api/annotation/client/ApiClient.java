@@ -36,11 +36,6 @@ public @interface ApiClient {
     String[] headers() default {};
 
     /**
-     * HTTP connection timeout, default is 6 seconds.
-     */
-    int connectTimeout() default 6;
-
-    /**
      * HTTP read timeout, default is 60 seconds.
      */
     int readTimeout() default 60;
