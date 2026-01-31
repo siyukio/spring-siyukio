@@ -4,11 +4,11 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.12</version>
+        <version>3.4.13</version>
     </parent>
     <groupId>io.github.siyukio</groupId>
     <artifactId>spring-siyukio</artifactId>
-    <version>3.4.12</version>
+    <version>3.4.13-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Siyukio Parent</name>
 
@@ -22,7 +22,7 @@
     </modules>
 
     <properties>
-        <siyukio.version>3.4.12</siyukio.version>
+        <siyukio.version>3.4.13-SNAPSHOT</siyukio.version>
         <java.version>21</java.version>
         <spring.ai.version>1.1.2</spring.ai.version>
         <mcp.version>0.16.0</mcp.version>
