@@ -22,6 +22,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.ServerResponse;
+import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -35,6 +36,15 @@ import java.util.Map;
 @EnableConfigurationProperties(SiyukioMcpServerProperties.class)
 @AutoConfigureAfter({SiyukioApplicationAutoConfiguration.class})
 public class SiyukioWebMvcStreamableMcpServerAutoConfiguration implements ApplicationContextAware {
+
+    static {
+        System.setProperty("reactor.schedulers.defaultBoundedElasticOnVirtualThreads", "true");
+        if (Schedulers.DEFAULT_BOUNDED_ELASTIC_ON_VIRTUAL_THREADS) {
+            log.info("Schedulers.DEFAULT_BOUNDED_ELASTIC_ON_VIRTUAL_THREADS is enabled.");
+        } else {
+            log.warn("Schedulers.DEFAULT_BOUNDED_ELASTIC_ON_VIRTUAL_THREADS is not enabled. Please set -Dreactor.schedulers.defaultBoundedElasticOnVirtualThreads=true in Spring Boot startup arguments.");
+        }
+    }
 
     private ApplicationContext applicationContext;
 
