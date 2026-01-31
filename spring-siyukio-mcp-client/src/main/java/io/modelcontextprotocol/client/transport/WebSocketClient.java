@@ -1,5 +1,6 @@
 package io.modelcontextprotocol.client.transport;
 
+import io.github.siyukio.tools.util.AsyncUtils;
 import io.github.siyukio.tools.util.HttpClientUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -147,7 +148,7 @@ public class WebSocketClient {
                 future.completeExceptionally(new RuntimeException("WebSocket send failed"));
             }
             return future.join();
-        });
+        }, AsyncUtils.VIRTUAL_EXECUTOR_SERVICE);
     }
 
 
