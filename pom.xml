@@ -90,6 +90,12 @@
             </dependency>
 
             <dependency>
+                <groupId>org.brotli</groupId>
+                <artifactId>dec</artifactId>
+                <version>0.1.2</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-bom</artifactId>
                 <version>${spring.ai.version}</version>

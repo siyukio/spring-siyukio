@@ -21,7 +21,7 @@ public @interface ApiClient {
      * Base URL for the API.
      */
     @AliasFor(annotation = HttpExchange.class)
-    String url();
+    String url() default "";
 
     @AliasFor(annotation = HttpExchange.class)
     String method() default "";

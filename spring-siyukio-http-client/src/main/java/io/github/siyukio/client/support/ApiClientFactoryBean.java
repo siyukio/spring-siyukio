@@ -1,5 +1,6 @@
 package io.github.siyukio.client.support;
 
+import io.github.siyukio.client.interceptor.BrotliResponseInterceptor;
 import io.github.siyukio.client.interceptor.GzipResponseInterceptor;
 import io.github.siyukio.client.interceptor.UnifiedErrorResponseInterceptor;
 import io.github.siyukio.tools.api.annotation.client.ApiClient;
@@ -85,6 +86,7 @@ public class ApiClientFactoryBean implements FactoryBean<Object>, InitializingBe
                 .requestFactory(requestFactory)
                 .requestInterceptor(new UnifiedErrorResponseInterceptor())
                 .requestInterceptor(new GzipResponseInterceptor())
+                .requestInterceptor(new BrotliResponseInterceptor())
                 .messageConverters(List.of(
                         new MappingJackson2HttpMessageConverter(XDataUtils.OBJECT_MAPPER),
                         new StringHttpMessageConverter(),
