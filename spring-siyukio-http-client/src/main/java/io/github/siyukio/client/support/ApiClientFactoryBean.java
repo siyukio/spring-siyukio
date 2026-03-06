@@ -90,9 +90,9 @@ public class ApiClientFactoryBean implements FactoryBean<Object>, InitializingBe
         ));
 
         RestClient.Builder restClientBuilder = RestClient.builder()
-                .defaultHeader("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36")
+                .defaultHeader("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36")
                 .defaultHeader("Accept", "*/*")
-                .defaultHeader("Accept-Encoding", "gzip")
+                .defaultHeader("Accept-Encoding", "gzip, br")
                 .requestFactory(requestFactory)
                 .requestInterceptor(new UnifiedErrorResponseInterceptor())
                 .requestInterceptor(new GzipResponseInterceptor())
