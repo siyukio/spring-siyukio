@@ -15,7 +15,9 @@ import org.springframework.boot.context.properties.bind.PropertySourcesPlacehold
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.data.util.Lazy;
+import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.http.converter.xml.MappingJackson2XmlHttpMessageConverter;
@@ -79,6 +81,14 @@ public class ApiClientFactoryBean implements FactoryBean<Object>, InitializingBe
         JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
         requestFactory.setReadTimeout(Duration.ofSeconds(readTimeout));
 
+        StringHttpMessageConverter stringHttpMessageConverter = new StringHttpMessageConverter();
+        stringHttpMessageConverter.setSupportedMediaTypes(List.of(
+                MediaType.TEXT_PLAIN,
+                MediaType.TEXT_HTML,
+                MediaType.APPLICATION_JSON,
+                MediaType.ALL
+        ));
+
         RestClient.Builder restClientBuilder = RestClient.builder()
                 .defaultHeader("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36")
                 .defaultHeader("Accept", "*/*")
@@ -88,9 +98,10 @@ public class ApiClientFactoryBean implements FactoryBean<Object>, InitializingBe
                 .requestInterceptor(new GzipResponseInterceptor())
                 .requestInterceptor(new BrotliResponseInterceptor())
                 .messageConverters(List.of(
+                        stringHttpMessageConverter,
                         new MappingJackson2HttpMessageConverter(XDataUtils.OBJECT_MAPPER),
-                        new StringHttpMessageConverter(),
-                        new MappingJackson2XmlHttpMessageConverter(XDataUtils.XML_MAPPER)
+                        new MappingJackson2XmlHttpMessageConverter(XDataUtils.XML_MAPPER),
+                        new FormHttpMessageConverter()
                 ));
 
         RestClient restClient = restClientBuilder.build();
