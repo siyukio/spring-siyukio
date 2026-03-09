@@ -5,6 +5,8 @@ package io.github.siyukio.tools.api.constants;
  */
 public interface ApiConstants {
 
+    int API_PARAMETER_DEFAULT_NUMBER = 4096;
+
     String ATTRIBUTE_TOKEN = "siyukio.token";
 
     String ATTRIBUTE_REQUEST_BODY = "siyukio.requestBody";

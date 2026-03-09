@@ -1,6 +1,7 @@
 package io.github.siyukio.tools.api.annotation;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.github.siyukio.tools.api.constants.ApiConstants;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
@@ -48,9 +49,8 @@ public @interface ApiParameter {
 
     /**
      * If the parameter is a String, sets the maximum length of the String.
-     * Default is 1024.
      */
-    int maxLength() default 1024;
+    int maxLength() default ApiConstants.API_PARAMETER_DEFAULT_NUMBER;
 
     /**
      * If the parameter is a String, validates the text content using a regular expression.
@@ -65,9 +65,8 @@ public @interface ApiParameter {
 
     /**
      * If the parameter is an array, sets the maximum number of elements.
-     * Default is 1024.
      */
-    int maxItems() default 1024;
+    int maxItems() default ApiConstants.API_PARAMETER_DEFAULT_NUMBER;
 
     /**
      * If the parameter is an array, sets the minimum number of elements.
