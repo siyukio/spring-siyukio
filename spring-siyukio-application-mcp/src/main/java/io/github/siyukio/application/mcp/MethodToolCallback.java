@@ -93,12 +93,12 @@ public class MethodToolCallback {
                     } catch (ApiException ex) {
                         JSONObject responseJson = ex.toJson();
                         String text = XDataUtils.toJSONString(responseJson);
-                        return new McpSchema.CallToolResult(text, true);
+                        return McpSchema.CallToolResult.builder().isError(true).addTextContent(text).build();
                     } catch (Exception e) {
                         ApiException apiException = ApiException.getUnknownApiException(e);
                         JSONObject responseJson = apiException.toJson();
                         String text = XDataUtils.toJSONString(responseJson);
-                        return new McpSchema.CallToolResult(text, true);
+                        return McpSchema.CallToolResult.builder().isError(true).addTextContent(text).build();
                     }
                 }).build();
     }
