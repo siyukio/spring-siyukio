@@ -46,12 +46,12 @@ public class SiyukioWebSocketStreamableMcpServerAutoConfiguration implements Web
     private ApplicationContext applicationContext;
 
     @Bean
-    public WebSocketStreamableContext myWebsocketStreamableContext() {
+    public WebSocketStreamableContext websocketStreamableContext() {
         return new WebSocketStreamableContext();
     }
 
     @Bean
-    public WebSocketStreamableServerTransportProvider myWebSocketStreamableServerTransportProvider(SiyukioMcpServerProperties siyukioMcpServerProperties) {
+    public WebSocketStreamableServerTransportProvider webSocketStreamableServerTransportProvider(SiyukioMcpServerProperties siyukioMcpServerProperties) {
         WebSocketStreamableContext webSocketStreamableContext = this.applicationContext.getBean(WebSocketStreamableContext.class);
 
         McpTransportContextExtractor<WebSocketServerSession> contextExtractor = (webSocketServerSession) ->
