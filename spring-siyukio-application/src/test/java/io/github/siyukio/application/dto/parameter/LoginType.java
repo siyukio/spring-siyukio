@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.annotation.EnumNaming;
 /**
  * @author Bugee
  */
-@EnumNaming(EnumNamingStrategies.CamelCaseStrategy.class)
+@EnumNaming(EnumNamingStrategies.LowerCamelCaseStrategy.class)
 public enum LoginType {
     USERNAME,
     PHONE,

@@ -89,7 +89,7 @@ public record RecordEventEntity(
         long updatedAtTs
 ) {
 
-    @EnumNaming(value = EnumNamingStrategies.CamelCaseStrategy.class)
+    @EnumNaming(value = EnumNamingStrategies.LowerCamelCaseStrategy.class)
     public enum LoginType {
         USERNAME,
         PHONE,

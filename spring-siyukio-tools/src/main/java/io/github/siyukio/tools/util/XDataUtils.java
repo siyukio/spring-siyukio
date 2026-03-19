@@ -311,8 +311,8 @@ public abstract class XDataUtils {
         List<String> items;
         if (typeClass.isAnnotationPresent(EnumNaming.class)) {
             EnumNaming enumNaming = typeClass.getAnnotation(EnumNaming.class);
-            if (enumNaming.value() == EnumNamingStrategies.CamelCaseStrategy.class) {
-                items = Arrays.stream(values).map(item -> EnumNamingStrategies.CamelCaseStrategy.INSTANCE.convertEnumToExternalName(String.valueOf(item))).toList();
+            if (enumNaming.value() == EnumNamingStrategies.LowerCamelCaseStrategy.class) {
+                items = Arrays.stream(values).map(item -> EnumNamingStrategies.LowerCamelCaseStrategy.INSTANCE.convertEnumToExternalName(String.valueOf(item))).toList();
             } else {
                 try {
                     EnumNamingStrategy enumNamingStrategy = enumNaming.value().getDeclaredConstructor().newInstance();
@@ -332,8 +332,8 @@ public abstract class XDataUtils {
         Class<?> typeClass = enumValue.getClass();
         if (typeClass.isAnnotationPresent(EnumNaming.class)) {
             EnumNaming enumNaming = typeClass.getAnnotation(EnumNaming.class);
-            if (enumNaming.value() == EnumNamingStrategies.CamelCaseStrategy.class) {
-                return EnumNamingStrategies.CamelCaseStrategy.INSTANCE.convertEnumToExternalName(String.valueOf(enumValue));
+            if (enumNaming.value() == EnumNamingStrategies.LowerCamelCaseStrategy.class) {
+                return EnumNamingStrategies.LowerCamelCaseStrategy.INSTANCE.convertEnumToExternalName(String.valueOf(enumValue));
             } else {
                 try {
                     EnumNamingStrategy enumNamingStrategy = enumNaming.value().getDeclaredConstructor().newInstance();
@@ -368,7 +368,7 @@ public abstract class XDataUtils {
     public static class MultiFormatLocalDateTimeDeserializer extends JsonDeserializer<LocalDateTime> {
 
         @Override
-        public LocalDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
+        public LocalDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
             String text = p.getText().trim();
             try {
                 return parse(text);

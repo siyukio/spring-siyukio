@@ -103,9 +103,6 @@ public class McpController {
 
             McpSchema.CreateMessageResult result = exchange.createMessage(request);
             log.info("server CreateMessageResult: {}", XDataUtils.toPrettyJSONString(result));
-//
-//            result = exchange.createMessage(request);
-//            log.info("server CreateMessageResult: {}", JsonUtils.toPrettyJSONString(result));
         }
         return TokenResponse.builder().build();
     }

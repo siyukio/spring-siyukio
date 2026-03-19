@@ -87,7 +87,7 @@ public class XDataUtilsTest {
         log.info("testParseLocalDateTime: {}", localDateTime);
     }
 
-    @EnumNaming(EnumNamingStrategies.CamelCaseStrategy.class)
+    @EnumNaming(EnumNamingStrategies.LowerCamelCaseStrategy.class)
     public enum LoginType {
         USERNAME,
         PHONE,

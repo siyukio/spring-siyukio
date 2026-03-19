@@ -37,7 +37,7 @@ public record ApiSchema(
         ApiSchema items
 ) {
 
-    @EnumNaming(EnumNamingStrategies.CamelCaseStrategy.class)
+    @EnumNaming(EnumNamingStrategies.LowerCamelCaseStrategy.class)
     public enum Type {
         STRING,
         INTEGER,
