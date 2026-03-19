@@ -84,7 +84,7 @@ public class SiyukioMcpServerProperties {
         return this.mcpEndpoint;
     }
 
-    public void setMcpEndpoint(String sseEndpoint) {
+    public void setMcpEndpoint(String mcpEndpoint) {
         Assert.hasText(mcpEndpoint, "mcp endpoint must not be empty");
         this.mcpEndpoint = mcpEndpoint;
     }

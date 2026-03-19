@@ -137,7 +137,7 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
                         }
                     })
                     .flatMap(jsonRpcMessage -> this.handler.get().apply(Mono.just(jsonRpcMessage)))
-                    .onErrorMap(CompletionException.class, t -> t.getCause())
+                    .onErrorMap(CompletionException.class, Throwable::getCause)
                     .onErrorComplete(t -> {
                         this.handleException(t);
                         return true;
@@ -186,7 +186,7 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
                                         responseSink.next(response);
                                     }
                                     responseSink.complete();
-                                })).onErrorMap(CompletionException.class, t -> t.getCause()).onErrorComplete().subscribe();
+                                })).onErrorMap(CompletionException.class, Throwable::getCause).onErrorComplete().subscribe();
                     }))
                     .flatMap(responseMessage -> {
                         if (transportSession.sessionId().isEmpty() && StringUtils.hasText(responseMessage.mcpSessionId())) {
@@ -220,7 +220,7 @@ public class WebSocketClientStreamableTransport implements McpClientTransport {
                         }
                     })
                     .flatMap(jsonRpcMessage -> this.handler.get().apply(Mono.just(jsonRpcMessage)))
-                    .onErrorMap(CompletionException.class, t -> t.getCause())
+                    .onErrorMap(CompletionException.class, Throwable::getCause)
                     .onErrorComplete(t -> {
                         // handle the error first
                         this.handleException(t);
