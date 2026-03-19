@@ -2,6 +2,7 @@ package io.github.siyukio.client;
 
 import io.github.siyukio.client.boot.starter.autoconfigure.SiyukioMcpClientCommonProperties;
 import io.github.siyukio.tools.api.ApiException;
+import io.github.siyukio.tools.util.AsyncUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpClient;
@@ -18,6 +19,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.net.URI;
+import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.time.Duration;
 import java.util.HashMap;
@@ -157,6 +159,9 @@ public class McpSyncClient {
                     .endpoint(targetMcpEndpoint)
                     .jsonMapper(XDataUtils.MCP_JSON_MAPPER)
                     .requestBuilder(httpRequestBuilder)
+                    .clientBuilder(HttpClient.newBuilder()
+                            .version(HttpClient.Version.HTTP_1_1)
+                            .executor(AsyncUtils.VIRTUAL_EXECUTOR_SERVICE))
                     .build();
         }
 

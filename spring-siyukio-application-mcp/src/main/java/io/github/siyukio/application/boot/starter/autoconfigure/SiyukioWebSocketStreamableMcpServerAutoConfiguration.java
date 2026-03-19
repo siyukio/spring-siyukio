@@ -7,10 +7,7 @@ import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.XDataUtils;
 import io.modelcontextprotocol.common.McpTransportContext;
-import io.modelcontextprotocol.server.McpServer;
-import io.modelcontextprotocol.server.McpServerFeatures;
-import io.modelcontextprotocol.server.McpSyncServer;
-import io.modelcontextprotocol.server.McpTransportContextExtractor;
+import io.modelcontextprotocol.server.*;
 import io.modelcontextprotocol.server.transport.WebSocketHandler;
 import io.modelcontextprotocol.server.transport.WebSocketServerSession;
 import io.modelcontextprotocol.server.transport.WebSocketStreamableContext;
@@ -97,7 +94,7 @@ public class SiyukioWebSocketStreamableMcpServerAutoConfiguration implements Web
         String serverName = siyukioMcpServerProperties.getName();
         String serverVersion = siyukioMcpServerProperties.getVersion();
 
-        McpServer.SyncSpecification<McpServer.StreamableSyncSpecification> spec = McpServer.sync(webSocketStreamableServerTransportProvider)
+        McpServer.SyncSpecification<McpServer.StreamableSyncSpecification> spec = CustomMcpServer.sync(webSocketStreamableServerTransportProvider)
                 .serverInfo(serverName, serverVersion)
                 .requestTimeout(siyukioMcpServerProperties.getRequestTimeout())
                 .capabilities(capabilities);

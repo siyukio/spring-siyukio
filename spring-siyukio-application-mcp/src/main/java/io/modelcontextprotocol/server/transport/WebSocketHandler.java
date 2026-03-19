@@ -3,8 +3,8 @@ package io.modelcontextprotocol.server.transport;
 import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
-import io.github.siyukio.tools.util.AsyncUtils;
 import io.github.siyukio.tools.util.XDataUtils;
+import io.modelcontextprotocol.server.CustomMcpServerFeatures;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -17,7 +17,6 @@ import org.springframework.web.socket.server.HandshakeFailureException;
 import org.springframework.web.socket.server.HandshakeHandler;
 import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -148,7 +147,7 @@ public class WebSocketHandler extends TextWebSocketHandler implements HandshakeH
                     webSocketStreamableServerTransportProvider.handlePost(webSocketServerSession, websocketMessage);
                 }
             }
-        }).subscribeOn(Schedulers.fromExecutor(AsyncUtils.VIRTUAL_EXECUTOR_SERVICE)).subscribe();
+        }).subscribeOn(CustomMcpServerFeatures.VIRTUAL_SCHEDULER).subscribe();
     }
 
     @Override
