@@ -193,7 +193,7 @@ public class MethodToolCallback {
         } catch (InvocationTargetException ex) {
             Throwable throwable = ex.getTargetException();
             log.error("callTool error: {}, {}", this.name, throwable.getMessage());
-            ApiException exception = ApiException.getUnknownApiException(ex);
+            ApiException exception = ApiException.getUnknownApiException(throwable);
             return createCallToolResult(true, exception.toJson());
         }
         //
