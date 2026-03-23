@@ -1,6 +1,7 @@
 package io.github.siyukio.tools.util;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -116,6 +117,9 @@ public abstract class CryptoUtils {
     }
 
     public static String md5(String input) {
+        if (!StringUtils.hasText(input)) {
+            return "";
+        }
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
             byte[] digest = md.digest(input.getBytes());
@@ -130,6 +134,9 @@ public abstract class CryptoUtils {
     }
 
     public static String sha256(String input) {
+        if (!StringUtils.hasText(input)) {
+            return "";
+        }
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             byte[] digest = md.digest(input.getBytes());
