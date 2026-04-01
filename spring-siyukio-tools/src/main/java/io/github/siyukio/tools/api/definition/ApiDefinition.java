@@ -20,6 +20,7 @@ public record ApiDefinition(
         boolean authorization,
         boolean signature,
         boolean mcpTool,
+        boolean acpTool,
         ApiRequestParameter requestBodyParameter,
         ApiResponseParameter responseBodyParameter,
         Class<?> returnType,

@@ -62,4 +62,6 @@ public @interface ApiMapping {
      * Whether it can be used as an MCP service tool, default is false.
      */
     boolean mcpTool() default false;
+
+    boolean acpTool() default false;
 }
