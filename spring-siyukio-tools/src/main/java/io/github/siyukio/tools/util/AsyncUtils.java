@@ -1,6 +1,8 @@
 package io.github.siyukio.tools.util;
 
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -15,6 +17,7 @@ public abstract class AsyncUtils {
     public final static ExecutorService VIRTUAL_EXECUTOR_SERVICE = Executors.newThreadPerTaskExecutor(Thread.ofVirtual()
             .name(ASYNC_THREAD_PREFIX, 0)
             .factory());
+    public final static Scheduler VIRTUAL_SCHEDULER = Schedulers.fromExecutor(VIRTUAL_EXECUTOR_SERVICE);
     private final static ScheduledExecutorService SCHEDULED_EXECUTOR_SERVICE = Executors.newSingleThreadScheduledExecutor();
     private final static AtomicInteger ATOMIC_INTEGER = new AtomicInteger(0);
 

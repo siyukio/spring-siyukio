@@ -3,8 +3,6 @@ package io.modelcontextprotocol.server;
 import io.github.siyukio.tools.util.AsyncUtils;
 import io.modelcontextprotocol.spec.McpSchema;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,8 +16,6 @@ import java.util.function.BiFunction;
  */
 public class CustomMcpServerFeatures {
 
-    public static Scheduler VIRTUAL_SCHEDULER = Schedulers.fromExecutor(AsyncUtils.VIRTUAL_EXECUTOR_SERVICE);
-
     record AsyncToolSpecification() {
         static McpServerFeatures.AsyncToolSpecification fromSync(McpServerFeatures.SyncToolSpecification syncToolSpec, boolean immediate) {
 
@@ -32,14 +28,14 @@ public class CustomMcpServerFeatures {
                     .call() != null) ? (exchange, map) -> {
                 var toolResult = Mono
                         .fromCallable(() -> syncToolSpec.call().apply(new McpSyncServerExchange(exchange), map));
-                return immediate ? toolResult : toolResult.subscribeOn(VIRTUAL_SCHEDULER);
+                return immediate ? toolResult : toolResult.subscribeOn(AsyncUtils.VIRTUAL_SCHEDULER);
             } : null;
 
             BiFunction<McpAsyncServerExchange, McpSchema.CallToolRequest, Mono<McpSchema.CallToolResult>> callHandler = (
                     exchange, req) -> {
                 var toolResult = Mono
                         .fromCallable(() -> syncToolSpec.callHandler().apply(new McpSyncServerExchange(exchange), req));
-                return immediate ? toolResult : toolResult.subscribeOn(VIRTUAL_SCHEDULER);
+                return immediate ? toolResult : toolResult.subscribeOn(AsyncUtils.VIRTUAL_SCHEDULER);
             };
 
             return new McpServerFeatures.AsyncToolSpecification(syncToolSpec.tool(), deprecatedCall, callHandler);
@@ -55,7 +51,7 @@ public class CustomMcpServerFeatures {
             return new McpServerFeatures.AsyncResourceSpecification(resource.resource(), (exchange, req) -> {
                 var resourceResult = Mono
                         .fromCallable(() -> resource.readHandler().apply(new McpSyncServerExchange(exchange), req));
-                return immediateExecution ? resourceResult : resourceResult.subscribeOn(VIRTUAL_SCHEDULER);
+                return immediateExecution ? resourceResult : resourceResult.subscribeOn(AsyncUtils.VIRTUAL_SCHEDULER);
             });
         }
     }
@@ -70,7 +66,7 @@ public class CustomMcpServerFeatures {
             return new McpServerFeatures.AsyncResourceTemplateSpecification(resource.resourceTemplate(), (exchange, req) -> {
                 var resourceResult = Mono
                         .fromCallable(() -> resource.readHandler().apply(new McpSyncServerExchange(exchange), req));
-                return immediateExecution ? resourceResult : resourceResult.subscribeOn(VIRTUAL_SCHEDULER);
+                return immediateExecution ? resourceResult : resourceResult.subscribeOn(AsyncUtils.VIRTUAL_SCHEDULER);
             });
         }
     }
@@ -84,7 +80,7 @@ public class CustomMcpServerFeatures {
             return new McpServerFeatures.AsyncPromptSpecification(prompt.prompt(), (exchange, req) -> {
                 var promptResult = Mono
                         .fromCallable(() -> prompt.promptHandler().apply(new McpSyncServerExchange(exchange), req));
-                return immediateExecution ? promptResult : promptResult.subscribeOn(VIRTUAL_SCHEDULER);
+                return immediateExecution ? promptResult : promptResult.subscribeOn(AsyncUtils.VIRTUAL_SCHEDULER);
             });
         }
     }
@@ -99,7 +95,7 @@ public class CustomMcpServerFeatures {
                 var completionResult = Mono.fromCallable(
                         () -> completion.completionHandler().apply(new McpSyncServerExchange(exchange), request));
                 return immediateExecution ? completionResult
-                        : completionResult.subscribeOn(VIRTUAL_SCHEDULER);
+                        : completionResult.subscribeOn(AsyncUtils.VIRTUAL_SCHEDULER);
             });
         }
     }
@@ -136,7 +132,7 @@ public class CustomMcpServerFeatures {
             for (var rootChangeConsumer : syncSpec.rootsChangeConsumers()) {
                 rootChangeConsumers.add((exchange, list) -> Mono
                         .<Void>fromRunnable(() -> rootChangeConsumer.accept(new McpSyncServerExchange(exchange), list))
-                        .subscribeOn(VIRTUAL_SCHEDULER));
+                        .subscribeOn(AsyncUtils.VIRTUAL_SCHEDULER));
             }
 
             return new McpServerFeatures.Async(syncSpec.serverInfo(), syncSpec.serverCapabilities(), tools, resources, resourceTemplates,
