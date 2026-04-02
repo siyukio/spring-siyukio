@@ -10,7 +10,6 @@
     </parent>
 
     <artifactId>spring-siyukio-postgresql</artifactId>
-    <name>Postgresql Entity</name>
 
     <dependencies>
 

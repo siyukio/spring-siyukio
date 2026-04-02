@@ -10,7 +10,6 @@
     </parent>
 
     <artifactId>spring-siyukio-tools</artifactId>
-    <name>API tools</name>
 
     <dependencies>
 

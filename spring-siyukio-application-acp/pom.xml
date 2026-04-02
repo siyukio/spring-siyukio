@@ -9,33 +9,28 @@
         <version>3.5.11-SNAPSHOT</version>
     </parent>
 
-    <artifactId>spring-siyukio-http-client</artifactId>
+    <artifactId>spring-siyukio-application-acp</artifactId>
 
     <dependencies>
         <dependency>
             <groupId>io.github.siyukio</groupId>
-            <artifactId>spring-siyukio-tools</artifactId>
+            <artifactId>spring-siyukio-application</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-web</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.springframework.data</groupId>
-            <artifactId>spring-data-commons</artifactId>
+            <groupId>com.agentclientprotocol</groupId>
+            <artifactId>acp-core</artifactId>
         </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.brotli</groupId>
-            <artifactId>dec</artifactId>
         </dependency>
     </dependencies>
 

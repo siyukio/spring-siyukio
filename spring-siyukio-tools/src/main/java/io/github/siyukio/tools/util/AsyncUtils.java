@@ -19,6 +19,7 @@ public abstract class AsyncUtils {
             .factory());
     public final static Scheduler VIRTUAL_SCHEDULER = Schedulers.fromExecutor(VIRTUAL_EXECUTOR_SERVICE);
     private final static ScheduledExecutorService SCHEDULED_EXECUTOR_SERVICE = Executors.newSingleThreadScheduledExecutor();
+    public final static Scheduler TIMER_SCHEDULER = Schedulers.fromExecutor(SCHEDULED_EXECUTOR_SERVICE);
     private final static AtomicInteger ATOMIC_INTEGER = new AtomicInteger(0);
 
     public static boolean isAsyncThread() {
