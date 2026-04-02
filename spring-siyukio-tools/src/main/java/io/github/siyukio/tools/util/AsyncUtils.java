@@ -18,8 +18,8 @@ public abstract class AsyncUtils {
             .name(ASYNC_THREAD_PREFIX, 0)
             .factory());
     public final static Scheduler VIRTUAL_SCHEDULER = Schedulers.fromExecutor(VIRTUAL_EXECUTOR_SERVICE);
-    private final static ScheduledExecutorService SCHEDULED_EXECUTOR_SERVICE = Executors.newSingleThreadScheduledExecutor();
-    public final static Scheduler TIMER_SCHEDULER = Schedulers.fromExecutor(SCHEDULED_EXECUTOR_SERVICE);
+    private final static ScheduledExecutorService SINGLE_EXECUTOR_SERVICE = Executors.newSingleThreadScheduledExecutor();
+    public final static Scheduler SINGLE_SCHEDULER = Schedulers.fromExecutor(SINGLE_EXECUTOR_SERVICE);
     private final static AtomicInteger ATOMIC_INTEGER = new AtomicInteger(0);
 
     public static boolean isAsyncThread() {
@@ -59,19 +59,19 @@ public abstract class AsyncUtils {
     }
 
     public static ScheduledFuture<?> schedule(Runnable runnable, long delay, TimeUnit unit) {
-        return SCHEDULED_EXECUTOR_SERVICE.schedule(() -> {
+        return SINGLE_EXECUTOR_SERVICE.schedule(() -> {
             submit(runnable);
         }, delay, unit);
     }
 
     public static ScheduledFuture<?> scheduleAtFixedRate(Runnable runnable, long initialDelay, long period, TimeUnit unit) {
-        return SCHEDULED_EXECUTOR_SERVICE.scheduleAtFixedRate(() -> {
+        return SINGLE_EXECUTOR_SERVICE.scheduleAtFixedRate(() -> {
             submit(runnable);
         }, initialDelay, period, unit);
     }
 
     public static ScheduledFuture<?> scheduleWithFixedDelay(Runnable runnable, long initialDelay, long delay, TimeUnit unit) {
-        return SCHEDULED_EXECUTOR_SERVICE.scheduleWithFixedDelay(() -> {
+        return SINGLE_EXECUTOR_SERVICE.scheduleWithFixedDelay(() -> {
             submit(runnable);
         }, initialDelay, delay, unit);
     }
