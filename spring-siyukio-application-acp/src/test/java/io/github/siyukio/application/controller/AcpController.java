@@ -25,7 +25,7 @@ public class AcpController {
     @Autowired
     private TokenProvider tokenProvider;
 
-    @ApiMapping(path = "/authorization/create", authorization = false, acpTool = true,
+    @ApiMapping(path = "/authorization/create", authorization = false, acpAvailable = true,
             summary = "Retrieve JWT Token",
             description = """
                     A utility tool that authenticates with the target service and returns a valid JWT token for subsequent API requests.
@@ -48,7 +48,7 @@ public class AcpController {
                 .build();
     }
 
-    @ApiMapping(path = "/authorization/refresh", authorization = false, acpTool = true)
+    @ApiMapping(path = "/authorization/refresh", authorization = false, acpAvailable = true)
     public CreateAuthorizationResponse refreshAuthorization(RefreshAuthorizationRequest refreshAuthorizationRequest) {
         Token refreshToken = this.tokenProvider.verifyToken(refreshAuthorizationRequest.refreshToken());
         if (refreshToken == null || !refreshToken.refresh()) {

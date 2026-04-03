@@ -59,9 +59,12 @@ public @interface ApiMapping {
     boolean deprecated() default false;
 
     /**
-     * Whether it can be used as an MCP service tool, default is false.
+     * Whether available for MCP protocol calls.
      */
-    boolean mcpTool() default false;
+    boolean mcpAvailable() default false;
 
-    boolean acpTool() default false;
+    /**
+     * Whether available for ACP protocol calls.
+     */
+    boolean acpAvailable() default false;
 }

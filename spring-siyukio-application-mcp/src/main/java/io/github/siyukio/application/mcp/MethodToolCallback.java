@@ -39,7 +39,7 @@ public class MethodToolCallback {
     public static List<McpServerFeatures.SyncToolSpecification> getSyncToolSpecifications(AipHandlerManager aipHandlerManager) {
         if (SYNC_TOOL_SPECIFICATIONS_CACHES.isEmpty()) {
             for (Map.Entry<String, ApiHandler> entry : aipHandlerManager.getApiHandlerMap().entrySet()) {
-                if (entry.getValue().apiDefinition().mcpTool()) {
+                if (entry.getValue().apiDefinition().mcpAvailable()) {
                     SYNC_TOOL_SPECIFICATIONS_CACHES.add(MethodToolCallback.toSyncToolSpecification(entry.getKey(), entry.getValue()));
                 }
             }

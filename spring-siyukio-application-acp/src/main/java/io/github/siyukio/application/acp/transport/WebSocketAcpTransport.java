@@ -356,7 +356,7 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
 
         public AcpPromptHandler(Map<String, ApiHandler> apiHandlerMap) {
             apiHandlerMap.forEach((k, v) -> {
-                if (v.apiDefinition().acpTool()) {
+                if (v.apiDefinition().acpAvailable()) {
                     if (k.startsWith("/")) {
                         k = k.substring(1);
                     }

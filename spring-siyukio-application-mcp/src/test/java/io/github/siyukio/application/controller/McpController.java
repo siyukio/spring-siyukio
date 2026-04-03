@@ -31,7 +31,7 @@ public class McpController {
     @Autowired
     private TokenProvider tokenProvider;
 
-    @ApiMapping(path = "/authorization/create", authorization = false, mcpTool = true,
+    @ApiMapping(path = "/authorization/create", authorization = false, mcpAvailable = true,
             summary = "Retrieve JWT Token",
             description = """
                     A utility tool that authenticates with the target service and returns a valid JWT token for subsequent API requests.
@@ -54,7 +54,7 @@ public class McpController {
                 .build();
     }
 
-    @ApiMapping(path = "/authorization/refresh", authorization = false, mcpTool = true)
+    @ApiMapping(path = "/authorization/refresh", authorization = false, mcpAvailable = true)
     public CreateAuthorizationResponse refreshAuthorization(RefreshAuthorizationRequest refreshAuthorizationRequest) {
         Token refreshToken = this.tokenProvider.verifyToken(refreshAuthorizationRequest.refreshToken());
         if (refreshToken == null || !refreshToken.refresh()) {
@@ -68,7 +68,7 @@ public class McpController {
                 .build();
     }
 
-    @ApiMapping(path = "/mock/simulateRandomResponse", authorization = false, mcpTool = true)
+    @ApiMapping(path = "/mock/simulateRandomResponse", authorization = false, mcpAvailable = true)
     public CreateAuthorizationResponse simulateRandomResponse(CreateAuthorizationRequest createAuthorizationRequest) {
         log.info("{},{}", createAuthorizationRequest.uid(), "start");
         Token token = Token.builder().uid(createAuthorizationRequest.uid())
@@ -88,7 +88,7 @@ public class McpController {
                 .accessToken(authorization).build();
     }
 
-    @ApiMapping(path = "/token/get", mcpTool = true)
+    @ApiMapping(path = "/token/get", mcpAvailable = true)
     public TokenResponse getToken(Token token, McpSyncServerExchange exchange) {
         if (exchange != null) {
             log.info("getToken exchange: {}", exchange.getClientInfo());
@@ -107,7 +107,7 @@ public class McpController {
         return TokenResponse.builder().build();
     }
 
-    @ApiMapping(path = "/token/getByProgress", mcpTool = true)
+    @ApiMapping(path = "/token/getByProgress", mcpAvailable = true)
     public TokenResponse getTokenByProgress(Token token, McpSyncServerExchange exchange) {
         if (exchange != null) {
             log.info("getTokenByProgress exchange: {}", exchange.getClientInfo());
@@ -129,7 +129,7 @@ public class McpController {
     }
 
 
-    @ApiMapping(path = "/testProgress", mcpTool = true)
+    @ApiMapping(path = "/testProgress", mcpAvailable = true)
     public void testProgress(McpSyncServerExchange exchange) {
         if (exchange != null) {
             for (int i = 0; i < 100; i++) {
