@@ -2,6 +2,7 @@ package io.github.siyukio.client;
 
 import com.agentclientprotocol.sdk.client.AcpAsyncClient;
 import com.agentclientprotocol.sdk.client.AcpClient;
+import com.agentclientprotocol.sdk.spec.AcpClientSession;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import io.github.siyukio.client.transport.WebSocketAcpClientTransport;
 import io.github.siyukio.tools.acp.AcpSchemaExt;
@@ -35,16 +36,12 @@ public class SimpleAcpClient {
 
     private final Map<String, String> toolCallUpdateCache;
 
-    private final List<ProgressNotificationHandler> progressNotificationHandlers;
-
     public SimpleAcpClient(AcpAsyncClient acpAsyncClient,
                            String sessionId,
-                           Map<String, String> toolCallUpdateCache,
-                           List<ProgressNotificationHandler> progressNotificationHandlers) {
+                           Map<String, String> toolCallUpdateCache) {
         this.acpAsyncClient = acpAsyncClient;
         this.sessionId = sessionId;
         this.toolCallUpdateCache = toolCallUpdateCache;
-        this.progressNotificationHandlers = progressNotificationHandlers;
     }
 
     public static Builder builder(String uri) {
@@ -63,14 +60,20 @@ public class SimpleAcpClient {
             AcpSchema.PromptResponse promptResponse = this.acpAsyncClient.prompt(promptRequest).block();
             log.debug("{}", XDataUtils.toPrettyJSONString(promptResponse));
             String cacheValue = this.toolCallUpdateCache.get(invoke.toolCallId());
-            if (!cacheValue.equals("IN_PROGRESS") && !typeClass.equals(Void.class)) {
-                return XDataUtils.parse(cacheValue, typeClass);
-            } else {
-                throw new ApiException("Acp callTool error:" + invoke.tool() + "," + invoke.toolCallId());
+            if (!cacheValue.equals("IN_PROGRESS")) {
+                if (typeClass.equals(Void.class)) {
+                    return null;
+                } else {
+                    return XDataUtils.parse(cacheValue, typeClass);
+                }
             }
+        } catch (AcpClientSession.AcpError ex) {
+            throw new ApiException(ex.getCode(), ex.getMessage());
         } finally {
             this.toolCallUpdateCache.remove(invoke.toolCallId());
         }
+
+        throw new ApiException("Acp callTool no response:" + invoke.tool() + "," + invoke.toolCallId());
     }
 
     public <T> T callTool(String tool, Class<T> typeClass) {
@@ -202,8 +205,7 @@ public class SimpleAcpClient {
             assert newSessionResponse != null;
             return new SimpleAcpClient(acpAsyncClient,
                     newSessionResponse.sessionId(),
-                    toolCallUpdateCache,
-                    this.progressNotificationHandlers);
+                    toolCallUpdateCache);
         }
     }
 }

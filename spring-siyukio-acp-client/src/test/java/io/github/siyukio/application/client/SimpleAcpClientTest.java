@@ -2,6 +2,7 @@ package io.github.siyukio.application.client;
 
 import io.github.siyukio.application.dto.CreateAuthorizationRequest;
 import io.github.siyukio.application.dto.CreateAuthorizationResponse;
+import io.github.siyukio.application.dto.RefreshAuthorizationRequest;
 import io.github.siyukio.client.SimpleAcpClient;
 import io.github.siyukio.tools.api.dto.TokenResponse;
 import io.github.siyukio.tools.api.token.Token;
@@ -67,6 +68,17 @@ public class SimpleAcpClientTest {
                 "token.getByProgress",
                 TokenResponse.class);
         log.info("{}", XDataUtils.toPrettyJSONString(tokenResponse));
+    }
+
+    @Test
+    void testException() {
+        RefreshAuthorizationRequest refreshAuthorizationRequest = RefreshAuthorizationRequest.builder()
+                .refreshToken("test_token").build();
+        CreateAuthorizationResponse createAuthorizationResponse = simpleAcpClient.callTool(
+                "authorization.refreshException",
+                refreshAuthorizationRequest,
+                CreateAuthorizationResponse.class);
+        log.info("{}", XDataUtils.toPrettyJSONString(createAuthorizationResponse));
     }
 
 }

@@ -52,18 +52,9 @@ public class AcpController {
                 .build();
     }
 
-    @ApiMapping(path = "/authorization/refresh", authorization = false, acpAvailable = true)
-    public CreateAuthorizationResponse refreshAuthorization(RefreshAuthorizationRequest refreshAuthorizationRequest) {
-        Token refreshToken = this.tokenProvider.verifyToken(refreshAuthorizationRequest.refreshToken());
-        if (refreshToken == null || !refreshToken.refresh()) {
-            throw new ApiException("Invalid refresh token");
-        }
-        Token accessToken = refreshToken.createAccessToken();
-        String authorization = this.tokenProvider.createAuthorization(accessToken);
-        return CreateAuthorizationResponse.builder()
-                .accessToken(authorization)
-                .createdAt(LocalDateTime.now())
-                .build();
+    @ApiMapping(path = "/authorization/refreshException", authorization = false, acpAvailable = true)
+    public CreateAuthorizationResponse refreshException(RefreshAuthorizationRequest refreshAuthorizationRequest) {
+        throw new ApiException("Business exception");
     }
 
     @ApiMapping(path = "/token/getByProgress", acpAvailable = true)
