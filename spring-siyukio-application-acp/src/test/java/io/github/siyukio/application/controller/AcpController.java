@@ -74,9 +74,8 @@ public class AcpController {
             for (int i = 0; i < 3; i++) {
                 JSONObject messageJson = new JSONObject();
                 messageJson.put("data", i);
-                AcpSchemaExt.ProgressNotification progressNotification = new AcpSchemaExt.ProgressNotification(
-                        i + 1, 3,
-                        XDataUtils.toJSONString(messageJson)
+                AcpSchemaExt.ProgressNotification progressNotification = AcpSchemaExt.ProgressNotification.create(
+                        i + 1, 3, XDataUtils.toJSONString(messageJson)
                 );
                 acpSessionContext.sendToolCallProgress(progressNotification);
             }

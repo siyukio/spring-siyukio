@@ -188,9 +188,10 @@ public class SimpleAcpClient {
                                         } else if (toolCallUpdateNotification.status().equals(AcpSchema.ToolCallStatus.IN_PROGRESS)) {
                                             String jsonText = this.readJsonText(toolCallUpdateNotification);
                                             AcpSchemaExt.ProgressNotification progressNotification = XDataUtils.parse(jsonText, AcpSchemaExt.ProgressNotification.class);
+                                            AcpSchemaExt.ProgressNotification completeProgressNotification = progressNotification.withToolCallId(toolCallId);
                                             this.progressNotificationHandlers.forEach(handler -> {
                                                 try {
-                                                    handler.handle(progressNotification);
+                                                    handler.handle(completeProgressNotification);
                                                 } catch (Exception ignored) {
                                                 }
                                             });

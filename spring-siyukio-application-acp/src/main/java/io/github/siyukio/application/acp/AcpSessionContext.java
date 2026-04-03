@@ -28,6 +28,10 @@ public class AcpSessionContext {
         this.invoke = invoke;
     }
 
+    public String getToolCallId() {
+        return this.invoke.toolCallId();
+    }
+
     public String getSessionId() {
         return this.promptContext.getSessionId();
     }
