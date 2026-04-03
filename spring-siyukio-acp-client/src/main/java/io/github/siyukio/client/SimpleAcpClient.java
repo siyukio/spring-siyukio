@@ -1,7 +1,7 @@
 package io.github.siyukio.client;
 
 import com.agentclientprotocol.sdk.client.AcpAsyncClient;
-import com.agentclientprotocol.sdk.client.AcpClient;
+import com.agentclientprotocol.sdk.client.SimpleAsyncSpec;
 import com.agentclientprotocol.sdk.spec.AcpClientSession;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import io.github.siyukio.client.transport.WebSocketAcpClientTransport;
@@ -36,9 +36,9 @@ public class SimpleAcpClient {
 
     private final Map<String, String> toolCallUpdateCache;
 
-    public SimpleAcpClient(AcpAsyncClient acpAsyncClient,
-                           String sessionId,
-                           Map<String, String> toolCallUpdateCache) {
+    private SimpleAcpClient(AcpAsyncClient acpAsyncClient,
+                            String sessionId,
+                            Map<String, String> toolCallUpdateCache) {
         this.acpAsyncClient = acpAsyncClient;
         this.sessionId = sessionId;
         this.toolCallUpdateCache = toolCallUpdateCache;
@@ -102,12 +102,11 @@ public class SimpleAcpClient {
     public static class Builder {
 
         private final String uri;
+        private final List<ProgressNotificationHandler> progressNotificationHandlers = new ArrayList<>();
         private Duration requestTimeout = Duration.ofSeconds(60);
         private Duration connectTimeout = Duration.ofSeconds(12);
         private String authorization = "";
         private String cwd = "/" + IdUtils.getUniqueId();
-
-        private List<ProgressNotificationHandler> progressNotificationHandlers = new ArrayList<>();
 
         public Builder(String uri) {
             this.uri = uri;
@@ -162,7 +161,7 @@ public class SimpleAcpClient {
             WebSocketAcpClientTransport clientTransport = new WebSocketAcpClientTransport(this.uri, Map.of("authorization", this.authorization))
                     .connectTimeout(this.connectTimeout);
             Map<String, String> toolCallUpdateCache = new ConcurrentHashMap<>();
-            AcpClient.AsyncSpec asyncSpec = AcpClient.async(clientTransport)
+            SimpleAsyncSpec simpleAsyncSpec = new SimpleAsyncSpec(clientTransport)
                     .requestTimeout(this.requestTimeout)
                     .notificationHandler(AcpSchema.METHOD_SESSION_UPDATE, (notification -> {
                         log.debug("{}: {}", AcpSchema.METHOD_SESSION_UPDATE, XDataUtils.toPrettyJSONString(notification));
@@ -195,7 +194,7 @@ public class SimpleAcpClient {
                         return Mono.empty();
                     }));
 
-            AcpAsyncClient acpAsyncClient = asyncSpec.build();
+            AcpAsyncClient acpAsyncClient = simpleAsyncSpec.build();
             AcpSchema.InitializeResponse initializeResponse = acpAsyncClient.initialize().block();
             log.debug("Init acp client: {}, {}", this.uri, XDataUtils.toJSONString(initializeResponse));
 

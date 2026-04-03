@@ -57,6 +57,16 @@ public class AcpController {
         throw new ApiException("Business exception");
     }
 
+    @ApiMapping(path = "/authorization/refreshTimeout", authorization = false, acpAvailable = true)
+    public CreateAuthorizationResponse refreshTimeout(RefreshAuthorizationRequest refreshAuthorizationRequest) {
+        try {
+            Thread.sleep(40000);
+        } catch (InterruptedException ignored) {
+        }
+        return CreateAuthorizationResponse.builder()
+                .accessToken("ok").build();
+    }
+
     @ApiMapping(path = "/token/getByProgress", acpAvailable = true)
     public TokenResponse getTokenByProgress(Token token, AcpSessionContext acpSessionContext) {
         if (acpSessionContext != null) {
