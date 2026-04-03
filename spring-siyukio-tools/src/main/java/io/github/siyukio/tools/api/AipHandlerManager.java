@@ -31,10 +31,11 @@ public class AipHandlerManager {
 
         for (String path : apiDefinition.paths()) {
             this.apiHandlerMap.put(path, apiHandler);
-            log.info("find api:{}, authorization:{}, signature:{}, roles:{}", path,
+            log.info("find api:{}, authorization:{}, signature:{}, roles:{}, acpAvailable:{}", path,
                     apiDefinition.authorization(),
                     apiDefinition.signature(),
-                    apiDefinition.roles());
+                    apiDefinition.roles(),
+                    apiDefinition.acpAvailable());
         }
     }
 

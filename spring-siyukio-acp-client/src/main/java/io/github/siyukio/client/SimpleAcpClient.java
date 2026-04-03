@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeoutException;
 
 /**
  *
@@ -69,11 +70,18 @@ public class SimpleAcpClient {
             }
         } catch (AcpClientSession.AcpError ex) {
             throw new ApiException(ex.getCode(), ex.getMessage());
+        } catch (Exception ex) {
+            Throwable t = ex.getCause();
+            if (t instanceof TimeoutException) {
+                throw new ApiException("CallTool timeout: " + invoke.tool() + "," + invoke.toolCallId());
+            } else {
+                throw new ApiException("CallTool error: " + invoke.tool() + "," + invoke.toolCallId() + ex.getMessage());
+            }
         } finally {
             this.toolCallUpdateCache.remove(invoke.toolCallId());
         }
 
-        throw new ApiException("Acp callTool no response:" + invoke.tool() + "," + invoke.toolCallId());
+        throw new ApiException("CallTool no response:" + invoke.tool() + "," + invoke.toolCallId());
     }
 
     public <T> T callTool(String tool, Class<T> typeClass) {

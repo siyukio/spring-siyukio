@@ -44,7 +44,7 @@ public class WebSocketAcpSession {
         this.lock.lock();
         try {
             this.webSocketSession.sendMessage(new PingMessage(ByteBuffer.wrap("".getBytes(StandardCharsets.UTF_8))));
-            log.debug("sendPingMessage: {}", this.getId());
+            log.debug("SendPingMessage: {}", this.getId());
         } finally {
             this.lock.unlock();
         }
@@ -55,12 +55,9 @@ public class WebSocketAcpSession {
         try {
             this.webSocketSession.sendMessage(new TextMessage(text, true));
         } catch (IOException e) {
-            log.error("sendTextMessage io error, open: {}, message: {}", this.webSocketSession.isOpen(), e.getMessage());
+            log.error("SendTextMessage io error, sessionId: {}, open: {}, message: {}", this.webSocketSession.getId(), this.webSocketSession.isOpen(), e.getMessage());
         } catch (RuntimeException e) {
-            log.error("sendTextMessage unexpected error, open: {}, message: {}", this.webSocketSession.isOpen(), e.getMessage());
-            if (!this.webSocketSession.isOpen()) {
-                throw new WebSocketAcpException(this.getId(), e);
-            }
+            log.error("SendTextMessage unexpected error, sessionId: {}, open: {}, message: {}", this.webSocketSession.getId(), this.webSocketSession.isOpen(), e.getMessage());
         } finally {
             this.lock.unlock();
         }

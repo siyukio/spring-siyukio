@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -44,6 +45,7 @@ public class SimpleAcpClientTest {
             String authorization = this.tokenProvider.createAuthorization(Token.builder().uid("321").build());
             String serverUri = "ws://localhost:8080";
             simpleAcpClient = SimpleAcpClient.builder(serverUri)
+                    .requestTimeout(Duration.ofSeconds(30))
                     .authorization(authorization)
                     .progressNotificationHandler((notification) -> {
                         log.debug("ProgressNotification: {}", XDataUtils.toPrettyJSONString(notification));
@@ -76,6 +78,17 @@ public class SimpleAcpClientTest {
                 .refreshToken("test_token").build();
         CreateAuthorizationResponse createAuthorizationResponse = simpleAcpClient.callTool(
                 "authorization.refreshException",
+                refreshAuthorizationRequest,
+                CreateAuthorizationResponse.class);
+        log.info("{}", XDataUtils.toPrettyJSONString(createAuthorizationResponse));
+    }
+
+    @Test
+    void testRequestTimeout() {
+        RefreshAuthorizationRequest refreshAuthorizationRequest = RefreshAuthorizationRequest.builder()
+                .refreshToken("test_token").build();
+        CreateAuthorizationResponse createAuthorizationResponse = simpleAcpClient.callTool(
+                "authorization.refreshTimeout",
                 refreshAuthorizationRequest,
                 CreateAuthorizationResponse.class);
         log.info("{}", XDataUtils.toPrettyJSONString(createAuthorizationResponse));

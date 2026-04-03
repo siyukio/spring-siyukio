@@ -262,9 +262,8 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
         @Override
         public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
             webSocketAcpSessionMap.remove(session.getId());
-
-            log.debug("WebSocket Acp closed: {}, {}", status.toString(), session.getId());
             this.dataBufferMap.remove(session.getId());
+            log.debug("WebSocket Acp closed: {}, {}", status.toString(), session.getId());
         }
 
         private String getMessage(WebSocketSession session, TextMessage textMessage) {
