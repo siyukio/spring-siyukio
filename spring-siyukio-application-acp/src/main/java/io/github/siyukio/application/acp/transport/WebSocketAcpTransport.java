@@ -11,6 +11,7 @@ import com.agentclientprotocol.sdk.spec.AcpAgentTransport;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.agentclientprotocol.sdk.spec.AcpSchema.JSONRPCMessage;
 import com.agentclientprotocol.sdk.util.Assert;
+import io.github.siyukio.application.acp.AcpSessionContext;
 import io.github.siyukio.tools.acp.Invoke;
 import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.api.ApiHandler;
@@ -30,7 +31,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
@@ -382,7 +382,7 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
         }
 
         @Override
-        public Mono<AcpSchema.PromptResponse> handle(AcpSchema.PromptRequest request, PromptContext context) {
+        public Mono<AcpSchema.PromptResponse> handle(AcpSchema.PromptRequest request, PromptContext promptContext) {
             String sessionId = request.sessionId();
             WebSocketAcpSession webSocketAcpSession = webSocketAcpSessionMap.get(sessionId);
             if (webSocketAcpSession == null) {
@@ -432,7 +432,9 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
                 return Mono.error(new AcpProtocolException(ex.getCode(), ex.getMessage()));
             }
 
-            Object[] params = new Object[]{context, token, invoke};
+            AcpSessionContext acpSessionContext = new AcpSessionContext(promptContext, invoke);
+
+            Object[] params = new Object[]{acpSessionContext, token};
 
             Object resultValue;
             try {
@@ -457,21 +459,8 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
                 result = XDataUtils.toJSONString(resultValue);
             }
 
-            AcpSchema.TextResourceContents textResourceContents = new AcpSchema.TextResourceContents(result, "", MimeTypeUtils.APPLICATION_JSON_VALUE);
-            AcpSchema.Resource resource = new AcpSchema.Resource("resource", textResourceContents, null, null);
-            context.sendUpdate(context.getSessionId(), new AcpSchema.ToolCallUpdateNotification(
-                    "tool_call_update",
-                    invoke.toolCallId(),
-                    apiDefinition.description(),
-                    AcpSchema.ToolKind.EXECUTE,
-                    AcpSchema.ToolCallStatus.COMPLETED,
-                    List.of(new AcpSchema.ToolCallContentBlock("content", resource)),
-                    List.of(),
-                    "",
-                    "",
-                    Map.of()));
-
-            return Mono.just(new AcpSchema.PromptResponse(AcpSchema.StopReason.END_TURN));
+            return acpSessionContext.sendToolCallCompleted(result)
+                    .then(Mono.just(new AcpSchema.PromptResponse(AcpSchema.StopReason.END_TURN)));
         }
     }
 

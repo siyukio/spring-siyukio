@@ -3,6 +3,7 @@ package io.github.siyukio.application.client;
 import io.github.siyukio.application.dto.CreateAuthorizationRequest;
 import io.github.siyukio.application.dto.CreateAuthorizationResponse;
 import io.github.siyukio.client.SimpleAcpClient;
+import io.github.siyukio.tools.api.dto.TokenResponse;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.XDataUtils;
@@ -42,7 +43,10 @@ public class SimpleAcpClientTest {
             String authorization = this.tokenProvider.createAuthorization(Token.builder().uid("321").build());
             String serverUri = "ws://localhost:8080";
             simpleAcpClient = SimpleAcpClient.builder(serverUri)
-                    .authorization(authorization).build();
+                    .authorization(authorization)
+                    .progressNotificationHandler((notification) -> {
+                        log.debug("ProgressNotification: {}", XDataUtils.toPrettyJSONString(notification));
+                    }).build();
         }
     }
 
@@ -55,6 +59,14 @@ public class SimpleAcpClientTest {
                 createAuthorizationRequest,
                 CreateAuthorizationResponse.class);
         log.info("{}", XDataUtils.toPrettyJSONString(createAuthorizationResponse));
+    }
+
+    @Test
+    void testAsyncNotification() {
+        TokenResponse tokenResponse = simpleAcpClient.callTool(
+                "token.getByProgress",
+                TokenResponse.class);
+        log.info("{}", XDataUtils.toPrettyJSONString(tokenResponse));
     }
 
 }

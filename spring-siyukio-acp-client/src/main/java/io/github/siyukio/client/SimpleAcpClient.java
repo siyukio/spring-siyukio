@@ -2,21 +2,22 @@ package io.github.siyukio.client;
 
 import com.agentclientprotocol.sdk.client.AcpAsyncClient;
 import com.agentclientprotocol.sdk.client.AcpClient;
-import com.agentclientprotocol.sdk.spec.AcpClientSession;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import io.github.siyukio.client.transport.WebSocketAcpClientTransport;
+import io.github.siyukio.tools.acp.AcpSchemaExt;
 import io.github.siyukio.tools.acp.Invoke;
 import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.util.IdUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import io.modelcontextprotocol.util.Assert;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONObject;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeTypeUtils;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,10 +35,16 @@ public class SimpleAcpClient {
 
     private final Map<String, String> toolCallUpdateCache;
 
-    public SimpleAcpClient(AcpAsyncClient acpAsyncClient, String sessionId, Map<String, String> toolCallUpdateCache) {
+    private final List<ProgressNotificationHandler> progressNotificationHandlers;
+
+    public SimpleAcpClient(AcpAsyncClient acpAsyncClient,
+                           String sessionId,
+                           Map<String, String> toolCallUpdateCache,
+                           List<ProgressNotificationHandler> progressNotificationHandlers) {
         this.acpAsyncClient = acpAsyncClient;
         this.sessionId = sessionId;
         this.toolCallUpdateCache = toolCallUpdateCache;
+        this.progressNotificationHandlers = progressNotificationHandlers;
     }
 
     public static Builder builder(String uri) {
@@ -56,7 +63,7 @@ public class SimpleAcpClient {
             AcpSchema.PromptResponse promptResponse = this.acpAsyncClient.prompt(promptRequest).block();
             log.debug("{}", XDataUtils.toPrettyJSONString(promptResponse));
             String cacheValue = this.toolCallUpdateCache.get(invoke.toolCallId());
-            if (!cacheValue.equals("IN_PROGRESS")) {
+            if (!cacheValue.equals("IN_PROGRESS") && !typeClass.equals(Void.class)) {
                 return XDataUtils.parse(cacheValue, typeClass);
             } else {
                 throw new ApiException("Acp callTool error:" + invoke.tool() + "," + invoke.toolCallId());
@@ -66,18 +73,38 @@ public class SimpleAcpClient {
         }
     }
 
+    public <T> T callTool(String tool, Class<T> typeClass) {
+        return this.callTool(tool, new JSONObject(), typeClass);
+    }
+
+    public void callTool(String tool) {
+        this.callTool(tool, new JSONObject(), Void.class);
+    }
+
+    public void callTool(String tool, Object params) {
+        this.callTool(tool, params, Void.class);
+    }
+
     public void close() {
         this.acpAsyncClient.close();
+    }
+
+    @FunctionalInterface
+    public interface ProgressNotificationHandler {
+
+        void handle(AcpSchemaExt.ProgressNotification progressNotification);
+
     }
 
     public static class Builder {
 
         private final String uri;
-        private final Map<String, AcpClientSession.NotificationHandler> notificationHandlers = new HashMap<>();
         private Duration requestTimeout = Duration.ofSeconds(60);
         private Duration connectTimeout = Duration.ofSeconds(12);
         private String authorization = "";
         private String cwd = "/" + IdUtils.getUniqueId();
+
+        private List<ProgressNotificationHandler> progressNotificationHandlers = new ArrayList<>();
 
         public Builder(String uri) {
             this.uri = uri;
@@ -103,6 +130,30 @@ public class SimpleAcpClient {
             return this;
         }
 
+        public Builder progressNotificationHandler(ProgressNotificationHandler progressNotificationHandler) {
+            this.progressNotificationHandlers.add(progressNotificationHandler);
+            return this;
+        }
+
+        public String readJsonText(AcpSchema.ToolCallUpdateNotification toolCallUpdateNotification) {
+            if (CollectionUtils.isEmpty(toolCallUpdateNotification.content())) {
+                return null;
+            }
+            AcpSchema.ToolCallContent toolCallContent = toolCallUpdateNotification.content().getFirst();
+            if (toolCallContent instanceof AcpSchema.ToolCallContentBlock block) {
+                AcpSchema.ContentBlock contentBlock = block.content();
+                if (contentBlock instanceof AcpSchema.Resource resource) {
+                    AcpSchema.EmbeddedResourceResource embeddedResourceResource = resource.resource();
+                    if (embeddedResourceResource instanceof AcpSchema.TextResourceContents textResourceContents) {
+                        if (textResourceContents.mimeType().equals(MimeTypeUtils.APPLICATION_JSON_VALUE)) {
+                            return textResourceContents.text();
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
         public SimpleAcpClient build() {
             Assert.hasText(uri, "uri is required");
             WebSocketAcpClientTransport clientTransport = new WebSocketAcpClientTransport(this.uri, Map.of("authorization", this.authorization))
@@ -111,7 +162,7 @@ public class SimpleAcpClient {
             AcpClient.AsyncSpec asyncSpec = AcpClient.async(clientTransport)
                     .requestTimeout(this.requestTimeout)
                     .notificationHandler(AcpSchema.METHOD_SESSION_UPDATE, (notification -> {
-                        log.debug("notification: {}", XDataUtils.toPrettyJSONString(notification));
+                        log.debug("{}: {}", AcpSchema.METHOD_SESSION_UPDATE, XDataUtils.toPrettyJSONString(notification));
                         if (notification instanceof Map notificationMap) {
                             Object update = notificationMap.get("update");
                             if (update instanceof Map updateMap) {
@@ -121,17 +172,18 @@ public class SimpleAcpClient {
                                     String toolCallId = toolCallUpdateNotification.toolCallId();
                                     String cacheValue = toolCallUpdateCache.get(toolCallId);
                                     if (cacheValue.equals("IN_PROGRESS")) {
-                                        AcpSchema.ToolCallContent toolCallContent = toolCallUpdateNotification.content().getFirst();
-                                        if (toolCallContent instanceof AcpSchema.ToolCallContentBlock block) {
-                                            AcpSchema.ContentBlock contentBlock = block.content();
-                                            if (contentBlock instanceof AcpSchema.Resource resource) {
-                                                AcpSchema.EmbeddedResourceResource embeddedResourceResource = resource.resource();
-                                                if (embeddedResourceResource instanceof AcpSchema.TextResourceContents textResourceContents) {
-                                                    if (textResourceContents.mimeType().equals(MimeTypeUtils.APPLICATION_JSON_VALUE)) {
-                                                        toolCallUpdateCache.put(toolCallId, textResourceContents.text());
-                                                    }
+                                        if (toolCallUpdateNotification.status().equals(AcpSchema.ToolCallStatus.COMPLETED)) {
+                                            String jsonText = this.readJsonText(toolCallUpdateNotification);
+                                            toolCallUpdateCache.put(toolCallId, jsonText);
+                                        } else if (toolCallUpdateNotification.status().equals(AcpSchema.ToolCallStatus.IN_PROGRESS)) {
+                                            String jsonText = this.readJsonText(toolCallUpdateNotification);
+                                            AcpSchemaExt.ProgressNotification progressNotification = XDataUtils.parse(jsonText, AcpSchemaExt.ProgressNotification.class);
+                                            this.progressNotificationHandlers.forEach(handler -> {
+                                                try {
+                                                    handler.handle(progressNotification);
+                                                } catch (Exception ignored) {
                                                 }
-                                            }
+                                            });
                                         }
                                     }
                                 }
@@ -148,7 +200,10 @@ public class SimpleAcpClient {
             AcpSchema.NewSessionResponse newSessionResponse = acpAsyncClient.newSession(newSessionRequest).block();
             log.debug("Get acp client session: {}, {}", this.uri, XDataUtils.toJSONString(newSessionResponse));
             assert newSessionResponse != null;
-            return new SimpleAcpClient(acpAsyncClient, newSessionResponse.sessionId(), toolCallUpdateCache);
+            return new SimpleAcpClient(acpAsyncClient,
+                    newSessionResponse.sessionId(),
+                    toolCallUpdateCache,
+                    this.progressNotificationHandlers);
         }
     }
 }
