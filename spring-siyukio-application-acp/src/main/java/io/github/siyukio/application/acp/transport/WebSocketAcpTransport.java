@@ -44,6 +44,8 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -69,6 +71,7 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
     private final TokenProvider tokenProvider;
     private final ConcurrentHashMap<String, WebSocketAcpSession> webSocketAcpSessionMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, WebSocketAcpSession> requestAcpSessionMap = new ConcurrentHashMap<>();
+    private ScheduledFuture<?> keepAliveScheduler;
     private Consumer<Throwable> exceptionHandler = t -> log.error("WebSocket Acp Transport error", t);
 
     /**
@@ -93,11 +96,33 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
         this.outboundSink = Sinks.many().unicast().onBackpressureBuffer();
     }
 
+    private void keepAlive() {
+        if (this.webSocketAcpSessionMap.isEmpty()) {
+            return;
+        }
+        Set<String> exceptionIdSet = new HashSet<>();
+        int total = this.webSocketAcpSessionMap.size();
+        for (WebSocketAcpSession webSocketAcpSession : this.webSocketAcpSessionMap.values()) {
+            try {
+                webSocketAcpSession.sendPing();
+            } catch (Exception ex) {
+                exceptionIdSet.add(webSocketAcpSession.getId());
+            }
+        }
+        exceptionIdSet.forEach(this.webSocketAcpSessionMap::remove);
+        int active = this.webSocketAcpSessionMap.size();
+        log.debug("WebSocket Acp keepAlive:{}/{}", active, total);
+    }
+
     @Override
     public Mono<Void> start(Function<Mono<JSONRPCMessage>, Mono<JSONRPCMessage>> handler) {
         if (!isStarted.compareAndSet(false, true)) {
             return Mono.error(new IllegalStateException("Already started"));
         }
+
+        // Start keepAlive
+        log.info("Starting WebSocket Acp keepAlive");
+        this.keepAliveScheduler = AsyncUtils.scheduleWithFixedDelay(this::keepAlive, 3, 10, TimeUnit.SECONDS);
 
         return Mono.fromCallable(() -> {
             log.info("Starting WebSocket agent server on port {} at path {}", ApiProfiles.PORT, path);
@@ -211,7 +236,7 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
         private final ReentrantLock lock = new ReentrantLock();
 
         @Override
-        public boolean doHandshake(ServerHttpRequest request, ServerHttpResponse response, org.springframework.web.socket.WebSocketHandler wsHandler, Map<String, Object> attributes) throws HandshakeFailureException {
+        public boolean doHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) throws HandshakeFailureException {
             String protocol = request.getHeaders().getFirst(WebSocketHttpHeaders.SEC_WEBSOCKET_PROTOCOL);
             if (StringUtils.hasText(protocol)) {
                 response.getHeaders().add(WebSocketHttpHeaders.SEC_WEBSOCKET_PROTOCOL, protocol);

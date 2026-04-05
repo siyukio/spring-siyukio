@@ -15,9 +15,9 @@ import reactor.core.publisher.Sinks;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
@@ -201,7 +201,7 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
         @Override
         public void onOpen(WebSocket webSocket) {
             log.debug("WebSocket connection opened");
-            webSocket.request(1);
+            WebSocket.Listener.super.onOpen(webSocket);
         }
 
         @Override
@@ -233,17 +233,23 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
                     exceptionHandler.accept(e);
                 }
             }
-
-            webSocket.request(1);
-            return CompletableFuture.completedFuture(null);
+            return WebSocket.Listener.super.onText(webSocket, data, last);
         }
+
+        @Override
+        public CompletionStage<?> onPing(WebSocket webSocket,
+                                         ByteBuffer message) {
+            log.debug("Received WebSocket ping");
+            return WebSocket.Listener.super.onPing(webSocket, message);
+        }
+
 
         @Override
         public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
             log.info("WebSocket connection closed: {} - {}", statusCode, reason);
             isClosing.set(true);
             inboundSink.tryEmitComplete();
-            return CompletableFuture.completedFuture(null);
+            return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
         }
 
         @Override
@@ -254,6 +260,7 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
             }
             isClosing.set(true);
             inboundSink.tryEmitComplete();
+            WebSocket.Listener.super.onError(webSocket, error);
         }
 
     }
