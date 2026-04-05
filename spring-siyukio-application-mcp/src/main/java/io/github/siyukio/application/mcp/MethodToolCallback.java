@@ -3,9 +3,9 @@ package io.github.siyukio.application.mcp;
 import io.github.siyukio.tools.api.AipHandlerManager;
 import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.api.ApiHandler;
-import io.github.siyukio.tools.api.constants.ApiConstants;
 import io.github.siyukio.tools.api.definition.ApiDefinition;
 import io.github.siyukio.tools.api.token.Token;
+import io.github.siyukio.tools.util.OpenApiUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
@@ -57,46 +57,6 @@ public class MethodToolCallback {
                 .addTextContent("").build();
     }
 
-    /**
-     * Simplify JSON schema by removing default constraint values and recursively processing nested structures.
-     * This method removes default maxItems from arrays, maxLength from strings,
-     * and recursively processes object properties to clean up the schema.
-     *
-     * @param schemaJson the JSON schema object to simplify
-     */
-    private static void simplifySchema(JSONObject schemaJson) {
-        if (schemaJson == null) {
-            return;
-        }
-        String type = schemaJson.optString("type");
-        if ("object".equals(type)) {
-            JSONObject properties = schemaJson.optJSONObject("properties");
-            if (properties != null) {
-                for (String key : properties.keySet()) {
-                    JSONObject property = properties.optJSONObject(key);
-                    simplifySchema(property);
-                }
-            }
-        } else if ("array".equals(type)) {
-            int maxItems = schemaJson.optInt("maxItems");
-            if (maxItems == ApiConstants.API_PARAMETER_DEFAULT_NUMBER) {
-                schemaJson.remove("maxItems");
-            }
-            JSONObject items = schemaJson.optJSONObject("items");
-            simplifySchema(items);
-        } else if ("string".equals(type)) {
-            int maxLength = schemaJson.optInt("maxLength");
-            if (maxLength == ApiConstants.API_PARAMETER_DEFAULT_NUMBER) {
-                schemaJson.remove("maxLength");
-            }
-
-            String pattern = schemaJson.optString("pattern");
-            if (StringUtils.hasText(pattern)) {
-                schemaJson.remove("pattern");
-            }
-        }
-    }
-
     public static McpServerFeatures.SyncToolSpecification toSyncToolSpecification(String path, ApiHandler apiHandler) {
         String name = path;
         if (name.startsWith("/")) {
@@ -114,7 +74,7 @@ public class MethodToolCallback {
 
         JSONObject requestSchema = XDataUtils.copy(apiDefinition.requestBodyParameter().schema(), JSONObject.class);
 
-        simplifySchema(requestSchema);
+        OpenApiUtils.simplifySchema(requestSchema);
 
         McpSchema.JsonSchema inputSchema = XDataUtils.copy(requestSchema, McpSchema.JsonSchema.class);
 

@@ -4,6 +4,7 @@ import com.agentclientprotocol.sdk.agent.PromptContext;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import io.github.siyukio.tools.acp.AcpSchemaExt;
 import io.github.siyukio.tools.acp.Invoke;
+import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.Getter;
 import org.springframework.util.MimeTypeUtils;
@@ -23,9 +24,13 @@ public class AcpSessionContext {
     @Getter
     private final Invoke invoke;
 
-    public AcpSessionContext(PromptContext promptContext, Invoke invoke) {
+    @Getter
+    private final Token token;
+
+    public AcpSessionContext(PromptContext promptContext, Invoke invoke, Token token) {
         this.promptContext = promptContext;
         this.invoke = invoke;
+        this.token = token;
     }
 
     public String getToolCallId() {

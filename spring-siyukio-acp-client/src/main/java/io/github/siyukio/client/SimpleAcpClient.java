@@ -96,6 +96,10 @@ public class SimpleAcpClient {
         this.callTool(tool, params, Void.class);
     }
 
+    public AcpSchemaExt.ListToolsResult listTools() {
+        return this.callTool("listTools", new JSONObject(), AcpSchemaExt.ListToolsResult.class);
+    }
+
     public void close() {
         this.acpAsyncClient.close();
     }

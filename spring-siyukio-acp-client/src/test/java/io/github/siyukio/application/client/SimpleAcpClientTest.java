@@ -4,6 +4,7 @@ import io.github.siyukio.application.dto.CreateAuthorizationRequest;
 import io.github.siyukio.application.dto.CreateAuthorizationResponse;
 import io.github.siyukio.application.dto.RefreshAuthorizationRequest;
 import io.github.siyukio.client.SimpleAcpClient;
+import io.github.siyukio.tools.acp.AcpSchemaExt;
 import io.github.siyukio.tools.api.dto.TokenResponse;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
@@ -92,6 +93,12 @@ public class SimpleAcpClientTest {
                 refreshAuthorizationRequest,
                 CreateAuthorizationResponse.class);
         log.info("{}", XDataUtils.toPrettyJSONString(createAuthorizationResponse));
+    }
+
+    @Test
+    void testListTools() {
+        AcpSchemaExt.ListToolsResult listToolsResult = simpleAcpClient.listTools();
+        log.info("{}", XDataUtils.toPrettyJSONString(listToolsResult));
     }
 
 }

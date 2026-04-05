@@ -1,12 +1,14 @@
 package io.github.siyukio.tools.util;
 
 import io.github.siyukio.tools.api.ApiProfiles;
+import io.github.siyukio.tools.api.constants.ApiConstants;
 import io.github.siyukio.tools.api.definition.ApiDefinition;
 import io.github.siyukio.tools.api.definition.ApiDefinitionManager;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 
 import java.util.Map;
 import java.util.SortedMap;
@@ -138,6 +140,46 @@ public abstract class OpenApiUtils {
         //content.application/json.schema
         applicationJson.put("schema", apiDefinition.responseBodyParameter().schema());
         return responseJson;
+    }
+
+    /**
+     * Simplify JSON schema by removing default constraint values and recursively processing nested structures.
+     * This method removes default maxItems from arrays, maxLength from strings,
+     * and recursively processes object properties to clean up the schema.
+     *
+     * @param schemaJson the JSON schema object to simplify
+     */
+    public static void simplifySchema(JSONObject schemaJson) {
+        if (schemaJson == null) {
+            return;
+        }
+        String type = schemaJson.optString("type");
+        if ("object".equals(type)) {
+            JSONObject properties = schemaJson.optJSONObject("properties");
+            if (properties != null) {
+                for (String key : properties.keySet()) {
+                    JSONObject property = properties.optJSONObject(key);
+                    simplifySchema(property);
+                }
+            }
+        } else if ("array".equals(type)) {
+            int maxItems = schemaJson.optInt("maxItems");
+            if (maxItems == ApiConstants.API_PARAMETER_DEFAULT_NUMBER) {
+                schemaJson.remove("maxItems");
+            }
+            JSONObject items = schemaJson.optJSONObject("items");
+            simplifySchema(items);
+        } else if ("string".equals(type)) {
+            int maxLength = schemaJson.optInt("maxLength");
+            if (maxLength == ApiConstants.API_PARAMETER_DEFAULT_NUMBER) {
+                schemaJson.remove("maxLength");
+            }
+
+            String pattern = schemaJson.optString("pattern");
+            if (StringUtils.hasText(pattern)) {
+                schemaJson.remove("pattern");
+            }
+        }
     }
 
 }

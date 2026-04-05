@@ -12,6 +12,7 @@ import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.agentclientprotocol.sdk.spec.AcpSchema.JSONRPCMessage;
 import com.agentclientprotocol.sdk.util.Assert;
 import io.github.siyukio.application.acp.AcpSessionContext;
+import io.github.siyukio.tools.acp.AcpSchemaExt;
 import io.github.siyukio.tools.acp.Invoke;
 import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.api.ApiHandler;
@@ -20,6 +21,7 @@ import io.github.siyukio.tools.api.definition.ApiDefinition;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.AsyncUtils;
+import io.github.siyukio.tools.util.OpenApiUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.json.TypeRef;
@@ -405,6 +407,91 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
             return null;
         }
 
+        private Mono<AcpSchema.PromptResponse> listTools(AcpSessionContext acpSessionContext) {
+            List<AcpSchemaExt.Tool> tools = new ArrayList<>();
+            this.toolHandlerMap.forEach((key, value) -> {
+                ApiDefinition apiDefinition = value.apiDefinition();
+                String title = apiDefinition.summary();
+                String description = apiDefinition.description();
+                if (!StringUtils.hasText(description)) {
+                    description = title;
+                }
+
+                JSONObject inputSchema = XDataUtils.copy(apiDefinition.requestBodyParameter().schema(), JSONObject.class);
+
+                OpenApiUtils.simplifySchema(inputSchema);
+
+                JSONObject outputSchema = XDataUtils.copy(apiDefinition.responseBodyParameter().schema(), JSONObject.class);
+
+                AcpSchemaExt.Tool tool = new AcpSchemaExt.Tool(
+                        key,
+                        title,
+                        description,
+                        inputSchema,
+                        outputSchema
+                );
+                tools.add(tool);
+            });
+
+            AcpSchemaExt.ListToolsResult listToolsResult = new AcpSchemaExt.ListToolsResult(tools);
+            String result = XDataUtils.toJSONString(listToolsResult);
+            return acpSessionContext.sendToolCallCompleted(result)
+                    .then(Mono.just(new AcpSchema.PromptResponse(AcpSchema.StopReason.END_TURN)));
+        }
+
+        private Mono<AcpSchema.PromptResponse> callTool(ApiHandler apiHandler, AcpSessionContext acpSessionContext) {
+            Token token = acpSessionContext.getToken();
+            ApiDefinition apiDefinition = apiHandler.apiDefinition();
+            if (apiDefinition.authorization()) {
+                //validate authorization
+                if (!apiDefinition.roles().isEmpty()) {
+                    // validate role
+                    Set<String> roleSet = new HashSet<>(apiDefinition.roles());
+                    if (!CollectionUtils.isEmpty(token.roles())) {
+                        roleSet.retainAll(token.roles());
+                    }
+                    if (roleSet.isEmpty()) {
+                        return Mono.error(new AcpProtocolException(HttpStatus.FORBIDDEN.value(), HttpStatus.FORBIDDEN.getReasonPhrase()));
+                    }
+                }
+            }
+
+            JSONObject requestJson;
+            Invoke invoke = acpSessionContext.getInvoke();
+            try {
+                requestJson = apiHandler.requestValidator().validate(invoke.params());
+            } catch (ApiException ex) {
+                return Mono.error(new AcpProtocolException(ex.getCode(), ex.getMessage()));
+            }
+
+            Object[] params = new Object[]{acpSessionContext, token};
+
+            Object resultValue;
+            try {
+                resultValue = apiHandler.apiInvoker().invoke(requestJson, params);
+            } catch (IllegalAccessException | IllegalArgumentException ex) {
+                log.error("CallTool error:{}, {}", invoke.tool(), ex.getMessage());
+                ApiException exception = ApiException.getUnknownApiException(ex);
+                return Mono.error(new AcpProtocolException(exception.getCode(), exception.getMessage()));
+            } catch (InvocationTargetException ex) {
+                Throwable throwable = ex.getTargetException();
+                log.error("CallTool error: {}, {}", invoke.tool(), throwable.getMessage());
+                ApiException exception = ApiException.getUnknownApiException(throwable);
+                return Mono.error(new AcpProtocolException(exception.getCode(), exception.getMessage()));
+            }
+
+            Class<?> returnType = apiDefinition.realReturnType();
+            String result;
+            if (returnType == void.class || returnType == Void.class) {
+                result = "{}";
+            } else {
+                result = XDataUtils.toJSONString(resultValue);
+            }
+
+            return acpSessionContext.sendToolCallCompleted(result)
+                    .then(Mono.just(new AcpSchema.PromptResponse(AcpSchema.StopReason.END_TURN)));
+        }
+
         @Override
         public Mono<AcpSchema.PromptResponse> handle(AcpSchema.PromptRequest request, PromptContext promptContext) {
             String sessionId = request.sessionId();
@@ -427,64 +514,18 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
                 return Mono.error(new AcpProtocolException(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value(), HttpStatus.UNSUPPORTED_MEDIA_TYPE.getReasonPhrase()));
             }
 
-            ApiHandler apiHandler = toolHandlerMap.get(invoke.tool());
-            if (apiHandler == null) {
-                return Mono.error(new AcpProtocolException(HttpStatus.NOT_FOUND.value(), "Tool not found"));
-            }
-
             Token token = webSocketAcpSession.getToken();
+            AcpSessionContext acpSessionContext = new AcpSessionContext(promptContext, invoke, token);
 
-            ApiDefinition apiDefinition = apiHandler.apiDefinition();
-            if (apiDefinition.authorization()) {
-                //validate authorization
-                if (!apiDefinition.roles().isEmpty()) {
-                    // validate role
-                    Set<String> roleSet = new HashSet<>(apiDefinition.roles());
-                    if (!CollectionUtils.isEmpty(token.roles())) {
-                        roleSet.retainAll(token.roles());
-                    }
-                    if (roleSet.isEmpty()) {
-                        return Mono.error(new AcpProtocolException(HttpStatus.FORBIDDEN.value(), HttpStatus.FORBIDDEN.getReasonPhrase()));
-                    }
-                }
-            }
-
-            JSONObject requestJson;
-            try {
-                requestJson = apiHandler.requestValidator().validate(invoke.params());
-            } catch (ApiException ex) {
-                return Mono.error(new AcpProtocolException(ex.getCode(), ex.getMessage()));
-            }
-
-            AcpSessionContext acpSessionContext = new AcpSessionContext(promptContext, invoke);
-
-            Object[] params = new Object[]{acpSessionContext, token};
-
-            Object resultValue;
-            try {
-                resultValue = apiHandler.apiInvoker().invoke(requestJson, params);
-            } catch (IllegalAccessException | IllegalArgumentException ex) {
-                log.error("CallTool error:{}, {}", invoke.tool(), ex.getMessage());
-                ApiException exception = ApiException.getUnknownApiException(ex);
-                return Mono.error(new AcpProtocolException(exception.getCode(), exception.getMessage()));
-            } catch (InvocationTargetException ex) {
-                Throwable throwable = ex.getTargetException();
-                log.error("CallTool error: {}, {}", invoke.tool(), throwable.getMessage());
-                ApiException exception = ApiException.getUnknownApiException(throwable);
-                return Mono.error(new AcpProtocolException(exception.getCode(), exception.getMessage()));
-            }
-
-
-            Class<?> returnType = apiDefinition.realReturnType();
-            String result;
-            if (returnType == void.class || returnType == Void.class) {
-                result = "{}";
+            if (invoke.tool().equals("listTools")) {
+                return this.listTools(acpSessionContext);
             } else {
-                result = XDataUtils.toJSONString(resultValue);
+                ApiHandler apiHandler = toolHandlerMap.get(invoke.tool());
+                if (apiHandler == null) {
+                    return Mono.error(new AcpProtocolException(HttpStatus.NOT_FOUND.value(), "Tool not found"));
+                }
+                return this.callTool(apiHandler, acpSessionContext);
             }
-
-            return acpSessionContext.sendToolCallCompleted(result)
-                    .then(Mono.just(new AcpSchema.PromptResponse(AcpSchema.StopReason.END_TURN)));
         }
     }
 

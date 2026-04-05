@@ -1,6 +1,9 @@
 package io.github.siyukio.tools.acp;
 
 import lombok.With;
+import org.json.JSONObject;
+
+import java.util.List;
 
 /**
  *
@@ -26,5 +29,20 @@ public final class AcpSchemaExt {
         public static ProgressNotification create(String message) {
             return new ProgressNotification(null, 1, 1, message);
         }
+    }
+
+    public record Tool(
+            String name,
+            String title,
+            String description,
+            JSONObject inputSchema,
+            JSONObject outputSchema
+    ) {
+    }
+
+    public record ListToolsResult(
+            List<Tool> tools
+    ) {
+
     }
 }
