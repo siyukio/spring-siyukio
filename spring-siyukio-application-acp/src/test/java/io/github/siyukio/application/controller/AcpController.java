@@ -1,10 +1,10 @@
 package io.github.siyukio.application.controller;
 
-import io.github.siyukio.application.acp.AcpSessionContext;
 import io.github.siyukio.application.dto.CreateAuthorizationRequest;
 import io.github.siyukio.application.dto.CreateAuthorizationResponse;
 import io.github.siyukio.application.dto.RefreshAuthorizationRequest;
 import io.github.siyukio.tools.acp.AcpSchemaExt;
+import io.github.siyukio.tools.acp.AcpSessionContext;
 import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.api.annotation.ApiController;
 import io.github.siyukio.tools.api.annotation.ApiMapping;

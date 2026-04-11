@@ -1,5 +1,6 @@
 package io.github.siyukio.tools.api.definition;
 
+import io.github.siyukio.tools.acp.AcpSessionContext;
 import io.github.siyukio.tools.api.ApiRequest;
 import io.github.siyukio.tools.api.annotation.ApiController;
 import io.github.siyukio.tools.api.annotation.ApiMapping;
@@ -7,7 +8,6 @@ import io.github.siyukio.tools.api.annotation.ApiParameter;
 import io.github.siyukio.tools.api.annotation.Example;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.util.XDataUtils;
-import io.modelcontextprotocol.server.McpSyncServerExchange;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
@@ -563,7 +563,7 @@ public final class ApiDefinitionManager {
 
     public List<ApiRequestParameter> getSubRequestParameters(Method method, Class<?> typeClass, LinkedList<Class<?>> requestClassLinked) {
         List<ApiRequestParameter> requestParameters = new ArrayList<>();
-        if (typeClass == String.class || typeClass == ApiRequest.class || typeClass == Token.class || typeClass == McpSyncServerExchange.class) {
+        if (typeClass == String.class || typeClass == ApiRequest.class || typeClass == Token.class || typeClass == AcpSessionContext.class) {
             return requestParameters;
         }
         //

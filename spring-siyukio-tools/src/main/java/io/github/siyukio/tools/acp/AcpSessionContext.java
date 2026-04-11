@@ -1,9 +1,7 @@
-package io.github.siyukio.application.acp;
+package io.github.siyukio.tools.acp;
 
 import com.agentclientprotocol.sdk.agent.PromptContext;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
-import io.github.siyukio.tools.acp.AcpSchemaExt;
-import io.github.siyukio.tools.acp.Invoke;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.Getter;
