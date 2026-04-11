@@ -1,24 +1,19 @@
 # spring-siyukio
 
 **spring-siyukio** is a lightweight development framework built on top of **Spring Boot**, designed to accelerate the
-creation of **MCP services** with enhanced security, performance, and developer experience.
+creation of **API services** with enhanced security, performance, and developer experience.
 
 ## Core Highlights
 
 ### ⚡ Virtual Thread Native
 
-Built for Java 21+ with full virtual thread support across MCP client and execution layers, enabling massive concurrency
+Built for Java 21+ with full virtual thread support, enabling massive concurrency
 without thread exhaustion.
 
 ### 🔒 Enterprise-Grade Security
 
 Comprehensive security controls with JWT authentication (RSA/ECDSA), request signature validation, role-based access
 control, and column-level AES-GCM encryption.
-
-### 🚀 Dual Protocol Architecture
-
-Seamlessly expose the same API as both HTTP and MCP protocols with minimal configuration changes—perfect for unified
-service ecosystems.
 
 ### 🎯 Zero-Configuration Schema Sync
 
@@ -46,35 +41,9 @@ Spring Boot application foundation with powerful API development tools.
 
 - **`@ApiController` & `@ApiMapping`** — Define REST APIs with built-in authorization, CORS, and OpenAPI
 - **Flexible Security Controls** — JWT auth, request signatures, role-based access (independent or combined)
-- **Unified Exception Handling** — MCP protocol-aligned error responses
+- **Unified Exception Handling** — Consistent error responses across services
 - **Automatic OpenAPI Documentation** — Environment-toggled API documentation
 - **Spring Boot Actuator** — Health checks, metrics, and runtime management
-
-### [spring-siyukio-application-mcp](./spring-siyukio-application-mcp/README.md)
-
-MCP service application enabling dual protocol support.
-
-**Key Features:**
-
-- **Dual Protocol Support** — Same API supports HTTP and MCP simultaneously
-- **Automatic Schema Conversion** — OpenAPI to MCP schema with zero code duplication
-- **Enhanced MCP Interactions** — ProgressNotification and AI Sampling support
-- **WebSocketStreamable Transport** — Direct Kubernetes deployment without session sharing services
-- **Virtual Thread Execution** — Auto-switch for efficient long-running tasks
-- **Zero-Config JWT** — Seamless authentication integration
-
-### [spring-siyukio-mcp-client](./spring-siyukio-mcp-client/README.md)
-
-MCP client for accessing MCP streamable protocol services.
-
-**Key Features:**
-
-- **Virtual Thread Native** — Handle thousands of long-running blocking requests
-- **WebSocket Transport** — Better performance and clustering support
-- **Flexible Authentication** — Static tokens or dynamic token suppliers
-- **Progress Notifications** — Built-in progress update handling
-- **AI Sampling Handler** — Customizable AI model interaction
-- **Spring Integration** — Fluent builder API with property configuration
 
 ### [spring-siyukio-http-client](./spring-siyukio-http-client/README.md)
 

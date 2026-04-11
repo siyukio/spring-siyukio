@@ -15,8 +15,6 @@
     <modules>
         <module>spring-siyukio-tools</module>
         <module>spring-siyukio-application</module>
-        <module>spring-siyukio-application-mcp</module>
-        <module>spring-siyukio-mcp-client</module>
         <module>spring-siyukio-postgresql</module>
         <module>spring-siyukio-http-client</module>
         <module>spring-siyukio-application-acp</module>
@@ -60,18 +58,6 @@
             <dependency>
                 <groupId>io.github.siyukio</groupId>
                 <artifactId>spring-siyukio-application</artifactId>
-                <version>${siyukio.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.github.siyukio</groupId>
-                <artifactId>spring-siyukio-application-mcp</artifactId>
-                <version>${siyukio.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.github.siyukio</groupId>
-                <artifactId>spring-siyukio-mcp-client</artifactId>
                 <version>${siyukio.version}</version>
             </dependency>
 
