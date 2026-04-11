@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -35,7 +36,10 @@ public class ExceptionAdvice {
             return ResponseEntity.notFound().build();
         } else {
             ApiException apiException = new ApiException(HttpStatus.NOT_FOUND);
-            return ResponseEntity.ok(apiException.toJson());
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(apiException.toJson());
         }
     }
 
