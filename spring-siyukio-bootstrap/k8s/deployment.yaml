@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: siyukio-bootstrap
+  labels:
+    app: siyukio-bootstrap
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: siyukio-bootstrap
+  template:
+    metadata:
+      labels:
+        app: siyukio-bootstrap
+        version: v1
+    spec:
+      containers:
+        - name: siyukio-bootstrap
+          image: siyukio-bootstrap:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              name: http
+              protocol: TCP
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"
+            - name: JAVA_OPTS
+              value: "-Xms512m -Xmx1024m -XX:+UseG1GC"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 80
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 10"]
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: siyukio-bootstrap
+  labels:
+    app: siyukio-bootstrap
+spec:
+  type: ClusterIP
+  selector:
+    app: siyukio-bootstrap
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: siyukio-bootstrap-headless
+  labels:
+    app: siyukio-bootstrap
+spec:
+  clusterIP: None
+  selector:
+    app: siyukio-bootstrap
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
