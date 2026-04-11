@@ -7,7 +7,7 @@ logging:
 spring:
   siyukio:
     api-docs:
-      url: http://127.0.0.1:8080
+      url: http://siyukio.local
       authorization: test
     jwt:
       public-key: |

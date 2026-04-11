@@ -44,4 +44,9 @@ public @interface ApiClient {
      * HTTP version, default is HTTP/2.
      */
     HttpClient.Version version() default HttpClient.Version.HTTP_2;
+
+    /**
+     * DNS resolver configuration.
+     */
+    DnsResolver dnsResolver() default @DnsResolver;
 }

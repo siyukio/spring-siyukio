@@ -124,6 +124,12 @@
             </dependency>
 
             <dependency>
+                <groupId>dnsjava</groupId>
+                <artifactId>dnsjava</artifactId>
+                <version>3.6.1</version>
+            </dependency>
+
+            <dependency>
                 <groupId>com.agentclientprotocol</groupId>
                 <artifactId>acp-core</artifactId>
                 <version>${acp.version}</version>
