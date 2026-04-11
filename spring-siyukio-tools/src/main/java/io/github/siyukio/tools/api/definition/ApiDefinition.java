@@ -19,7 +19,6 @@ public record ApiDefinition(
         List<String> roles,
         boolean authorization,
         boolean signature,
-        boolean mcpAvailable,
         boolean acpAvailable,
         ApiRequestParameter requestBodyParameter,
         ApiResponseParameter responseBodyParameter,

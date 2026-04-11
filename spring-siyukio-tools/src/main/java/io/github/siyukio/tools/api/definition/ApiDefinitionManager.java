@@ -197,7 +197,6 @@ public final class ApiDefinitionManager {
                 .authorization(apiMapping.authorization())
                 .signature(apiMapping.signature())
                 .tags(List.of(apiController.tags()))
-                .mcpAvailable(apiMapping.mcpAvailable())
                 .acpAvailable(apiMapping.acpAvailable())
                 .roles(List.of(roles))
                 .returnType(method.getReturnType())

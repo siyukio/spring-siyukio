@@ -59,11 +59,6 @@ public @interface ApiMapping {
     boolean deprecated() default false;
 
     /**
-     * Whether available for MCP protocol calls.
-     */
-    boolean mcpAvailable() default false;
-
-    /**
      * Whether available for ACP protocol calls.
      */
     boolean acpAvailable() default false;
