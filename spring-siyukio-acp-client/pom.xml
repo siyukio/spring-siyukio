@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>spring-siyukio-acp-client</artifactId>
+    <name>Spring Siyukio ACP Client</name>
 
     <dependencies>
         <dependency>

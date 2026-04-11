@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>spring-siyukio-http-client</artifactId>
+    <name>Spring Siyukio HTTP Client</name>
 
     <dependencies>
         <dependency>
