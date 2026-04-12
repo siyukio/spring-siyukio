@@ -1,6 +1,7 @@
 package io.github.siyukio.tools.acp;
 
 import com.agentclientprotocol.sdk.agent.PromptContext;
+import com.agentclientprotocol.sdk.agent.SyncPromptContext;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.util.XDataUtils;
@@ -17,6 +18,8 @@ import java.util.Map;
  */
 public class AcpSessionContext {
 
+    private final SyncPromptContext syncPromptContext;
+
     private final PromptContext promptContext;
 
     @Getter
@@ -25,18 +28,15 @@ public class AcpSessionContext {
     @Getter
     private final Token token;
 
-    public AcpSessionContext(PromptContext promptContext, Invoke invoke, Token token) {
+    public AcpSessionContext(PromptContext promptContext, SyncPromptContext syncPromptContext, Invoke invoke, Token token) {
+        this.syncPromptContext = syncPromptContext;
         this.promptContext = promptContext;
         this.invoke = invoke;
         this.token = token;
     }
 
-    public String getToolCallId() {
-        return this.invoke.toolCallId();
-    }
-
     public String getSessionId() {
-        return this.promptContext.getSessionId();
+        return this.syncPromptContext.getSessionId();
     }
 
     private AcpSchema.ToolCallUpdateNotification getToolCallUpdateNotification(String jsonText, AcpSchema.ToolCallStatus toolCallStatus) {
@@ -44,7 +44,7 @@ public class AcpSessionContext {
         AcpSchema.Resource resource = new AcpSchema.Resource("resource", textResourceContents, null, null);
         AcpSchema.ToolCallContentBlock toolCallContentBlock = new AcpSchema.ToolCallContentBlock("content", resource);
         return new AcpSchema.ToolCallUpdateNotification(
-                "tool_call_update",
+                AcpSchemaExt.TOOL_CALL_UPDATE,
                 this.invoke.toolCallId(),
                 this.invoke.tool(),
                 AcpSchema.ToolKind.EXECUTE,
@@ -56,14 +56,26 @@ public class AcpSessionContext {
                 Map.of());
     }
 
-    public Mono<Void> sendToolCallCompleted(String jsonText) {
+    public Mono<Void> sendToolCallCompletedAsync(String jsonText) {
         AcpSchema.ToolCallUpdateNotification toolCallUpdateNotification = this.getToolCallUpdateNotification(jsonText, AcpSchema.ToolCallStatus.COMPLETED);
         return this.promptContext.sendUpdate(this.promptContext.getSessionId(), toolCallUpdateNotification);
     }
 
-    public Mono<Void> sendToolCallProgress(AcpSchemaExt.ProgressNotification progressNotification) {
+    public void sendToolCallCompleted(String jsonText) {
+        AcpSchema.ToolCallUpdateNotification toolCallUpdateNotification = this.getToolCallUpdateNotification(jsonText, AcpSchema.ToolCallStatus.COMPLETED);
+        this.syncPromptContext.sendUpdate(this.syncPromptContext.getSessionId(), toolCallUpdateNotification);
+    }
+
+    public void sendToolCallProgress(AcpSchemaExt.ProgressNotification progressNotification) {
         String jsonText = XDataUtils.toJSONString(progressNotification);
         AcpSchema.ToolCallUpdateNotification toolCallUpdateNotification = this.getToolCallUpdateNotification(jsonText, AcpSchema.ToolCallStatus.IN_PROGRESS);
-        return this.promptContext.sendUpdate(this.promptContext.getSessionId(), toolCallUpdateNotification);
+        this.syncPromptContext.sendUpdate(this.syncPromptContext.getSessionId(), toolCallUpdateNotification);
+    }
+
+    public void sendMessage(String text) {
+        AcpSchema.AgentMessageChunk messageChunk = new AcpSchema.AgentMessageChunk(
+                AcpSchemaExt.AGENT_MESSAGE_CHUNK,
+                new AcpSchema.TextContent(text));
+        this.syncPromptContext.sendUpdate(this.syncPromptContext.getSessionId(), messageChunk);
     }
 }

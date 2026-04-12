@@ -11,6 +11,12 @@ import java.util.List;
  */
 public final class AcpSchemaExt {
 
+    public static final String LIST_TOOLS = "listTools";
+
+    public static final String TOOL_CALL_UPDATE = "tool_call_update";
+
+    public static final String AGENT_MESSAGE_CHUNK = "agent_message_chunk";
+
     @With
     public record ProgressNotification(
             String toolCallId,

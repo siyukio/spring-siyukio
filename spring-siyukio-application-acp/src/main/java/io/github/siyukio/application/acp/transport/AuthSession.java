@@ -18,7 +18,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bugee
  */
 @Slf4j
-public class WebSocketAcpSession {
+public class AuthSession {
 
     private final WebSocketSession webSocketSession;
 
@@ -27,13 +27,16 @@ public class WebSocketAcpSession {
     @Getter
     private final Token token;
 
-    public WebSocketAcpSession(WebSocketSession webSocketSession, Token token) {
+    public AuthSession(WebSocketSession webSocketSession, Token token) {
         this.webSocketSession = webSocketSession;
         this.token = token;
     }
 
-    public void close() throws IOException {
-        this.webSocketSession.close(CloseStatus.PROTOCOL_ERROR);
+    public void close() {
+        try {
+            this.webSocketSession.close(CloseStatus.GOING_AWAY);
+        } catch (IOException ignored) {
+        }
     }
 
     public String getId() {

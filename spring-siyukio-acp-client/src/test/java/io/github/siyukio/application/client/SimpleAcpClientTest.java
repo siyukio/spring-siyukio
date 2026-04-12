@@ -1,5 +1,6 @@
 package io.github.siyukio.application.client;
 
+import com.agentclientprotocol.sdk.spec.AcpSchema;
 import io.github.siyukio.application.dto.CreateAuthorizationRequest;
 import io.github.siyukio.application.dto.CreateAuthorizationResponse;
 import io.github.siyukio.application.dto.RefreshAuthorizationRequest;
@@ -51,6 +52,8 @@ public class SimpleAcpClientTest {
                     .progressNotificationHandler((notification) -> {
                         log.debug("ProgressNotification: {}", XDataUtils.toPrettyJSONString(notification));
                     }).build();
+            AcpSchema.NewSessionResponse newSessionResponse = simpleAcpClient.newSession();
+            log.info("newSessionResponse: {}", XDataUtils.toPrettyJSONString(newSessionResponse));
         }
     }
 
@@ -99,6 +102,25 @@ public class SimpleAcpClientTest {
     void testListTools() {
         AcpSchemaExt.ListToolsResult listToolsResult = simpleAcpClient.listTools();
         log.info("{}", XDataUtils.toPrettyJSONString(listToolsResult));
+    }
+
+    @Test
+    void testLoadSession() {
+        String sessionId = "aRXnwCt7KBpWA9vqZWeLn";
+        AcpSchema.LoadSessionResponse loadSessionResponse = simpleAcpClient.loadSession(sessionId);
+        log.info("{}", XDataUtils.toPrettyJSONString(loadSessionResponse));
+    }
+
+    @Test
+    void testPrompt() {
+        AcpSchema.PromptResponse response = simpleAcpClient.prompt("hello");
+        log.info("{}", XDataUtils.toPrettyJSONString(response));
+    }
+
+    @Test
+    void testSetMode() {
+        AcpSchema.SetSessionModeResponse response = simpleAcpClient.setSessionMode("gpt-5.4");
+        log.info("{}", XDataUtils.toPrettyJSONString(response));
     }
 
 }

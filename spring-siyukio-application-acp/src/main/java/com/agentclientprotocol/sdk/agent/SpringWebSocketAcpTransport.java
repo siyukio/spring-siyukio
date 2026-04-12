@@ -2,15 +2,15 @@
  * Copyright 2025-2025 the original author or authors.
  */
 
-package io.github.siyukio.application.acp.transport;
+package com.agentclientprotocol.sdk.agent;
 
-import com.agentclientprotocol.sdk.agent.AcpAgent;
-import com.agentclientprotocol.sdk.agent.PromptContext;
 import com.agentclientprotocol.sdk.error.AcpProtocolException;
 import com.agentclientprotocol.sdk.spec.AcpAgentTransport;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.agentclientprotocol.sdk.spec.AcpSchema.JSONRPCMessage;
 import com.agentclientprotocol.sdk.util.Assert;
+import io.github.siyukio.application.acp.AcpSessionHandler;
+import io.github.siyukio.application.acp.transport.AuthSession;
 import io.github.siyukio.tools.acp.AcpSchemaExt;
 import io.github.siyukio.tools.acp.AcpSessionContext;
 import io.github.siyukio.tools.acp.Invoke;
@@ -42,7 +42,6 @@ import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,7 +53,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 @Slf4j
-public class WebSocketAcpTransport implements AcpAgentTransport {
+public class SpringWebSocketAcpTransport implements AcpAgentTransport {
 
     /**
      * Default path for ACP WebSocket endpoints
@@ -71,8 +70,11 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
     private final AtomicBoolean isClosing = new AtomicBoolean(false);
     private final AtomicBoolean isStarted = new AtomicBoolean(false);
     private final TokenProvider tokenProvider;
-    private final ConcurrentHashMap<String, WebSocketAcpSession> webSocketAcpSessionMap = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, WebSocketAcpSession> requestAcpSessionMap = new ConcurrentHashMap<>();
+    private final AcpSessionHandler acpSessionHandler;
+    private final ConcurrentHashMap<String, AuthSession> authSessionMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, AuthSession> acpRequest2AuthSessionMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, AuthSession> acpSession2AuthSessionMap = new ConcurrentHashMap<>();
+    private final ReentrantLock lock = new ReentrantLock();
     private ScheduledFuture<?> keepAliveScheduler;
     private Consumer<Throwable> exceptionHandler = t -> log.error("WebSocket Acp Transport error", t);
 
@@ -80,8 +82,8 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
      * Creates a new WebSocketAcpTransport on the specified port with default path.
      *
      */
-    public WebSocketAcpTransport(TokenProvider tokenProvider) {
-        this(DEFAULT_ACP_PATH, tokenProvider);
+    public SpringWebSocketAcpTransport(TokenProvider tokenProvider, AcpSessionHandler acpSessionHandler) {
+        this(DEFAULT_ACP_PATH, tokenProvider, acpSessionHandler);
     }
 
     /**
@@ -89,8 +91,9 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
      *
      * @param path The WebSocket endpoint path (e.g., "/acp")
      */
-    public WebSocketAcpTransport(String path, TokenProvider tokenProvider) {
+    public SpringWebSocketAcpTransport(String path, TokenProvider tokenProvider, AcpSessionHandler acpSessionHandler) {
         this.tokenProvider = tokenProvider;
+        this.acpSessionHandler = acpSessionHandler;
         Assert.hasText(path, "Path must not be empty");
         this.path = path;
 
@@ -98,21 +101,38 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
         this.outboundSink = Sinks.many().unicast().onBackpressureBuffer();
     }
 
+    private void saveAcpSession2AuthSession(String sessionId, AuthSession authSession) {
+        lock.lock();
+        try {
+            AuthSession existAuthSession = acpSession2AuthSessionMap.get(sessionId);
+            if (existAuthSession != null) {
+                log.warn("Auth session already exists, close old session: {}, {}, {}",
+                        existAuthSession.getId(),
+                        existAuthSession.getToken().id(),
+                        existAuthSession.getToken().name());
+                existAuthSession.close();
+            }
+            acpSession2AuthSessionMap.put(sessionId, authSession);
+        } finally {
+            lock.unlock();
+        }
+    }
+
     private void keepAlive() {
-        if (this.webSocketAcpSessionMap.isEmpty()) {
+        if (this.authSessionMap.isEmpty()) {
             return;
         }
         Set<String> exceptionIdSet = new HashSet<>();
-        int total = this.webSocketAcpSessionMap.size();
-        for (WebSocketAcpSession webSocketAcpSession : this.webSocketAcpSessionMap.values()) {
+        int total = this.authSessionMap.size();
+        for (AuthSession authSession : this.authSessionMap.values()) {
             try {
-                webSocketAcpSession.sendPing();
+                authSession.sendPing();
             } catch (Exception ex) {
-                exceptionIdSet.add(webSocketAcpSession.getId());
+                exceptionIdSet.add(authSession.getId());
             }
         }
-        exceptionIdSet.forEach(this.webSocketAcpSessionMap::remove);
-        int active = this.webSocketAcpSessionMap.size();
+        exceptionIdSet.forEach(this.authSessionMap::remove);
+        int active = this.authSessionMap.size();
         log.debug("WebSocket Acp keepAlive:{}/{}", active, total);
     }
 
@@ -158,23 +178,22 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
                 .publishOn(AsyncUtils.VIRTUAL_SCHEDULER)
                 .subscribe(message -> {
                     if (message != null && !isClosing.get()) {
-                        WebSocketAcpSession webSocketAcpSession = null;
+                        AuthSession authSession = null;
                         if (message instanceof AcpSchema.JSONRPCResponse jsonrpcResponse) {
-                            webSocketAcpSession = requestAcpSessionMap.remove(jsonrpcResponse.id().toString());
+                            authSession = acpRequest2AuthSessionMap.remove(jsonrpcResponse.id().toString());
                         } else if (message instanceof AcpSchema.JSONRPCNotification jsonrpcNotification) {
-                            if (jsonrpcNotification.params() instanceof AcpSchema.SessionNotification params) {
-                                String sessionId = params.sessionId();
-                                webSocketAcpSession = webSocketAcpSessionMap.get(sessionId);
+                            if (jsonrpcNotification.params() instanceof AcpSchema.SessionNotification notification) {
+                                authSession = acpSession2AuthSessionMap.get(notification.sessionId());
                             }
                         } else {
-                            log.error("Unsupported message type: {}", message.getClass().getSimpleName());
+                            log.error("Unsupported Acp message type: {}", message.getClass().getSimpleName());
                         }
-                        if (webSocketAcpSession != null) {
+                        if (authSession != null) {
                             try {
                                 McpJsonMapper jsonMapper = XDataUtils.MCP_JSON_MAPPER;
                                 String jsonMessage = jsonMapper.writeValueAsString(message);
                                 log.debug("Sending WebSocket message: {}", jsonMessage);
-                                webSocketAcpSession.sendTextMessage(jsonMessage);
+                                authSession.sendTextMessage(jsonMessage);
                             } catch (Exception e) {
                                 if (!isClosing.get()) {
                                     log.error("Error sending WebSocket message", e);
@@ -182,7 +201,6 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
                                 }
                             }
                         }
-
                     }
                 });
     }
@@ -204,12 +222,7 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
             inboundSink.tryEmitComplete();
             outboundSink.tryEmitComplete();
         }).then(Mono.fromCallable(() -> {
-            webSocketAcpSessionMap.values().forEach((session) -> {
-                try {
-                    session.close();
-                } catch (IOException ignored) {
-                }
-            });
+            authSessionMap.values().forEach(AuthSession::close);
             return null;
         })).then();
     }
@@ -274,8 +287,8 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
         public void afterConnectionEstablished(WebSocketSession session) throws Exception {
             Object value = session.getAttributes().get(HttpHeaders.AUTHORIZATION);
             if (value instanceof Token token) {
-                WebSocketAcpSession webSocketAcpSession = new WebSocketAcpSession(session, token);
-                webSocketAcpSessionMap.put(webSocketAcpSession.getId(), webSocketAcpSession);
+                AuthSession authSession = new AuthSession(session, token);
+                authSessionMap.put(authSession.getId(), authSession);
             } else {
                 session.close(CloseStatus.PROTOCOL_ERROR);
             }
@@ -288,7 +301,7 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
 
         @Override
         public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-            webSocketAcpSessionMap.remove(session.getId());
+            authSessionMap.remove(session.getId());
             this.dataBufferMap.remove(session.getId());
             log.debug("WebSocket Acp closed: {}, {}", status.toString(), session.getId());
         }
@@ -322,8 +335,8 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
             String message = this.getMessage(session, textMessage);
             log.debug("Received WebSocket Acp message: {}, {}", session.getId(), message);
 
-            WebSocketAcpSession webSocketAcpSession = webSocketAcpSessionMap.get(session.getId());
-            if (webSocketAcpSession == null) {
+            AuthSession authSession = authSessionMap.get(session.getId());
+            if (authSession == null) {
                 log.error("WebSocket Acp session is not found: {}", session.getId());
                 return;
             }
@@ -332,23 +345,20 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
                 try {
                     JSONRPCMessage jsonRpcMessage = AcpSchema.deserializeJsonRpcMessage(XDataUtils.MCP_JSON_MAPPER, message);
                     if (jsonRpcMessage instanceof AcpSchema.JSONRPCRequest jsonrpcRequest) {
-                        // new session
-                        if (jsonrpcRequest.method().equals(AcpSchema.METHOD_SESSION_NEW)) {
-                            JSONObject requestJson = XDataUtils.parseObject(message);
-                            JSONObject params = requestJson.optJSONObject("params");
-                            if (params != null) {
-                                JSONObject meta = params.optJSONObject("_meta");
-                                if (meta == null) {
-                                    meta = new JSONObject();
-                                    params.put("_meta", meta);
-                                }
-                                meta.put("sessionId", session.getId());
-                                log.debug("Received method:{}, auto set sessionId: {}", AcpSchema.METHOD_SESSION_NEW, session.getId());
-                                jsonRpcMessage = XDataUtils.copy(requestJson, AcpSchema.JSONRPCRequest.class);
+                        // Update wsSessionId in request meta
+                        JSONObject requestJson = XDataUtils.parseObject(message);
+                        JSONObject params = requestJson.optJSONObject("params");
+                        if (params != null) {
+                            JSONObject meta = params.optJSONObject("_meta");
+                            if (meta == null) {
+                                meta = new JSONObject();
+                                params.put("_meta", meta);
                             }
+                            meta.put(AcpSessionHandler.WS_SESSION_ID, session.getId());
+                            log.debug("Received method:{}, auto set wsSessionId: {}", jsonrpcRequest.method(), session.getId());
+                            jsonRpcMessage = XDataUtils.copy(requestJson, AcpSchema.JSONRPCRequest.class);
                         }
-
-                        requestAcpSessionMap.put(jsonrpcRequest.id().toString(), webSocketAcpSession);
+                        acpRequest2AuthSessionMap.put(jsonrpcRequest.id().toString(), authSession);
                     }
                     if (!inboundSink.tryEmitNext(jsonRpcMessage).isSuccess()) {
                         if (!isClosing.get()) {
@@ -374,6 +384,41 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
             return true;
         }
 
+    }
+
+    public class AcpInitializeHandler implements AcpAgent.InitializeHandler {
+
+        @Override
+        public Mono<AcpSchema.InitializeResponse> handle(AcpSchema.InitializeRequest request) {
+            return AcpSessionHandler.withWebSocketSession(request.meta(), authSessionMap, authSession -> {
+                AcpSchema.InitializeResponse response = acpSessionHandler.handleInit(authSession.getToken(), request);
+                return Mono.just(response);
+            });
+        }
+    }
+
+    public class AcpNewSessionHandler implements AcpAgent.NewSessionHandler {
+
+        @Override
+        public Mono<AcpSchema.NewSessionResponse> handle(AcpSchema.NewSessionRequest request) {
+            return AcpSessionHandler.withWebSocketSession(request.meta(), authSessionMap, authSession -> {
+                AcpSchema.NewSessionResponse response = acpSessionHandler.handleNewSession(authSession.getToken(), request);
+                saveAcpSession2AuthSession(response.sessionId(), authSession);
+                return Mono.just(response);
+            });
+        }
+    }
+
+    public class AcpLoadSessionHandler implements AcpAgent.LoadSessionHandler {
+
+        @Override
+        public Mono<AcpSchema.LoadSessionResponse> handle(AcpSchema.LoadSessionRequest request) {
+            return AcpSessionHandler.withWebSocketSession(request.meta(), authSessionMap, authSession -> {
+                AcpSchema.LoadSessionResponse response = acpSessionHandler.handleLoadSession(authSession.getToken(), request);
+                saveAcpSession2AuthSession(request.sessionId(), authSession);
+                return Mono.just(response);
+            });
+        }
     }
 
     public class AcpPromptHandler implements AcpAgent.PromptHandler {
@@ -435,7 +480,7 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
 
             AcpSchemaExt.ListToolsResult listToolsResult = new AcpSchemaExt.ListToolsResult(tools);
             String result = XDataUtils.toJSONString(listToolsResult);
-            return acpSessionContext.sendToolCallCompleted(result)
+            return acpSessionContext.sendToolCallCompletedAsync(result)
                     .then(Mono.just(new AcpSchema.PromptResponse(AcpSchema.StopReason.END_TURN)));
         }
 
@@ -488,59 +533,41 @@ public class WebSocketAcpTransport implements AcpAgentTransport {
                 result = XDataUtils.toJSONString(resultValue);
             }
 
-            return acpSessionContext.sendToolCallCompleted(result)
+            return acpSessionContext.sendToolCallCompletedAsync(result)
                     .then(Mono.just(new AcpSchema.PromptResponse(AcpSchema.StopReason.END_TURN)));
         }
 
         @Override
         public Mono<AcpSchema.PromptResponse> handle(AcpSchema.PromptRequest request, PromptContext promptContext) {
-            String sessionId = request.sessionId();
-            WebSocketAcpSession webSocketAcpSession = webSocketAcpSessionMap.get(sessionId);
-            if (webSocketAcpSession == null) {
-                return Mono.error(new AcpProtocolException(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED.getReasonPhrase()));
-            }
-
-            Invoke invoke = null;
-            for (AcpSchema.ContentBlock contentBlock : request.prompt()) {
-                if (contentBlock instanceof AcpSchema.TextContent textContent) {
-                    invoke = parseInvoke(textContent.text());
-                    if (invoke != null) {
-                        break;
+            SyncPromptContext syncPromptContext = new DefaultSyncPromptContext(promptContext);
+            return AcpSessionHandler.withWebSocketSession(request.meta(), authSessionMap, authSession -> {
+                Invoke invoke = null;
+                for (AcpSchema.ContentBlock contentBlock : request.prompt()) {
+                    if (contentBlock instanceof AcpSchema.TextContent textContent) {
+                        invoke = parseInvoke(textContent.text());
+                        if (invoke != null) {
+                            break;
+                        }
                     }
                 }
-            }
+                Token token = authSession.getToken();
+                AcpSessionContext acpSessionContext = new AcpSessionContext(promptContext, syncPromptContext, invoke, token);
 
-            if (invoke == null) {
-                return Mono.error(new AcpProtocolException(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value(), HttpStatus.UNSUPPORTED_MEDIA_TYPE.getReasonPhrase()));
-            }
-
-            Token token = webSocketAcpSession.getToken();
-            AcpSessionContext acpSessionContext = new AcpSessionContext(promptContext, invoke, token);
-
-            if (invoke.tool().equals("listTools")) {
-                return this.listTools(acpSessionContext);
-            } else {
-                ApiHandler apiHandler = toolHandlerMap.get(invoke.tool());
-                if (apiHandler == null) {
-                    return Mono.error(new AcpProtocolException(HttpStatus.NOT_FOUND.value(), "Tool not found"));
+                if (invoke == null) {
+                    AcpSchema.PromptResponse response = acpSessionHandler.handlePrompt(authSession.getToken(), request, acpSessionContext);
+                    return Mono.just(response);
                 }
-                return this.callTool(apiHandler, acpSessionContext);
-            }
-        }
-    }
 
-    public class AcpNewSessionHandler implements AcpAgent.NewSessionHandler {
-
-        @Override
-        public Mono<AcpSchema.NewSessionResponse> handle(AcpSchema.NewSessionRequest request) {
-            Object sessionIdValue = request.meta().get("sessionId");
-            if (sessionIdValue == null) {
-                return Mono.error(new AcpProtocolException(HttpStatus.NOT_EXTENDED.value(), "Session id is null"));
-            }
-            String sessionId = sessionIdValue.toString();
-            AcpSchema.SessionModelState sessionModelState = new AcpSchema.SessionModelState("default", List.of());
-            AcpSchema.SessionModeState sessionModeState = new AcpSchema.SessionModeState("default", List.of());
-            return Mono.just(new AcpSchema.NewSessionResponse(sessionId, sessionModeState, sessionModelState));
+                if (invoke.tool().equals(AcpSchemaExt.LIST_TOOLS)) {
+                    return this.listTools(acpSessionContext);
+                } else {
+                    ApiHandler apiHandler = toolHandlerMap.get(invoke.tool());
+                    if (apiHandler == null) {
+                        return Mono.error(new AcpProtocolException(HttpStatus.NOT_FOUND.value(), "Tool not found"));
+                    }
+                    return this.callTool(apiHandler, acpSessionContext);
+                }
+            });
         }
     }
 
