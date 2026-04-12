@@ -29,31 +29,37 @@ import java.util.List;
 @SpringBootTest
 public class SimpleAcpClientTest {
 
-    private static SimpleAcpClient simpleAcpClient = null;
+    private static SimpleAcpClient SIMPLE_ACP_CLIENT = null;
+
+    private static String SESSION_ID = null;
 
     @Autowired
     private TokenProvider tokenProvider;
 
     @AfterAll
     static void setAfter() {
-        if (simpleAcpClient != null) {
-            simpleAcpClient.close();
+        if (SIMPLE_ACP_CLIENT != null) {
+            SIMPLE_ACP_CLIENT.close();
         }
     }
 
     @BeforeEach
     void setUp() {
-        if (simpleAcpClient == null) {
+        if (SIMPLE_ACP_CLIENT == null) {
             String authorization = this.tokenProvider.createAuthorization(Token.builder().uid("321").build());
             String serverUri = "ws://localhost:8080";
-            simpleAcpClient = SimpleAcpClient.builder(serverUri)
+            SIMPLE_ACP_CLIENT = SimpleAcpClient.builder(serverUri)
                     .requestTimeout(Duration.ofSeconds(30))
                     .authorization(authorization)
                     .progressNotificationHandler((notification) -> {
                         log.debug("ProgressNotification: {}", XDataUtils.toPrettyJSONString(notification));
+                    })
+                    .sessionNotificationHandler((notification) -> {
+                        log.debug("SessionNotification: {}", XDataUtils.toPrettyJSONString(notification));
                     }).build();
-            AcpSchema.NewSessionResponse newSessionResponse = simpleAcpClient.newSession();
+            AcpSchema.NewSessionResponse newSessionResponse = SIMPLE_ACP_CLIENT.newSession();
             log.info("newSessionResponse: {}", XDataUtils.toPrettyJSONString(newSessionResponse));
+            SESSION_ID = newSessionResponse.sessionId();
         }
     }
 
@@ -61,7 +67,7 @@ public class SimpleAcpClientTest {
     void testAcpAsyncClient() {
         CreateAuthorizationRequest createAuthorizationRequest = CreateAuthorizationRequest.builder()
                 .uid("test").name("test").roles(List.of()).build();
-        CreateAuthorizationResponse createAuthorizationResponse = simpleAcpClient.callTool(
+        CreateAuthorizationResponse createAuthorizationResponse = SIMPLE_ACP_CLIENT.callTool(
                 "authorization.create",
                 createAuthorizationRequest,
                 CreateAuthorizationResponse.class);
@@ -70,7 +76,7 @@ public class SimpleAcpClientTest {
 
     @Test
     void testAsyncNotification() {
-        TokenResponse tokenResponse = simpleAcpClient.callTool(
+        TokenResponse tokenResponse = SIMPLE_ACP_CLIENT.callTool(
                 "token.getByProgress",
                 TokenResponse.class);
         log.info("{}", XDataUtils.toPrettyJSONString(tokenResponse));
@@ -80,7 +86,7 @@ public class SimpleAcpClientTest {
     void testException() {
         RefreshAuthorizationRequest refreshAuthorizationRequest = RefreshAuthorizationRequest.builder()
                 .refreshToken("test_token").build();
-        CreateAuthorizationResponse createAuthorizationResponse = simpleAcpClient.callTool(
+        CreateAuthorizationResponse createAuthorizationResponse = SIMPLE_ACP_CLIENT.callTool(
                 "authorization.refreshException",
                 refreshAuthorizationRequest,
                 CreateAuthorizationResponse.class);
@@ -91,7 +97,7 @@ public class SimpleAcpClientTest {
     void testRequestTimeout() {
         RefreshAuthorizationRequest refreshAuthorizationRequest = RefreshAuthorizationRequest.builder()
                 .refreshToken("test_token").build();
-        CreateAuthorizationResponse createAuthorizationResponse = simpleAcpClient.callTool(
+        CreateAuthorizationResponse createAuthorizationResponse = SIMPLE_ACP_CLIENT.callTool(
                 "authorization.refreshTimeout",
                 refreshAuthorizationRequest,
                 CreateAuthorizationResponse.class);
@@ -100,26 +106,26 @@ public class SimpleAcpClientTest {
 
     @Test
     void testListTools() {
-        AcpSchemaExt.ListToolsResult listToolsResult = simpleAcpClient.listTools();
+        AcpSchemaExt.ListToolsResult listToolsResult = SIMPLE_ACP_CLIENT.listTools();
         log.info("{}", XDataUtils.toPrettyJSONString(listToolsResult));
     }
 
     @Test
     void testLoadSession() {
-        String sessionId = "aRXnwCt7KBpWA9vqZWeLn";
-        AcpSchema.LoadSessionResponse loadSessionResponse = simpleAcpClient.loadSession(sessionId);
+        String sessionId = SIMPLE_ACP_CLIENT.getCallToolSessionId();
+        AcpSchema.LoadSessionResponse loadSessionResponse = SIMPLE_ACP_CLIENT.loadSession(sessionId);
         log.info("{}", XDataUtils.toPrettyJSONString(loadSessionResponse));
     }
 
     @Test
     void testPrompt() {
-        AcpSchema.PromptResponse response = simpleAcpClient.prompt("hello");
+        AcpSchema.PromptResponse response = SIMPLE_ACP_CLIENT.prompt(SESSION_ID, "hello");
         log.info("{}", XDataUtils.toPrettyJSONString(response));
     }
 
     @Test
     void testSetMode() {
-        AcpSchema.SetSessionModeResponse response = simpleAcpClient.setSessionMode("gpt-5.4");
+        AcpSchema.SetSessionModeResponse response = SIMPLE_ACP_CLIENT.setSessionMode(SESSION_ID, "gpt-5.4");
         log.info("{}", XDataUtils.toPrettyJSONString(response));
     }
 

@@ -26,5 +26,9 @@ logging:
     io:
       github:
         siyukio: DEBUG
+    com:
+      agentclientprotocol:
+        sdk:
+          agent: DEBUG
 server:
   port: 8080

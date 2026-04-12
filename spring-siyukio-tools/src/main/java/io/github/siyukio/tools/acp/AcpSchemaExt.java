@@ -11,6 +11,10 @@ import java.util.List;
  */
 public final class AcpSchemaExt {
 
+    public static final String DEFAULT_AUTH_METHOD_NAME = "jwt_id";
+
+    public static final String WS_SESSION_ID = "wsSessionId";
+
     public static final String LIST_TOOLS = "listTools";
 
     public static final String TOOL_CALL_UPDATE = "tool_call_update";

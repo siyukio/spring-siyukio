@@ -11,6 +11,7 @@ import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.util.IdUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import io.modelcontextprotocol.util.Assert;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.util.CollectionUtils;
@@ -24,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  *
@@ -33,17 +33,20 @@ import java.util.concurrent.locks.ReentrantLock;
 @Slf4j
 public class SimpleAcpClient {
 
-    private final static String IN_PROGRESS = "IN_PROGRESS";
+    private final static String IN_PROGRESS = "in_progress";
 
     private final AcpAsyncClient acpAsyncClient;
     private final Map<String, String> toolCallUpdateCache;
-    private final ReentrantLock lock = new ReentrantLock();
-    private String currentSessionId = "";
+
+    @Getter
+    private final String callToolSessionId;
 
     private SimpleAcpClient(AcpAsyncClient acpAsyncClient,
-                            Map<String, String> toolCallUpdateCache) {
+                            Map<String, String> toolCallUpdateCache,
+                            String callToolSessionId) {
         this.acpAsyncClient = acpAsyncClient;
         this.toolCallUpdateCache = toolCallUpdateCache;
+        this.callToolSessionId = callToolSessionId;
     }
 
     public static Builder builder(String uri) {
@@ -51,10 +54,9 @@ public class SimpleAcpClient {
     }
 
     public <T> T callTool(String tool, Object params, Class<T> typeClass) {
-        if (!StringUtils.hasText(this.currentSessionId)) {
-            this.newSession();
+        if (!StringUtils.hasText(this.callToolSessionId)) {
+            throw new ApiException("Unsupported callTool");
         }
-
         Invoke invoke = Invoke.create(tool, params);
         String toolCallText = WebSocketAcpClientTransport.createAcpToolCall(invoke);
         List<AcpSchema.ContentBlock> prompts = new ArrayList<>();
@@ -62,7 +64,7 @@ public class SimpleAcpClient {
 
         this.toolCallUpdateCache.put(invoke.toolCallId(), IN_PROGRESS);
         try {
-            AcpSchema.PromptRequest promptRequest = new AcpSchema.PromptRequest(this.currentSessionId, prompts);
+            AcpSchema.PromptRequest promptRequest = new AcpSchema.PromptRequest(this.callToolSessionId, prompts);
             AcpSchema.PromptResponse promptResponse = this.acpAsyncClient.prompt(promptRequest).block();
             log.debug("{}", XDataUtils.toPrettyJSONString(promptResponse));
             String cacheValue = this.toolCallUpdateCache.get(invoke.toolCallId());
@@ -108,41 +110,24 @@ public class SimpleAcpClient {
     public AcpSchema.NewSessionResponse newSession() {
         String cwd = "/" + IdUtils.getUniqueId();
         AcpSchema.NewSessionRequest newSessionRequest = new AcpSchema.NewSessionRequest(cwd, List.of(), Map.of());
-        AcpSchema.NewSessionResponse newSessionResponse = this.acpAsyncClient.newSession(newSessionRequest).block();
-        assert newSessionResponse != null;
-        this.currentSessionId = newSessionResponse.sessionId();
-        log.debug("New acp client session: {}", XDataUtils.toJSONString(newSessionResponse));
-        return newSessionResponse;
+        return this.acpAsyncClient.newSession(newSessionRequest).block();
     }
 
     public AcpSchema.LoadSessionResponse loadSession(String sessionId) {
         String cwd = "/" + IdUtils.getUniqueId();
         AcpSchema.LoadSessionRequest loadSessionRequest = new AcpSchema.LoadSessionRequest(sessionId, cwd, List.of(), Map.of());
-        AcpSchema.LoadSessionResponse loadSessionResponse = this.acpAsyncClient.loadSession(loadSessionRequest).block();
-        this.currentSessionId = sessionId;
-        log.debug("Change acp client session: {}, {}", sessionId, XDataUtils.toJSONString(loadSessionResponse));
-        return loadSessionResponse;
+        return this.acpAsyncClient.loadSession(loadSessionRequest).block();
     }
 
-    private void checkSession() {
-        if (!StringUtils.hasText(this.currentSessionId)) {
-            throw new ApiException("Acp client session not initialized");
-        }
-    }
-
-    public AcpSchema.PromptResponse prompt(String prompt) {
-        this.checkSession();
-
+    public AcpSchema.PromptResponse prompt(String sessionId, String prompt) {
         List<AcpSchema.ContentBlock> prompts = new ArrayList<>();
         prompts.add(new AcpSchema.TextContent(prompt));
-        AcpSchema.PromptRequest promptRequest = new AcpSchema.PromptRequest(this.currentSessionId, prompts);
+        AcpSchema.PromptRequest promptRequest = new AcpSchema.PromptRequest(sessionId, prompts);
         return this.acpAsyncClient.prompt(promptRequest).block();
     }
 
-    public AcpSchema.SetSessionModeResponse setSessionMode(String modeId) {
-        this.checkSession();
-        
-        AcpSchema.SetSessionModeRequest setSessionModeRequest = new AcpSchema.SetSessionModeRequest(this.currentSessionId, modeId);
+    public AcpSchema.SetSessionModeResponse setSessionMode(String sessionId, String modeId) {
+        AcpSchema.SetSessionModeRequest setSessionModeRequest = new AcpSchema.SetSessionModeRequest(sessionId, modeId);
         return this.acpAsyncClient.setSessionMode(setSessionModeRequest).block();
     }
 
@@ -272,8 +257,17 @@ public class SimpleAcpClient {
             AcpAsyncClient acpAsyncClient = simpleAsyncSpec.build();
             AcpSchema.InitializeResponse initializeResponse = acpAsyncClient.initialize().block();
             log.debug("Init acp client: {}, {}", this.uri, XDataUtils.toJSONString(initializeResponse));
-            return new SimpleAcpClient(acpAsyncClient,
-                    toolCallUpdateCache);
+            String callToolSessionId = "";
+            assert initializeResponse != null;
+            if (!CollectionUtils.isEmpty(initializeResponse.authMethods())) {
+                for (AcpSchema.AuthMethod authMethod : initializeResponse.authMethods()) {
+                    if (authMethod.name().equals(AcpSchemaExt.DEFAULT_AUTH_METHOD_NAME)) {
+                        callToolSessionId = authMethod.id();
+                        break;
+                    }
+                }
+            }
+            return new SimpleAcpClient(acpAsyncClient, toolCallUpdateCache, callToolSessionId);
         }
     }
 }
