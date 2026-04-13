@@ -6,7 +6,6 @@ package com.agentclientprotocol.sdk.agent.transport;
 
 import com.agentclientprotocol.sdk.agent.AcpAgent;
 import com.agentclientprotocol.sdk.agent.PromptContext;
-import com.agentclientprotocol.sdk.agent.SimpleAcpAgent;
 import com.agentclientprotocol.sdk.error.AcpProtocolException;
 import com.agentclientprotocol.sdk.spec.AcpAgentTransport;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
@@ -43,6 +42,8 @@ import org.springframework.web.socket.server.HandshakeHandler;
 import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -67,16 +68,14 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
 
     @Getter
     private final String path;
-    private final Sinks.Many<JSONRPCMessage> inboundSink;
-    private final Sinks.Many<JSONRPCMessage> outboundSink;
+    private final Sinks.Many<AcpSchemaExt.TransportMessage> inboundSink;
+    private final Sinks.Many<AcpSchemaExt.TransportMessage> outboundSink;
     private final Sinks.One<Void> terminationSink = Sinks.one();
     private final AtomicBoolean isClosing = new AtomicBoolean(false);
     private final AtomicBoolean isStarted = new AtomicBoolean(false);
     private final TokenProvider tokenProvider;
     private final AcpSessionHandler acpSessionHandler;
     private final ConcurrentHashMap<String, AuthSession> authSessionMap = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, AuthSession> acpRequest2AuthSessionMap = new ConcurrentHashMap<>();
-    private final ReentrantLock lock = new ReentrantLock();
     private ScheduledFuture<?> keepAliveScheduler;
     private Consumer<Throwable> exceptionHandler = t -> log.error("WebSocket Acp Transport error", t);
 
@@ -146,20 +145,35 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
 
     private void handleIncomingMessages(Function<Mono<JSONRPCMessage>, Mono<JSONRPCMessage>> handler) {
         this.inboundSink.asFlux()
-                .flatMap(message -> Mono.just(message).transform(handler))
-                .doOnNext(response -> {
-                    if (response != null) {
-                        Sinks.EmitResult emitResult = this.outboundSink.tryEmitNext(response);
-                        if (!emitResult.isSuccess()) {
-                            if (!isClosing.get()) {
-                                log.error("Failed to enqueue outbound message");
-                            }
-                        }
-                    }
-                })
-                .doOnTerminate(() -> {
-                    this.outboundSink.tryEmitComplete();
-                })
+                .flatMap(message ->
+                        Mono.just(message.jsonRpcMessage())
+                                // 1. Use Mono.deferContextual to get the Context
+                                .transform(handler)
+                                // 2. Get the Context before doOnNext
+                                .flatMap(response ->
+                                        Mono.deferContextual(ctx -> {
+                                            String transportId = ctx.get(AcpSchemaExt.TRANSPORT_ID);
+                                            return Mono.just(Tuples.of(response, transportId));
+                                        })
+                                )
+                                // 3. Use response + transportId
+                                .doOnNext(tuple -> {
+                                    JSONRPCMessage response = tuple.getT1();
+                                    String transportId = tuple.getT2();
+                                    AcpSchemaExt.TransportMessage responseMessage = new AcpSchemaExt.TransportMessage(transportId, response);
+                                    Sinks.EmitResult emitResult = this.outboundSink.tryEmitNext(responseMessage);
+                                    if (!emitResult.isSuccess()) {
+                                        if (!isClosing.get()) {
+                                            System.err.println("Failed to enqueue outbound message");
+                                        }
+                                    }
+                                })
+                                // 4. Restore the original data
+                                .map(Tuple2::getT1)
+                                // 5. Write transportId to Context
+                                .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, message.transportId()))
+                )
+                .doOnTerminate(() -> this.outboundSink.tryEmitComplete())
                 .subscribe();
     }
 
@@ -178,18 +192,11 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
                 .subscribe(message -> {
                     try {
                         if (message != null && !isClosing.get()) {
-                            if (message instanceof AcpSchema.JSONRPCResponse jsonrpcResponse) {
-                                AuthSession authSession = acpRequest2AuthSessionMap.remove(jsonrpcResponse.id().toString());
-                                if (authSession != null) {
-                                    sendMessage(authSession, message);
-                                }
-                            } else if (message instanceof AcpSchema.JSONRPCNotification jsonrpcNotification) {
-                                if (jsonrpcNotification.params() instanceof AcpSchema.SessionNotification notification) {
-                                    AcpSessionHandler.getAuthSession(notification.meta(), authSessionMap)
-                                            .blockOptional().ifPresent(authSession -> sendMessage(authSession, message));
-                                }
+                            AuthSession authSession = authSessionMap.get(message.transportId());
+                            if (authSession != null) {
+                                sendMessage(authSession, message.jsonRpcMessage());
                             } else {
-                                log.error("Unsupported Acp message type: {}", message.getClass().getSimpleName());
+                                log.warn("AuthSession not found for outbound message: {}", message.jsonRpcMessage());
                             }
                         }
                     } catch (Exception e) {
@@ -203,11 +210,17 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
 
     @Override
     public Mono<Void> sendMessage(JSONRPCMessage message) {
-        if (outboundSink.tryEmitNext(message).isSuccess()) {
-            return Mono.empty();
-        } else {
-            return Mono.error(new RuntimeException("Failed to enqueue message"));
-        }
+        return Mono.deferContextual(ctx -> {
+            String transportId = ctx.get(AcpSchemaExt.TRANSPORT_ID);
+            AcpSchemaExt.TransportMessage transportMessage = new AcpSchemaExt.TransportMessage(transportId, message);
+            if (outboundSink.tryEmitNext(transportMessage).isSuccess()) {
+                return Mono.empty();
+            } else {
+                return Mono.error(new RuntimeException(
+                        "Failed to enqueue outbound message"
+                ));
+            }
+        });
     }
 
     @Override
@@ -326,34 +339,6 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
             return message;
         }
 
-        private JSONRPCMessage deserializeJsonRpcMessage(String jsonText, String wsSessionId)
-                throws IOException {
-
-            log.debug("Received Acp message: {}", jsonText);
-            JSONObject jsonObject = XDataUtils.parseObject(jsonText);
-            // Auto set wsSessionId
-            JSONObject params = jsonObject.optJSONObject("params");
-            if (params != null) {
-                JSONObject meta = params.optJSONObject("_meta");
-                if (meta == null) {
-                    meta = new JSONObject();
-                    params.put("_meta", meta);
-                }
-                meta.put(AcpSchemaExt.WS_SESSION_ID, wsSessionId);
-            }
-
-            // Determine message type based on specific JSON structure
-            if (jsonObject.has("method") && jsonObject.has("id")) {
-                return XDataUtils.copy(jsonObject, AcpSchema.JSONRPCRequest.class);
-            } else if (jsonObject.has("method") && !jsonObject.has("id")) {
-                return XDataUtils.copy(jsonObject, AcpSchema.JSONRPCNotification.class);
-            } else if (jsonObject.has("result") || jsonObject.has("error")) {
-                return XDataUtils.copy(jsonObject, AcpSchema.JSONRPCResponse.class);
-            }
-
-            throw new IllegalArgumentException("Cannot deserialize JSONRPCMessage: " + jsonText);
-        }
-
         @Override
         protected void handleTextMessage(WebSocketSession session, TextMessage textMessage) {
             String message = this.getMessage(session, textMessage);
@@ -366,11 +351,10 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
 
             Mono.fromRunnable(() -> {
                 try {
-                    JSONRPCMessage jsonRpcMessage = deserializeJsonRpcMessage(message, session.getId());
-                    if (jsonRpcMessage instanceof AcpSchema.JSONRPCRequest jsonrpcRequest) {
-                        acpRequest2AuthSessionMap.put(jsonrpcRequest.id().toString(), authSession);
-                    }
-                    if (!inboundSink.tryEmitNext(jsonRpcMessage).isSuccess()) {
+                    JSONRPCMessage jsonRpcMessage = AcpSchema.deserializeJsonRpcMessage(XDataUtils.MCP_JSON_MAPPER, message);
+                    log.debug("Received Acp message: {}", jsonRpcMessage);
+                    AcpSchemaExt.TransportMessage transportMessage = new AcpSchemaExt.TransportMessage(session.getId(), jsonRpcMessage);
+                    if (!inboundSink.tryEmitNext(transportMessage).isSuccess()) {
                         if (!isClosing.get()) {
                             log.error("Failed to enqueue inbound message");
                         }
@@ -400,7 +384,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
 
         @Override
         public Mono<AcpSchema.InitializeResponse> handle(AcpSchema.InitializeRequest request) {
-            return AcpSessionHandler.withAuthSession(request.meta(), authSessionMap, authSession -> {
+            return AcpSessionHandler.withContext(authSessionMap, authSession -> {
                 AcpSchema.InitializeResponse response = acpSessionHandler.handleInit(authSession.getToken(), request);
                 List<AcpSchema.AuthMethod> authMethods = response.authMethods();
                 if (CollectionUtils.isEmpty(authMethods)) {
@@ -423,7 +407,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
 
         @Override
         public Mono<AcpSchema.NewSessionResponse> handle(AcpSchema.NewSessionRequest request) {
-            return AcpSessionHandler.withAuthSession(request.meta(), authSessionMap, authSession -> {
+            return AcpSessionHandler.withContext(authSessionMap, authSession -> {
                 AcpSchema.NewSessionResponse response = acpSessionHandler.handleNewSession(authSession.getToken(), request);
                 return Mono.just(response);
             });
@@ -434,46 +418,44 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
 
         @Override
         public Mono<AcpSchema.LoadSessionResponse> handle(AcpSchema.LoadSessionRequest request) {
-            return AcpSessionHandler.withAuthSession(request.meta(), authSessionMap, authSession -> {
+            return AcpSessionHandler.withContext(authSessionMap, authSession -> {
                 AcpSchema.LoadSessionResponse response = acpSessionHandler.handleLoadSession(authSession.getToken(), request);
                 return Mono.just(response);
             });
         }
     }
 
-    public class AcpCancelHandler implements SimpleAcpAgent.CancelHandler {
+    public class AcpCancelHandler implements AcpAgent.CancelHandler {
 
         @Override
-        public Mono<Void> handle(AcpSchemaExt.CancelNotification request) {
-            AcpSessionHandler.getAuthSession(request.meta(), authSessionMap)
-                    .blockOptional()
-                    .ifPresent(authSession -> {
-                        try {
-                            acpSessionHandler.handleCancel(authSession.getToken(), request);
-                        } catch (Exception e) {
-                            log.error("Error handling cancel request", e);
-                        }
-                    });
-            return Mono.empty();
+        public Mono<Void> handle(AcpSchema.CancelNotification request) {
+            return AcpSessionHandler.withContext(authSessionMap, authSession -> {
+                try {
+                    acpSessionHandler.handleCancel(authSession.getToken(), request);
+                } catch (Exception e) {
+                    log.error("Error handling cancel request", e);
+                }
+                return Mono.empty();
+            });
         }
     }
 
-    public class AcpSetSessionModeHandler implements SimpleAcpAgent.SetSessionModeHandler {
+    public class AcpSetSessionModeHandler implements AcpAgent.SetSessionModeHandler {
 
         @Override
-        public Mono<AcpSchema.SetSessionModeResponse> handle(AcpSchemaExt.SetSessionModeRequest request) {
-            return AcpSessionHandler.withAuthSession(request.meta(), authSessionMap, authSession -> {
+        public Mono<AcpSchema.SetSessionModeResponse> handle(AcpSchema.SetSessionModeRequest request) {
+            return AcpSessionHandler.withContext(authSessionMap, authSession -> {
                 AcpSchema.SetSessionModeResponse response = acpSessionHandler.handleSetSessionMode(authSession.getToken(), request);
                 return Mono.just(response);
             });
         }
     }
 
-    public class AcpSetSessionModelHandler implements SimpleAcpAgent.SetSessionModelHandler {
+    public class AcpSetSessionModelHandler implements AcpAgent.SetSessionModelHandler {
 
         @Override
-        public Mono<AcpSchema.SetSessionModelResponse> handle(AcpSchemaExt.SetSessionModelRequest request) {
-            return AcpSessionHandler.withAuthSession(request.meta(), authSessionMap, authSession -> {
+        public Mono<AcpSchema.SetSessionModelResponse> handle(AcpSchema.SetSessionModelRequest request) {
+            return AcpSessionHandler.withContext(authSessionMap, authSession -> {
                 AcpSchema.SetSessionModelResponse response = acpSessionHandler.handleSetSessionModel(authSession.getToken(), request);
                 return Mono.just(response);
             });
@@ -598,7 +580,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
 
         @Override
         public Mono<AcpSchema.PromptResponse> handle(AcpSchema.PromptRequest request, PromptContext promptContext) {
-            return AcpSessionHandler.withAuthSession(request.meta(), authSessionMap, authSession -> {
+            return AcpSessionHandler.withContext(authSessionMap, authSession -> {
                 Invoke invoke = null;
                 for (AcpSchema.ContentBlock contentBlock : request.prompt()) {
                     if (contentBlock instanceof AcpSchema.TextContent textContent) {

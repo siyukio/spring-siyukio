@@ -124,14 +124,14 @@ public class SimpleAcpClient {
         this.acpAsyncClient.cancel(cancelNotification).block();
     }
 
-    public void setSessionMode(String sessionId, String modeId) {
+    public AcpSchema.SetSessionModeResponse setSessionMode(String sessionId, String modeId) {
         AcpSchema.SetSessionModeRequest setModeRequest = new AcpSchema.SetSessionModeRequest(sessionId, modeId);
-        this.acpAsyncClient.setSessionMode(setModeRequest).block();
+        return this.acpAsyncClient.setSessionMode(setModeRequest).block();
     }
 
-    public void setSessionModel(String sessionId, String modelId) {
+    public AcpSchema.SetSessionModelResponse setSessionModel(String sessionId, String modelId) {
         AcpSchema.SetSessionModelRequest setModelRequest = new AcpSchema.SetSessionModelRequest(sessionId, modelId);
-        this.acpAsyncClient.setSessionModel(setModelRequest).block();
+        return this.acpAsyncClient.setSessionModel(setModelRequest).block();
     }
 
     public AcpSchema.PromptResponse prompt(String sessionId, String prompt) {

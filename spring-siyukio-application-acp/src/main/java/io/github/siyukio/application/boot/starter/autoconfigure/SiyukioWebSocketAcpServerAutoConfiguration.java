@@ -1,8 +1,8 @@
 package io.github.siyukio.application.boot.starter.autoconfigure;
 
 
+import com.agentclientprotocol.sdk.agent.AcpAgent;
 import com.agentclientprotocol.sdk.agent.AcpAsyncAgent;
-import com.agentclientprotocol.sdk.agent.SimpleAcpAgent;
 import com.agentclientprotocol.sdk.agent.transport.SpringWebSocketAcpTransport;
 import io.github.siyukio.application.acp.AcpSessionHandler;
 import io.github.siyukio.tools.api.AipHandlerManager;
@@ -63,7 +63,7 @@ public class SiyukioWebSocketAcpServerAutoConfiguration implements WebSocketConf
     public AcpAsyncAgent acpAsyncAgent() {
         SpringWebSocketAcpTransport springWebSocketAcpTransport = this.applicationContext.getBean(SpringWebSocketAcpTransport.class);
         AipHandlerManager aipHandlerManager = this.applicationContext.getBean(AipHandlerManager.class);
-        SimpleAcpAgent.SimpleAsyncAgentBuilder builder = SimpleAcpAgent.async(springWebSocketAcpTransport)
+        AcpAgent.AsyncAgentBuilder builder = AcpAgent.async(springWebSocketAcpTransport)
                 .initializeHandler(springWebSocketAcpTransport.new AcpInitializeHandler())
                 .newSessionHandler(springWebSocketAcpTransport.new AcpNewSessionHandler())
                 .loadSessionHandler(springWebSocketAcpTransport.new AcpLoadSessionHandler())

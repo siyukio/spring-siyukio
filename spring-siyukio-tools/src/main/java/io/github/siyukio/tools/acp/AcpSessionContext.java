@@ -8,9 +8,7 @@ import lombok.Getter;
 import org.springframework.util.MimeTypeUtils;
 import reactor.core.publisher.Mono;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  *
@@ -26,23 +24,17 @@ public class AcpSessionContext {
     @Getter
     private final Token token;
 
-    private final String wsSessionId;
+    private final String transportId;
 
-    public AcpSessionContext(PromptContext promptContext, Invoke invoke, Token token, String wsSessionId) {
+    public AcpSessionContext(PromptContext promptContext, Invoke invoke, Token token, String transportId) {
         this.promptContext = promptContext;
         this.invoke = invoke;
         this.token = token;
-        this.wsSessionId = wsSessionId;
+        this.transportId = transportId;
     }
 
     public String getSessionId() {
         return this.promptContext.getSessionId();
-    }
-
-    private Map<String, Object> createDefaultMeta() {
-        Map<String, Object> meta = new HashMap<>();
-        meta.put(AcpSchemaExt.WS_SESSION_ID, this.wsSessionId);
-        return meta;
     }
 
     private AcpSchema.ToolCallUpdateNotification getToolCallUpdateNotification(String jsonText, AcpSchema.ToolCallStatus toolCallStatus) {
@@ -59,30 +51,36 @@ public class AcpSessionContext {
                 List.of(),
                 "",
                 "",
-                this.createDefaultMeta());
+                null);
     }
 
     public Mono<Void> sendToolCallCompletedAsync(String jsonText) {
         AcpSchema.ToolCallUpdateNotification toolCallUpdateNotification = this.getToolCallUpdateNotification(jsonText, AcpSchema.ToolCallStatus.COMPLETED);
-        return this.promptContext.sendUpdate(this.getSessionId(), toolCallUpdateNotification);
+        return this.promptContext.sendUpdate(this.getSessionId(), toolCallUpdateNotification)
+                .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId));
     }
 
     public void sendToolCallCompleted(String jsonText) {
         AcpSchema.ToolCallUpdateNotification toolCallUpdateNotification = this.getToolCallUpdateNotification(jsonText, AcpSchema.ToolCallStatus.COMPLETED);
-        this.promptContext.sendUpdate(this.getSessionId(), toolCallUpdateNotification).block();
+        this.promptContext.sendUpdate(this.getSessionId(), toolCallUpdateNotification)
+                .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
+                .block();
     }
 
     public void sendToolCallProgress(AcpSchemaExt.ProgressNotification progressNotification) {
         String jsonText = XDataUtils.toJSONString(progressNotification);
         AcpSchema.ToolCallUpdateNotification toolCallUpdateNotification = this.getToolCallUpdateNotification(jsonText, AcpSchema.ToolCallStatus.IN_PROGRESS);
-        this.promptContext.sendUpdate(this.getSessionId(), toolCallUpdateNotification).block();
+        this.promptContext.sendUpdate(this.getSessionId(), toolCallUpdateNotification)
+                .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
+                .block();
     }
 
     public void sendMessage(String text) {
         AcpSchema.AgentMessageChunk messageChunk = new AcpSchema.AgentMessageChunk(
                 AcpSchemaExt.AGENT_MESSAGE_CHUNK,
-                new AcpSchema.TextContent(text),
-                this.createDefaultMeta());
-        this.promptContext.sendUpdate(this.getSessionId(), messageChunk).block();
+                new AcpSchema.TextContent(text));
+        this.promptContext.sendUpdate(this.getSessionId(), messageChunk)
+                .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
+                .block();
     }
 }

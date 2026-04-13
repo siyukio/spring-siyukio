@@ -131,12 +131,14 @@ public class SimpleAcpClientTest {
 
     @Test
     void testSetSessionMode() {
-        SIMPLE_ACP_CLIENT.setSessionMode(SESSION_ID, "cli");
+        AcpSchema.SetSessionModeResponse response = SIMPLE_ACP_CLIENT.setSessionMode(SESSION_ID, "cli");
+        log.info("{}", XDataUtils.toPrettyJSONString(response));
     }
 
     @Test
     void testSetSessionModel() {
-        SIMPLE_ACP_CLIENT.setSessionModel(SESSION_ID, "gpt-5.4");
+        AcpSchema.SetSessionModelResponse response = SIMPLE_ACP_CLIENT.setSessionModel(SESSION_ID, "gpt-5.4");
+        log.info("{}", XDataUtils.toPrettyJSONString(response));
     }
 
 }
