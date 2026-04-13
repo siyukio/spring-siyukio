@@ -1,7 +1,10 @@
 package com.agentclientprotocol.sdk.agent;
 
 import com.agentclientprotocol.sdk.spec.AcpAgentTransport;
+import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.agentclientprotocol.sdk.util.Assert;
+import io.github.siyukio.tools.acp.AcpSchemaExt;
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
@@ -23,6 +26,36 @@ public interface SimpleAcpAgent {
     }
 
     /**
+     * Functional interface for handling cancel notifications.
+     */
+    @FunctionalInterface
+    interface CancelHandler {
+
+        Mono<Void> handle(AcpSchemaExt.CancelNotification notification);
+
+    }
+
+    /**
+     * Functional interface for handling set session mode requests.
+     */
+    @FunctionalInterface
+    interface SetSessionModeHandler {
+
+        Mono<AcpSchema.SetSessionModeResponse> handle(AcpSchemaExt.SetSessionModeRequest request);
+
+    }
+
+    /**
+     * Functional interface for handling set session model requests.
+     */
+    @FunctionalInterface
+    interface SetSessionModelHandler {
+
+        Mono<AcpSchema.SetSessionModelResponse> handle(AcpSchemaExt.SetSessionModelRequest request);
+
+    }
+
+    /**
      * Builder for creating asynchronous ACP agents.
      */
     class SimpleAsyncAgentBuilder {
@@ -41,11 +74,11 @@ public interface SimpleAcpAgent {
 
         private AcpAgent.PromptHandler promptHandler;
 
-        private AcpAgent.SetSessionModeHandler setSessionModeHandler;
+        private SimpleAcpAgent.SetSessionModeHandler setSessionModeHandler;
 
-        private AcpAgent.SetSessionModelHandler setSessionModelHandler;
+        private SimpleAcpAgent.SetSessionModelHandler setSessionModelHandler;
 
-        private AcpAgent.CancelHandler cancelHandler;
+        private SimpleAcpAgent.CancelHandler cancelHandler;
 
         SimpleAsyncAgentBuilder(AcpAgentTransport transport) {
             Assert.notNull(transport, "Transport must not be null");
@@ -125,7 +158,7 @@ public interface SimpleAcpAgent {
          * @param handler The set session mode handler
          * @return This builder for chaining
          */
-        public SimpleAsyncAgentBuilder setSessionModeHandler(AcpAgent.SetSessionModeHandler handler) {
+        public SimpleAsyncAgentBuilder setSessionModeHandler(SimpleAcpAgent.SetSessionModeHandler handler) {
             this.setSessionModeHandler = handler;
             return this;
         }
@@ -136,7 +169,7 @@ public interface SimpleAcpAgent {
          * @param handler The set session model handler
          * @return This builder for chaining
          */
-        public SimpleAsyncAgentBuilder setSessionModelHandler(AcpAgent.SetSessionModelHandler handler) {
+        public SimpleAsyncAgentBuilder setSessionModelHandler(SimpleAcpAgent.SetSessionModelHandler handler) {
             this.setSessionModelHandler = handler;
             return this;
         }
@@ -147,7 +180,7 @@ public interface SimpleAcpAgent {
          * @param handler The cancel handler
          * @return This builder for chaining
          */
-        public SimpleAsyncAgentBuilder cancelHandler(AcpAgent.CancelHandler handler) {
+        public SimpleAsyncAgentBuilder cancelHandler(SimpleAcpAgent.CancelHandler handler) {
             this.cancelHandler = handler;
             return this;
         }

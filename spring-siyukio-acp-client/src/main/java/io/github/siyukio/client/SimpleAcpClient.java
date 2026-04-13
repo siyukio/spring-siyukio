@@ -119,16 +119,26 @@ public class SimpleAcpClient {
         return this.acpAsyncClient.loadSession(loadSessionRequest).block();
     }
 
+    public void cancel(String sessionId) {
+        AcpSchema.CancelNotification cancelNotification = new AcpSchema.CancelNotification(sessionId);
+        this.acpAsyncClient.cancel(cancelNotification).block();
+    }
+
+    public void setSessionMode(String sessionId, String modeId) {
+        AcpSchema.SetSessionModeRequest setModeRequest = new AcpSchema.SetSessionModeRequest(sessionId, modeId);
+        this.acpAsyncClient.setSessionMode(setModeRequest).block();
+    }
+
+    public void setSessionModel(String sessionId, String modelId) {
+        AcpSchema.SetSessionModelRequest setModelRequest = new AcpSchema.SetSessionModelRequest(sessionId, modelId);
+        this.acpAsyncClient.setSessionModel(setModelRequest).block();
+    }
+
     public AcpSchema.PromptResponse prompt(String sessionId, String prompt) {
         List<AcpSchema.ContentBlock> prompts = new ArrayList<>();
         prompts.add(new AcpSchema.TextContent(prompt));
         AcpSchema.PromptRequest promptRequest = new AcpSchema.PromptRequest(sessionId, prompts);
         return this.acpAsyncClient.prompt(promptRequest).block();
-    }
-
-    public AcpSchema.SetSessionModeResponse setSessionMode(String sessionId, String modeId) {
-        AcpSchema.SetSessionModeRequest setSessionModeRequest = new AcpSchema.SetSessionModeRequest(sessionId, modeId);
-        return this.acpAsyncClient.setSessionMode(setSessionModeRequest).block();
     }
 
     public void close() {

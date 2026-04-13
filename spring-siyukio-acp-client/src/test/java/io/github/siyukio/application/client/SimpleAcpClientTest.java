@@ -118,15 +118,25 @@ public class SimpleAcpClientTest {
     }
 
     @Test
+    void testCancel() {
+        String sessionId = SIMPLE_ACP_CLIENT.getCallToolSessionId();
+        SIMPLE_ACP_CLIENT.cancel(sessionId);
+    }
+
+    @Test
     void testPrompt() {
         AcpSchema.PromptResponse response = SIMPLE_ACP_CLIENT.prompt(SESSION_ID, "hello");
         log.info("{}", XDataUtils.toPrettyJSONString(response));
     }
 
     @Test
-    void testSetMode() {
-        AcpSchema.SetSessionModeResponse response = SIMPLE_ACP_CLIENT.setSessionMode(SESSION_ID, "gpt-5.4");
-        log.info("{}", XDataUtils.toPrettyJSONString(response));
+    void testSetSessionMode() {
+        SIMPLE_ACP_CLIENT.setSessionMode(SESSION_ID, "cli");
+    }
+
+    @Test
+    void testSetSessionModel() {
+        SIMPLE_ACP_CLIENT.setSessionModel(SESSION_ID, "gpt-5.4");
     }
 
 }

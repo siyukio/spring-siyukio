@@ -67,6 +67,9 @@ public class SiyukioWebSocketAcpServerAutoConfiguration implements WebSocketConf
                 .initializeHandler(springWebSocketAcpTransport.new AcpInitializeHandler())
                 .newSessionHandler(springWebSocketAcpTransport.new AcpNewSessionHandler())
                 .loadSessionHandler(springWebSocketAcpTransport.new AcpLoadSessionHandler())
+                .cancelHandler(springWebSocketAcpTransport.new AcpCancelHandler())
+                .setSessionModeHandler(springWebSocketAcpTransport.new AcpSetSessionModeHandler())
+                .setSessionModelHandler(springWebSocketAcpTransport.new AcpSetSessionModelHandler())
                 .promptHandler(springWebSocketAcpTransport.new AcpPromptHandler(aipHandlerManager.getApiHandlerMap()));
         AcpAsyncAgent acpAsyncAgent = builder.build();
         acpAsyncAgent.start().subscribe();

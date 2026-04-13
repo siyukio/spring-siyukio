@@ -38,11 +38,11 @@ public class SimpleAcpAsyncAgent implements AcpAsyncAgent {
 
     private final AcpAgent.PromptHandler promptHandler;
 
-    private final AcpAgent.SetSessionModeHandler setSessionModeHandler;
+    private final SimpleAcpAgent.SetSessionModeHandler setSessionModeHandler;
 
-    private final AcpAgent.SetSessionModelHandler setSessionModelHandler;
+    private final SimpleAcpAgent.SetSessionModelHandler setSessionModelHandler;
 
-    private final AcpAgent.CancelHandler cancelHandler;
+    private final SimpleAcpAgent.CancelHandler cancelHandler;
     /**
      * Capabilities negotiated with the client during initialization.
      */
@@ -52,8 +52,8 @@ public class SimpleAcpAsyncAgent implements AcpAsyncAgent {
     SimpleAcpAsyncAgent(AcpAgentTransport transport, Duration requestTimeout,
                         AcpAgent.InitializeHandler initializeHandler, AcpAgent.AuthenticateHandler authenticateHandler,
                         AcpAgent.NewSessionHandler newSessionHandler, AcpAgent.LoadSessionHandler loadSessionHandler,
-                        AcpAgent.PromptHandler promptHandler, AcpAgent.SetSessionModeHandler setSessionModeHandler,
-                        AcpAgent.SetSessionModelHandler setSessionModelHandler, AcpAgent.CancelHandler cancelHandler) {
+                        AcpAgent.PromptHandler promptHandler, SimpleAcpAgent.SetSessionModeHandler setSessionModeHandler,
+                        SimpleAcpAgent.SetSessionModelHandler setSessionModelHandler, SimpleAcpAgent.CancelHandler cancelHandler) {
         this.transport = transport;
         this.requestTimeout = requestTimeout;
         this.initializeHandler = initializeHandler;
@@ -134,8 +134,8 @@ public class SimpleAcpAsyncAgent implements AcpAsyncAgent {
             // Set session mode handler
             if (setSessionModeHandler != null) {
                 requestHandlers.put(AcpSchema.METHOD_SESSION_SET_MODE, params -> {
-                    AcpSchema.SetSessionModeRequest request = transport.unmarshalFrom(params,
-                            new TypeRef<AcpSchema.SetSessionModeRequest>() {
+                    AcpSchemaExt.SetSessionModeRequest request = transport.unmarshalFrom(params,
+                            new TypeRef<AcpSchemaExt.SetSessionModeRequest>() {
                             });
                     return setSessionModeHandler.handle(request).cast(Object.class);
                 });
@@ -144,8 +144,8 @@ public class SimpleAcpAsyncAgent implements AcpAsyncAgent {
             // Set session model handler
             if (setSessionModelHandler != null) {
                 requestHandlers.put(AcpSchema.METHOD_SESSION_SET_MODEL, params -> {
-                    AcpSchema.SetSessionModelRequest request = transport.unmarshalFrom(params,
-                            new TypeRef<AcpSchema.SetSessionModelRequest>() {
+                    AcpSchemaExt.SetSessionModelRequest request = transport.unmarshalFrom(params,
+                            new TypeRef<AcpSchemaExt.SetSessionModelRequest>() {
                             });
                     return setSessionModelHandler.handle(request).cast(Object.class);
                 });
@@ -157,8 +157,8 @@ public class SimpleAcpAsyncAgent implements AcpAsyncAgent {
             // Cancel handler
             if (cancelHandler != null) {
                 notificationHandlers.put(AcpSchema.METHOD_SESSION_CANCEL, params -> {
-                    AcpSchema.CancelNotification notification = transport.unmarshalFrom(params,
-                            new TypeRef<AcpSchema.CancelNotification>() {
+                    AcpSchemaExt.CancelNotification notification = transport.unmarshalFrom(params,
+                            new TypeRef<AcpSchemaExt.CancelNotification>() {
                             });
                     return cancelHandler.handle(notification);
                 });

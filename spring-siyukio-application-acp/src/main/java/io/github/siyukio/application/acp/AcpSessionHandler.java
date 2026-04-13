@@ -18,6 +18,24 @@ import java.util.function.Function;
  */
 public interface AcpSessionHandler {
 
+    static Mono<AuthSession> getAuthSession(
+            Map<String, Object> meta,
+            Map<String, AuthSession> sessionMap) {
+
+        Object wsSessionIdValue = meta.remove(AcpSchemaExt.WS_SESSION_ID);
+        if (wsSessionIdValue == null) {
+            return Mono.empty();
+        }
+
+        String sessionId = wsSessionIdValue.toString();
+        AuthSession authSession = sessionMap.get(sessionId);
+        if (authSession == null) {
+            return Mono.empty();
+        }
+
+        return Mono.just(authSession);
+    }
+
     static Mono<AuthSession> validateAndGetAuthSession(
             Map<String, Object> meta,
             Map<String, AuthSession> sessionMap) {
@@ -52,12 +70,10 @@ public interface AcpSessionHandler {
     }
 
     default AcpSchema.NewSessionResponse handleNewSession(Token token, AcpSchema.NewSessionRequest req) {
-        // TODO: Please override this method to new session
         throw new AcpProtocolException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Acp new session unsupported");
     }
 
     default AcpSchema.LoadSessionResponse handleLoadSession(Token token, AcpSchema.LoadSessionRequest req) {
-        // TODO: Please override this method to load session
         throw new AcpProtocolException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Acp load session unsupported");
     }
 
@@ -71,7 +87,16 @@ public interface AcpSessionHandler {
         return new AcpSchema.PromptResponse(AcpSchema.StopReason.END_TURN);
     }
 
-    default void handleCancel(Token token, AcpSchema.CancelNotification req) {
+    default void handleCancel(Token token, AcpSchemaExt.CancelNotification req) {
+        throw new AcpProtocolException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Acp cancel unsupported");
+    }
+
+    default AcpSchema.SetSessionModeResponse handleSetSessionMode(Token token, AcpSchemaExt.SetSessionModeRequest req) {
+        throw new AcpProtocolException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Acp set session mode unsupported");
+    }
+
+    default AcpSchema.SetSessionModelResponse handleSetSessionModel(Token token, AcpSchemaExt.SetSessionModelRequest req) {
+        throw new AcpProtocolException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Acp set session model unsupported");
     }
 
 }

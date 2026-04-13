@@ -6,6 +6,7 @@ package com.agentclientprotocol.sdk.agent.transport;
 
 import com.agentclientprotocol.sdk.agent.AcpAgent;
 import com.agentclientprotocol.sdk.agent.PromptContext;
+import com.agentclientprotocol.sdk.agent.SimpleAcpAgent;
 import com.agentclientprotocol.sdk.error.AcpProtocolException;
 import com.agentclientprotocol.sdk.spec.AcpAgentTransport;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
@@ -184,7 +185,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
                                 }
                             } else if (message instanceof AcpSchema.JSONRPCNotification jsonrpcNotification) {
                                 if (jsonrpcNotification.params() instanceof AcpSchema.SessionNotification notification) {
-                                    AcpSessionHandler.validateAndGetAuthSession(notification.meta(), authSessionMap)
+                                    AcpSessionHandler.getAuthSession(notification.meta(), authSessionMap)
                                             .blockOptional().ifPresent(authSession -> sendMessage(authSession, message));
                                 }
                             } else {
@@ -330,22 +331,19 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
 
             log.debug("Received Acp message: {}", jsonText);
             JSONObject jsonObject = XDataUtils.parseObject(jsonText);
-
-            // Determine message type based on specific JSON structure
-            if (jsonObject.has("method") && jsonObject.has("id")) {
-                JSONObject params = jsonObject.optJSONObject("params");
-                if (params == null) {
-                    params = new JSONObject();
-                    jsonObject.put("params", params);
-                }
-
+            // Auto set wsSessionId
+            JSONObject params = jsonObject.optJSONObject("params");
+            if (params != null) {
                 JSONObject meta = params.optJSONObject("_meta");
                 if (meta == null) {
                     meta = new JSONObject();
                     params.put("_meta", meta);
                 }
                 meta.put(AcpSchemaExt.WS_SESSION_ID, wsSessionId);
+            }
 
+            // Determine message type based on specific JSON structure
+            if (jsonObject.has("method") && jsonObject.has("id")) {
                 return XDataUtils.copy(jsonObject, AcpSchema.JSONRPCRequest.class);
             } else if (jsonObject.has("method") && !jsonObject.has("id")) {
                 return XDataUtils.copy(jsonObject, AcpSchema.JSONRPCNotification.class);
@@ -438,6 +436,45 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
         public Mono<AcpSchema.LoadSessionResponse> handle(AcpSchema.LoadSessionRequest request) {
             return AcpSessionHandler.withAuthSession(request.meta(), authSessionMap, authSession -> {
                 AcpSchema.LoadSessionResponse response = acpSessionHandler.handleLoadSession(authSession.getToken(), request);
+                return Mono.just(response);
+            });
+        }
+    }
+
+    public class AcpCancelHandler implements SimpleAcpAgent.CancelHandler {
+
+        @Override
+        public Mono<Void> handle(AcpSchemaExt.CancelNotification request) {
+            AcpSessionHandler.getAuthSession(request.meta(), authSessionMap)
+                    .blockOptional()
+                    .ifPresent(authSession -> {
+                        try {
+                            acpSessionHandler.handleCancel(authSession.getToken(), request);
+                        } catch (Exception e) {
+                            log.error("Error handling cancel request", e);
+                        }
+                    });
+            return Mono.empty();
+        }
+    }
+
+    public class AcpSetSessionModeHandler implements SimpleAcpAgent.SetSessionModeHandler {
+
+        @Override
+        public Mono<AcpSchema.SetSessionModeResponse> handle(AcpSchemaExt.SetSessionModeRequest request) {
+            return AcpSessionHandler.withAuthSession(request.meta(), authSessionMap, authSession -> {
+                AcpSchema.SetSessionModeResponse response = acpSessionHandler.handleSetSessionMode(authSession.getToken(), request);
+                return Mono.just(response);
+            });
+        }
+    }
+
+    public class AcpSetSessionModelHandler implements SimpleAcpAgent.SetSessionModelHandler {
+
+        @Override
+        public Mono<AcpSchema.SetSessionModelResponse> handle(AcpSchemaExt.SetSessionModelRequest request) {
+            return AcpSessionHandler.withAuthSession(request.meta(), authSessionMap, authSession -> {
+                AcpSchema.SetSessionModelResponse response = acpSessionHandler.handleSetSessionModel(authSession.getToken(), request);
                 return Mono.just(response);
             });
         }
