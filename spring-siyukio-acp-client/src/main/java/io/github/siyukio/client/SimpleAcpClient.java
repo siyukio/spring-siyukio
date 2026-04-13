@@ -36,6 +36,7 @@ public class SimpleAcpClient {
     private final static String IN_PROGRESS = "in_progress";
 
     private final AcpAsyncClient acpAsyncClient;
+
     private final Map<String, String> toolCallUpdateCache;
 
     @Getter
@@ -197,6 +198,47 @@ public class SimpleAcpClient {
             return this;
         }
 
+        public SimpleAcpClient build() {
+            Assert.hasText(uri, "uri is required");
+            WebSocketAcpClientTransport clientTransport = new WebSocketAcpClientTransport(this.uri, Map.of("authorization", this.authorization))
+                    .connectTimeout(this.connectTimeout);
+            final Map<String, String> toolCallUpdateCache = new ConcurrentHashMap<>();
+            SessionUpdateNotificationHandler sessionUpdateNotificationHandler = new SessionUpdateNotificationHandler(
+                    this.progressNotificationHandlers, this.sessionNotificationHandlers, toolCallUpdateCache);
+            SimpleAsyncSpec simpleAsyncSpec = new SimpleAsyncSpec(clientTransport)
+                    .requestTimeout(this.requestTimeout)
+                    .notificationHandler(AcpSchema.METHOD_SESSION_UPDATE, sessionUpdateNotificationHandler);
+
+            AcpAsyncClient acpAsyncClient = simpleAsyncSpec.build();
+            AcpSchema.InitializeResponse initializeResponse = acpAsyncClient.initialize().block();
+            log.debug("Init acp client: {}, {}", this.uri, XDataUtils.toJSONString(initializeResponse));
+            String callToolSessionId = "";
+            assert initializeResponse != null;
+            if (!CollectionUtils.isEmpty(initializeResponse.authMethods())) {
+                for (AcpSchema.AuthMethod authMethod : initializeResponse.authMethods()) {
+                    if (authMethod.name().equals(AcpSchemaExt.DEFAULT_AUTH_METHOD_NAME)) {
+                        callToolSessionId = authMethod.id();
+                        break;
+                    }
+                }
+            }
+            return new SimpleAcpClient(acpAsyncClient, toolCallUpdateCache, callToolSessionId);
+        }
+    }
+
+    public static class SessionUpdateNotificationHandler implements AcpClientSession.NotificationHandler {
+
+        private final List<ProgressNotificationHandler> progressNotificationHandlers;
+        private final List<SessionNotificationHandler> sessionNotificationHandlers;
+
+        private final Map<String, String> toolCallUpdateCache;
+
+        public SessionUpdateNotificationHandler(List<ProgressNotificationHandler> progressNotificationHandlers, List<SessionNotificationHandler> sessionNotificationHandlers, Map<String, String> toolCallUpdateCache) {
+            this.progressNotificationHandlers = progressNotificationHandlers;
+            this.sessionNotificationHandlers = sessionNotificationHandlers;
+            this.toolCallUpdateCache = toolCallUpdateCache;
+        }
+
         private String readJsonText(AcpSchema.ToolCallUpdateNotification toolCallUpdateNotification) {
             if (CollectionUtils.isEmpty(toolCallUpdateNotification.content())) {
                 return null;
@@ -216,68 +258,46 @@ public class SimpleAcpClient {
             return null;
         }
 
-        public SimpleAcpClient build() {
-            Assert.hasText(uri, "uri is required");
-            WebSocketAcpClientTransport clientTransport = new WebSocketAcpClientTransport(this.uri, Map.of("authorization", this.authorization))
-                    .connectTimeout(this.connectTimeout);
-            Map<String, String> toolCallUpdateCache = new ConcurrentHashMap<>();
-            SimpleAsyncSpec simpleAsyncSpec = new SimpleAsyncSpec(clientTransport)
-                    .requestTimeout(this.requestTimeout)
-                    .notificationHandler(AcpSchema.METHOD_SESSION_UPDATE, (notification -> {
-                        log.debug("{}: {}", AcpSchema.METHOD_SESSION_UPDATE, XDataUtils.toPrettyJSONString(notification));
-                        AcpSchema.SessionNotification sessionNotification = XDataUtils.copy(notification, AcpSchema.SessionNotification.class);
-                        AcpSchema.SessionUpdate sessionUpdate = sessionNotification.update();
-                        if (sessionUpdate instanceof AcpSchema.ToolCallUpdateNotification toolCallUpdateNotification) {
-                            String toolCallId = toolCallUpdateNotification.toolCallId();
-                            String cacheValue = toolCallUpdateCache.get(toolCallId);
-                            if (cacheValue.equals(IN_PROGRESS)) {
-                                if (toolCallUpdateNotification.status().equals(AcpSchema.ToolCallStatus.COMPLETED)) {
-                                    String jsonText = this.readJsonText(toolCallUpdateNotification);
-                                    toolCallUpdateCache.put(toolCallId, jsonText);
-                                } else if (toolCallUpdateNotification.status().equals(AcpSchema.ToolCallStatus.IN_PROGRESS)) {
-                                    String jsonText = this.readJsonText(toolCallUpdateNotification);
-                                    AcpSchemaExt.ProgressNotification progressNotification = XDataUtils.parse(jsonText, AcpSchemaExt.ProgressNotification.class);
-                                    AcpSchemaExt.ProgressNotification completeProgressNotification = progressNotification.withToolCallId(toolCallId);
-                                    this.progressNotificationHandlers.forEach(handler -> {
-                                        try {
-                                            handler.handle(completeProgressNotification);
-                                        } catch (Exception ignored) {
-                                        }
-                                    });
-                                }
-                            } else {
-                                this.sessionNotificationHandlers.forEach(handler -> {
-                                    try {
-                                        handler.handle(sessionNotification);
-                                    } catch (Exception ignored) {
-                                    }
-                                });
+        @Override
+        public Mono<Void> handle(Object notification) {
+            log.debug("{}: {}", AcpSchema.METHOD_SESSION_UPDATE, XDataUtils.toPrettyJSONString(notification));
+            AcpSchema.SessionNotification sessionNotification = XDataUtils.copy(notification, AcpSchema.SessionNotification.class);
+            AcpSchema.SessionUpdate sessionUpdate = sessionNotification.update();
+            if (sessionUpdate instanceof AcpSchema.ToolCallUpdateNotification toolCallUpdateNotification) {
+                String toolCallId = toolCallUpdateNotification.toolCallId();
+                String cacheValue = this.toolCallUpdateCache.get(toolCallId);
+                if (cacheValue.equals(IN_PROGRESS)) {
+                    if (toolCallUpdateNotification.status().equals(AcpSchema.ToolCallStatus.COMPLETED)) {
+                        String jsonText = this.readJsonText(toolCallUpdateNotification);
+                        this.toolCallUpdateCache.put(toolCallId, jsonText);
+                    } else if (toolCallUpdateNotification.status().equals(AcpSchema.ToolCallStatus.IN_PROGRESS)) {
+                        String jsonText = this.readJsonText(toolCallUpdateNotification);
+                        AcpSchemaExt.ProgressNotification progressNotification = XDataUtils.parse(jsonText, AcpSchemaExt.ProgressNotification.class);
+                        AcpSchemaExt.ProgressNotification completeProgressNotification = progressNotification.withToolCallId(toolCallId);
+                        this.progressNotificationHandlers.forEach(handler -> {
+                            try {
+                                handler.handle(completeProgressNotification);
+                            } catch (Exception ignored) {
                             }
-                        } else {
-                            this.sessionNotificationHandlers.forEach(handler -> {
-                                try {
-                                    handler.handle(sessionNotification);
-                                } catch (Exception ignored) {
-                                }
-                            });
-                        }
-                        return Mono.empty();
-                    }));
-
-            AcpAsyncClient acpAsyncClient = simpleAsyncSpec.build();
-            AcpSchema.InitializeResponse initializeResponse = acpAsyncClient.initialize().block();
-            log.debug("Init acp client: {}, {}", this.uri, XDataUtils.toJSONString(initializeResponse));
-            String callToolSessionId = "";
-            assert initializeResponse != null;
-            if (!CollectionUtils.isEmpty(initializeResponse.authMethods())) {
-                for (AcpSchema.AuthMethod authMethod : initializeResponse.authMethods()) {
-                    if (authMethod.name().equals(AcpSchemaExt.DEFAULT_AUTH_METHOD_NAME)) {
-                        callToolSessionId = authMethod.id();
-                        break;
+                        });
                     }
+                } else {
+                    this.sessionNotificationHandlers.forEach(handler -> {
+                        try {
+                            handler.handle(sessionNotification);
+                        } catch (Exception ignored) {
+                        }
+                    });
                 }
+            } else {
+                this.sessionNotificationHandlers.forEach(handler -> {
+                    try {
+                        handler.handle(sessionNotification);
+                    } catch (Exception ignored) {
+                    }
+                });
             }
-            return new SimpleAcpClient(acpAsyncClient, toolCallUpdateCache, callToolSessionId);
+            return Mono.empty();
         }
     }
 }
