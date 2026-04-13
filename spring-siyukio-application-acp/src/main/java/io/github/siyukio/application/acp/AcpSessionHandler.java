@@ -49,7 +49,7 @@ public interface AcpSessionHandler {
     }
 
     default AcpSchema.PromptResponse handlePrompt(Token token, AcpSchema.PromptRequest req, AcpSessionContext acpSessionContext) {
-        acpSessionContext.sendMessage("Processing...");
+        acpSessionContext.sendThought("Processing...");
         acpSessionContext.sendMessage("""
                 The server has not implemented this method.
                 Please implement AcpSessionHandler.handlePrompt() to process this request.

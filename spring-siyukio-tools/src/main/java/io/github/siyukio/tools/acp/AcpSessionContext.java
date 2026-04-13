@@ -76,10 +76,14 @@ public class AcpSessionContext {
     }
 
     public void sendMessage(String text) {
-        AcpSchema.AgentMessageChunk messageChunk = new AcpSchema.AgentMessageChunk(
-                AcpSchemaExt.AGENT_MESSAGE_CHUNK,
-                new AcpSchema.TextContent(text));
-        this.promptContext.sendUpdate(this.getSessionId(), messageChunk)
+        this.promptContext.sendMessage(text)
+                .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
+                .block();
+    }
+
+
+    public void sendThought(String text) {
+        this.promptContext.sendThought(text)
                 .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
                 .block();
     }

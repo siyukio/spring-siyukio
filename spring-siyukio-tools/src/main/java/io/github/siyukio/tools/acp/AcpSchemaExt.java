@@ -20,7 +20,8 @@ public final class AcpSchemaExt {
 
     public static final String TOOL_CALL_UPDATE = "tool_call_update";
 
-    public static final String AGENT_MESSAGE_CHUNK = "agent_message_chunk";
+    private AcpSchemaExt() {
+    }
 
     public record TransportMessage(
             String transportId,
