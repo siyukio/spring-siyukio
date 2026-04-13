@@ -96,4 +96,14 @@ public class AcpSessionContext {
                 .onErrorReturn(false)
                 .block();
     }
+
+    public AcpSchema.RequestPermissionResponse requestPermission(
+            AcpSchema.RequestPermissionRequest request,
+            Duration duration) {
+        return this.promptContext.requestPermission(request)
+                .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
+                .timeout(duration)
+                .onErrorReturn(new AcpSchema.RequestPermissionResponse(new AcpSchema.PermissionCancelled()))
+                .block();
+    }
 }
