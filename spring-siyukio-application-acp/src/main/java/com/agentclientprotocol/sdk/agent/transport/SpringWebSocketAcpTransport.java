@@ -145,6 +145,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
 
     private void handleIncomingMessages(Function<Mono<JSONRPCMessage>, Mono<JSONRPCMessage>> handler) {
         this.inboundSink.asFlux()
+                // Process each message on a separate virtual thread to avoid blocking
                 .flatMap(message ->
                         Mono.just(message.jsonRpcMessage())
                                 // 1. Use Mono.deferContextual to get the Context
@@ -164,7 +165,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
                                     Sinks.EmitResult emitResult = this.outboundSink.tryEmitNext(responseMessage);
                                     if (!emitResult.isSuccess()) {
                                         if (!isClosing.get()) {
-                                            System.err.println("Failed to enqueue outbound message");
+                                            log.error("Failed to enqueue outbound message");
                                         }
                                     }
                                 })
@@ -172,6 +173,8 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
                                 .map(Tuple2::getT1)
                                 // 5. Write transportId to Context
                                 .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, message.transportId()))
+                                // Run on virtual thread scheduler for parallel processing
+                                .subscribeOn(AsyncUtils.VIRTUAL_SCHEDULER)
                 )
                 .doOnTerminate(() -> this.outboundSink.tryEmitComplete())
                 .subscribe();
@@ -348,24 +351,23 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
                 log.error("Auth session is not found: {}", session.getId());
                 return;
             }
-
-            Mono.fromRunnable(() -> {
-                try {
-                    JSONRPCMessage jsonRpcMessage = AcpSchema.deserializeJsonRpcMessage(XDataUtils.MCP_JSON_MAPPER, message);
-                    log.debug("Received Acp message: {}", jsonRpcMessage);
-                    AcpSchemaExt.TransportMessage transportMessage = new AcpSchemaExt.TransportMessage(session.getId(), jsonRpcMessage);
-                    if (!inboundSink.tryEmitNext(transportMessage).isSuccess()) {
-                        if (!isClosing.get()) {
-                            log.error("Failed to enqueue inbound message");
-                        }
-                    }
-                } catch (Exception e) {
+            
+            try {
+                JSONRPCMessage jsonRpcMessage = AcpSchema.deserializeJsonRpcMessage(XDataUtils.MCP_JSON_MAPPER, message);
+                log.debug("Received Acp message: {}", jsonRpcMessage);
+                AcpSchemaExt.TransportMessage transportMessage = new AcpSchemaExt.TransportMessage(session.getId(), jsonRpcMessage);
+                Sinks.EmitResult emitResult = inboundSink.tryEmitNext(transportMessage);
+                if (!emitResult.isSuccess()) {
                     if (!isClosing.get()) {
-                        log.error("Error processing inbound message", e);
-                        exceptionHandler.accept(e);
+                        log.error("Failed to enqueue inbound message: {}", emitResult);
                     }
                 }
-            }).subscribeOn(AsyncUtils.VIRTUAL_SCHEDULER).subscribe();
+            } catch (Exception e) {
+                if (!isClosing.get()) {
+                    log.error("Error processing inbound message", e);
+                    exceptionHandler.accept(e);
+                }
+            }
         }
 
         @Override
