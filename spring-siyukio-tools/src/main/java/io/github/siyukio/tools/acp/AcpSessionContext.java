@@ -8,6 +8,7 @@ import lombok.Getter;
 import org.springframework.util.MimeTypeUtils;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -85,6 +86,14 @@ public class AcpSessionContext {
     public void sendThought(String text) {
         this.promptContext.sendThought(text)
                 .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
+                .block();
+    }
+
+    public Boolean askPermission(String action, Duration duration) {
+        return this.promptContext.askPermission(action)
+                .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
+                .timeout(duration)
+                .onErrorReturn(false)
                 .block();
     }
 }

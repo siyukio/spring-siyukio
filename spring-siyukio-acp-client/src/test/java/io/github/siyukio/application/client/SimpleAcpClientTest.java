@@ -49,8 +49,16 @@ public class SimpleAcpClientTest {
             String authorization = this.tokenProvider.createAuthorization(Token.builder().uid("321").build());
             String serverUri = "ws://localhost:8080";
             SIMPLE_ACP_CLIENT = SimpleAcpClient.builder(serverUri)
-                    .requestTimeout(Duration.ofSeconds(30))
+                    .requestTimeout(Duration.ofSeconds(60))
                     .authorization(authorization)
+                    .requestPermissionHandler((request) -> {
+                        log.debug("RequestPermission: {}", XDataUtils.toPrettyJSONString(request));
+                        try {
+                            Thread.sleep(5000);
+                        } catch (InterruptedException ignored) {
+                        }
+                        return new AcpSchema.RequestPermissionResponse(new AcpSchema.PermissionCancelled());
+                    })
                     .progressNotificationHandler((notification) -> {
                         log.debug("ProgressNotification: {}", XDataUtils.toPrettyJSONString(notification));
                     })
@@ -108,6 +116,14 @@ public class SimpleAcpClientTest {
     void testListTools() {
         AcpSchemaExt.ListToolsResult listToolsResult = SIMPLE_ACP_CLIENT.listTools();
         log.info("{}", XDataUtils.toPrettyJSONString(listToolsResult));
+    }
+
+    @Test
+    void testAskPermission() {
+        TokenResponse response = SIMPLE_ACP_CLIENT.callTool(
+                "askPermission",
+                TokenResponse.class);
+        log.info("{}", XDataUtils.toPrettyJSONString(response));
     }
 
     @Test

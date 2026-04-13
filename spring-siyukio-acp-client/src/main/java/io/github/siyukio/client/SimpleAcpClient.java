@@ -160,11 +160,19 @@ public class SimpleAcpClient {
 
     }
 
+    @FunctionalInterface
+    public interface RequestPermissionHandler {
+
+        AcpSchema.RequestPermissionResponse handle(AcpSchema.RequestPermissionRequest request);
+
+    }
+
     public static class Builder {
 
         private final String uri;
         private final List<ProgressNotificationHandler> progressNotificationHandlers = new ArrayList<>();
         private final List<SessionNotificationHandler> sessionNotificationHandlers = new ArrayList<>();
+        private RequestPermissionHandler requestPermissionHandler = null;
         private Duration requestTimeout = Duration.ofSeconds(60);
         private Duration connectTimeout = Duration.ofSeconds(12);
         private String authorization = "";
@@ -198,6 +206,11 @@ public class SimpleAcpClient {
             return this;
         }
 
+        public Builder requestPermissionHandler(RequestPermissionHandler requestPermissionHandler) {
+            this.requestPermissionHandler = requestPermissionHandler;
+            return this;
+        }
+
         public SimpleAcpClient build() {
             Assert.hasText(uri, "uri is required");
             WebSocketAcpClientTransport clientTransport = new WebSocketAcpClientTransport(this.uri, Map.of("authorization", this.authorization))
@@ -208,6 +221,9 @@ public class SimpleAcpClient {
             SimpleAsyncSpec simpleAsyncSpec = new SimpleAsyncSpec(clientTransport)
                     .requestTimeout(this.requestTimeout)
                     .notificationHandler(AcpSchema.METHOD_SESSION_UPDATE, sessionUpdateNotificationHandler);
+            if (this.requestPermissionHandler != null) {
+                simpleAsyncSpec.requestPermissionHandler(request -> Mono.just(this.requestPermissionHandler.handle(request)));
+            }
 
             AcpAsyncClient acpAsyncClient = simpleAsyncSpec.build();
             AcpSchema.InitializeResponse initializeResponse = acpAsyncClient.initialize().block();

@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -82,5 +83,12 @@ public class AcpController {
         }
         return TokenResponse.builder()
                 .name("ok").build();
+    }
+
+    @ApiMapping(path = "/askPermission", acpAvailable = true)
+    public TokenResponse askPermission(Token token, AcpSessionContext acpSessionContext) {
+        Boolean result = acpSessionContext.askPermission("Can you do this?", Duration.ofSeconds(30));
+        return TokenResponse.builder()
+                .name(result.toString()).build();
     }
 }
