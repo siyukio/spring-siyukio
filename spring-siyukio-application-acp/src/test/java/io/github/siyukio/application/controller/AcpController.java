@@ -1,5 +1,7 @@
 package io.github.siyukio.application.controller;
 
+import com.agentclientprotocol.sdk.agent.Command;
+import com.agentclientprotocol.sdk.agent.CommandResult;
 import io.github.siyukio.application.dto.CreateAuthorizationRequest;
 import io.github.siyukio.application.dto.CreateAuthorizationResponse;
 import io.github.siyukio.application.dto.RefreshAuthorizationRequest;
@@ -90,5 +92,21 @@ public class AcpController {
         Boolean result = acpSessionContext.askPermission("Can you do this?", Duration.ofSeconds(30));
         return TokenResponse.builder()
                 .name(result.toString()).build();
+    }
+
+    @ApiMapping(path = "/askChoice", acpAvailable = true)
+    public TokenResponse askChoice(Token token, AcpSessionContext acpSessionContext) {
+        List<String> colors = List.of("red", "green", "blue");
+        String result = acpSessionContext.askChoice("What's your favorite color?", colors, Duration.ofSeconds(30));
+        return TokenResponse.builder()
+                .name(result).build();
+    }
+
+    @ApiMapping(path = "/execute", acpAvailable = true)
+    public TokenResponse execute(Token token, AcpSessionContext acpSessionContext) {
+        Command command = Command.of("uname", "-a");
+        CommandResult result = acpSessionContext.execute(command, Duration.ofSeconds(10));
+        return TokenResponse.builder()
+                .name(result.output()).build();
     }
 }

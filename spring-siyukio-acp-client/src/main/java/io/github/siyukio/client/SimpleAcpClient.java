@@ -167,15 +167,61 @@ public class SimpleAcpClient {
 
     }
 
+    @FunctionalInterface
+    public interface CreateTerminalHandler {
+
+        AcpSchema.CreateTerminalResponse handle(AcpSchema.CreateTerminalRequest request);
+
+    }
+
+    @FunctionalInterface
+    public interface WaitForTerminalExitHandler {
+
+        AcpSchema.WaitForTerminalExitResponse handle(AcpSchema.WaitForTerminalExitRequest request);
+
+    }
+
+    @FunctionalInterface
+    public interface TerminalOutputHandler {
+
+        AcpSchema.TerminalOutputResponse handle(AcpSchema.TerminalOutputRequest request);
+
+    }
+
+    @FunctionalInterface
+    public interface ReleaseTerminalHandler {
+
+        AcpSchema.ReleaseTerminalResponse handle(AcpSchema.ReleaseTerminalRequest request);
+
+    }
+
+    public interface TerminalHandler {
+
+        CreateTerminalHandler createTerminalHandler();
+
+        WaitForTerminalExitHandler waitForTerminalExitHandler();
+
+        TerminalOutputHandler terminalOutputHandler();
+
+        ReleaseTerminalHandler releaseTerminalHandler();
+    }
+
     public static class Builder {
 
         private final String uri;
         private final List<ProgressNotificationHandler> progressNotificationHandlers = new ArrayList<>();
         private final List<SessionNotificationHandler> sessionNotificationHandlers = new ArrayList<>();
         private RequestPermissionHandler requestPermissionHandler = null;
+        private TerminalHandler terminalHandler = null;
         private Duration requestTimeout = Duration.ofSeconds(60);
         private Duration connectTimeout = Duration.ofSeconds(12);
         private String authorization = "";
+
+        // Can read client text file
+        private boolean readTextFile = false;
+
+        // Can write client text file
+        private boolean writeTextFile = false;
 
         public Builder(String uri) {
             this.uri = uri;
@@ -196,6 +242,16 @@ public class SimpleAcpClient {
             return this;
         }
 
+        public Builder readTextFile(boolean readTextFile) {
+            this.readTextFile = readTextFile;
+            return this;
+        }
+
+        public Builder writeTextFile(boolean writeTextFile) {
+            this.writeTextFile = writeTextFile;
+            return this;
+        }
+
         public Builder progressNotificationHandler(ProgressNotificationHandler progressNotificationHandler) {
             this.progressNotificationHandlers.add(progressNotificationHandler);
             return this;
@@ -208,6 +264,11 @@ public class SimpleAcpClient {
 
         public Builder requestPermissionHandler(RequestPermissionHandler requestPermissionHandler) {
             this.requestPermissionHandler = requestPermissionHandler;
+            return this;
+        }
+
+        public Builder terminalHandler(TerminalHandler terminalHandler) {
+            this.terminalHandler = terminalHandler;
             return this;
         }
 
@@ -224,9 +285,24 @@ public class SimpleAcpClient {
             if (this.requestPermissionHandler != null) {
                 simpleAsyncSpec.requestPermissionHandler(request -> Mono.just(this.requestPermissionHandler.handle(request)));
             }
+            boolean terminal = false;
+            if (this.terminalHandler != null) {
+                terminal = true;
+                simpleAsyncSpec.createTerminalHandler(request ->
+                                Mono.just(this.terminalHandler.createTerminalHandler().handle(request)))
+                        .waitForTerminalExitHandler(request ->
+                                Mono.just(this.terminalHandler.waitForTerminalExitHandler().handle(request)))
+                        .terminalOutputHandler(request -> Mono.just(this.terminalHandler.terminalOutputHandler().handle(request)))
+                        .releaseTerminalHandler(releaseTerminalRequest -> Mono.just(this.terminalHandler.releaseTerminalHandler().handle(releaseTerminalRequest)));
+            }
 
             AcpAsyncClient acpAsyncClient = simpleAsyncSpec.build();
-            AcpSchema.InitializeResponse initializeResponse = acpAsyncClient.initialize().block();
+
+            AcpSchema.FileSystemCapability fileSystemCapability = new AcpSchema.FileSystemCapability(this.readTextFile, this.writeTextFile);
+            AcpSchema.ClientCapabilities clientCapabilities = new AcpSchema.ClientCapabilities(fileSystemCapability, terminal);
+            AcpSchema.InitializeRequest initializeRequest = new AcpSchema.InitializeRequest(1, clientCapabilities);
+
+            AcpSchema.InitializeResponse initializeResponse = acpAsyncClient.initialize(initializeRequest).block();
             log.debug("Init acp client: {}, {}", this.uri, XDataUtils.toJSONString(initializeResponse));
             String callToolSessionId = "";
             assert initializeResponse != null;

@@ -9,6 +9,7 @@ import io.github.siyukio.tools.acp.AcpSchemaExt;
 import io.github.siyukio.tools.api.dto.TokenResponse;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
+import io.github.siyukio.tools.util.IdUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
@@ -51,7 +52,40 @@ public class SimpleAcpClientTest {
             SIMPLE_ACP_CLIENT = SimpleAcpClient.builder(serverUri)
                     .requestTimeout(Duration.ofSeconds(60))
                     .authorization(authorization)
-                    .requestPermissionHandler((request) -> {
+                    .terminalHandler(new SimpleAcpClient.TerminalHandler() {
+                        @Override
+                        public SimpleAcpClient.CreateTerminalHandler createTerminalHandler() {
+                            return request -> {
+                                try {
+                                    Thread.sleep(15000);
+                                } catch (InterruptedException ignored) {
+                                }
+                                return new AcpSchema.CreateTerminalResponse(IdUtils.getUniqueId());
+                            };
+                        }
+
+                        @Override
+                        public SimpleAcpClient.WaitForTerminalExitHandler waitForTerminalExitHandler() {
+                            return request -> {
+                                return new AcpSchema.WaitForTerminalExitResponse(0, null);
+                            };
+                        }
+
+                        @Override
+                        public SimpleAcpClient.TerminalOutputHandler terminalOutputHandler() {
+                            return request -> {
+                                return new AcpSchema.TerminalOutputResponse("Darwin bogon 25.3.0 Darwin Kernel Version 25.3.0: Wed Jan 28 20:53:05 PST 2026; root:xnu-12377.81.4~5/RELEASE_ARM64_T6020 arm64", true, new AcpSchema.TerminalExitStatus(0, null));
+                            };
+                        }
+
+                        @Override
+                        public SimpleAcpClient.ReleaseTerminalHandler releaseTerminalHandler() {
+                            return request -> {
+                                return new AcpSchema.ReleaseTerminalResponse();
+                            };
+                        }
+                    })
+                    .requestPermissionHandler(request -> {
                         log.debug("RequestPermission: {}", XDataUtils.toPrettyJSONString(request));
                         try {
                             Thread.sleep(5000);
@@ -59,10 +93,10 @@ public class SimpleAcpClientTest {
                         }
                         return new AcpSchema.RequestPermissionResponse(new AcpSchema.PermissionCancelled());
                     })
-                    .progressNotificationHandler((notification) -> {
+                    .progressNotificationHandler(notification -> {
                         log.debug("ProgressNotification: {}", XDataUtils.toPrettyJSONString(notification));
                     })
-                    .sessionNotificationHandler((notification) -> {
+                    .sessionNotificationHandler(notification -> {
                         log.debug("SessionNotification: {}", XDataUtils.toPrettyJSONString(notification));
                     }).build();
             AcpSchema.NewSessionResponse newSessionResponse = SIMPLE_ACP_CLIENT.newSession();
@@ -122,6 +156,22 @@ public class SimpleAcpClientTest {
     void testAskPermission() {
         TokenResponse response = SIMPLE_ACP_CLIENT.callTool(
                 "askPermission",
+                TokenResponse.class);
+        log.info("{}", XDataUtils.toPrettyJSONString(response));
+    }
+
+    @Test
+    void testAskChoice() {
+        TokenResponse response = SIMPLE_ACP_CLIENT.callTool(
+                "askChoice",
+                TokenResponse.class);
+        log.info("{}", XDataUtils.toPrettyJSONString(response));
+    }
+
+    @Test
+    void testExecute() {
+        TokenResponse response = SIMPLE_ACP_CLIENT.callTool(
+                "execute",
                 TokenResponse.class);
         log.info("{}", XDataUtils.toPrettyJSONString(response));
     }
