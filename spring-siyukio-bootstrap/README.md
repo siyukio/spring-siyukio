@@ -4,10 +4,22 @@
 minikube start
 ```
 
+# Start minikube dashboard
+
+```
+minikube dashboard
+```
+
 # Deploy
 
 ```
 ./deploy.sh
+```
+
+# Show images
+
+```
+minikube image ls --format table
 ```
 
 # Check status
@@ -30,7 +42,8 @@ NAME                                 TYPE           CLUSTER-IP       EXTERNAL-IP
 ingress-nginx-controller-lb          LoadBalancer   10.108.9.168     <pending>     80:31994/TCP,443:30637/TCP   2m55s
 ```
 
-Note: Wait for EXTERNAL-IP to change from `<pending>` to `127.0.0.1`. Make sure minikube tunnel is running: `sudo minikube tunnel`
+Note: Wait for EXTERNAL-IP to change from `<pending>` to `127.0.0.1`. Make sure minikube tunnel is running:
+`sudo minikube tunnel`
 
 # Access application
 

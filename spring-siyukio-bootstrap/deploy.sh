@@ -17,6 +17,8 @@ ENABLE_INGRESS=${ENABLE_INGRESS:-true}
 echo "========================================="
 echo "Building Docker image..."
 echo "========================================="
+echo "Image: ${IMAGE_NAME}:${IMAGE_TAG}"
+echo ""
 docker build --progress=plain -t ${IMAGE_NAME}:${IMAGE_TAG} .
 
 echo "========================================="
@@ -45,10 +47,10 @@ if [ "$ENABLE_INGRESS" = "true" ]; then
   echo "Adding host to /etc/hosts..."
   echo "========================================="
   if ! grep -q "siyukio.local" /etc/hosts; then
+    echo "Host siyukio.local not found, adding it to /etc/hosts"
     echo "127.0.0.1 siyukio.local" | sudo tee -a /etc/hosts
   else
-    echo "Host siyukio.local already exists in /etc/hosts, updating to 127.0.0.1"
-    sudo sed -i '' '/siyukio.local/s/^.*$/127.0.0.1 siyukio.local/' /etc/hosts
+    echo "Host siyukio.local already exists in /etc/hosts"
   fi
 fi
 
@@ -56,6 +58,11 @@ echo "========================================="
 echo "Waiting for deployment to be ready..."
 echo "========================================="
 kubectl rollout status deployment/siyukio-bootstrap --timeout=120s
+
+echo "========================================="
+echo "Cleaning up unused images..."
+echo "========================================="
+minikube ssh -- crictl rmi --prune
 
 echo "========================================="
 echo "Deployment completed!"
