@@ -56,6 +56,28 @@ HTTP client for inter-service API communication.
 - **Resource-Optimized** — JDK HttpClient reuse per protocol
 - **Spring Integration** — Compatible with `@HttpExchange`, specialized + general-purpose
 
+### [spring-siyukio-application-acp](./spring-siyukio-application-acp/README.md)
+
+Agent Client Protocol (ACP) server implementation for building AI agent services.
+
+**Key Features:**
+
+- **Zero-Configuration ACP Server** — Auto-configure WebSocket ACP transport with Spring Boot auto-configuration
+- **Bidirectional Communication** — Real-time interaction with ACP clients through `AcpSessionContext`
+- **Session Management** — Built-in session lifecycle handling via `AcpSessionHandler`
+- **Progress Notifications** — Send progress updates during long-running operations
+
+### [spring-siyukio-acp-client](./spring-siyukio-acp-client/README.md)
+
+Lightweight ACP client implementation for connecting to ACP agent services.
+
+**Key Features:**
+
+- **Simple API** — High-level, intuitive API for ACP operations with minimal boilerplate code
+- **WebSocket Transport** — Built-in WebSocket client transport for real-time bidirectional communication
+- **Tool Call Support** — Execute remote tool calls with automatic parameter serialization
+- **Client-Side Capabilities** — Handle server requests for file operations and terminal commands
+
 ### [spring-siyukio-postgresql](./spring-siyukio-postgresql/README.md)
 
 PostgreSQL entity management with automatic schema synchronization.

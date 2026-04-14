@@ -125,9 +125,9 @@ public class SimpleAcpClientTest {
     }
 
     @Test
-    void testAsyncNotification() {
+    void testToolCallProgress() {
         TokenResponse tokenResponse = SIMPLE_ACP_CLIENT.callTool(
-                "token.getByProgress",
+                "toolCallProgress",
                 TokenResponse.class);
         log.info("{}", XDataUtils.toPrettyJSONString(tokenResponse));
     }
