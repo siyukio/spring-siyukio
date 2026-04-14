@@ -12,7 +12,6 @@ import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.agentclientprotocol.sdk.spec.AcpSchema.JSONRPCMessage;
 import com.agentclientprotocol.sdk.util.Assert;
 import io.github.siyukio.application.acp.AcpSessionHandler;
-import io.github.siyukio.application.acp.transport.AuthSession;
 import io.github.siyukio.tools.acp.AcpSchemaExt;
 import io.github.siyukio.tools.acp.AcpSessionContext;
 import io.github.siyukio.tools.acp.Invoke;
@@ -233,6 +232,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
             isClosing.set(true);
             inboundSink.tryEmitComplete();
             outboundSink.tryEmitComplete();
+            this.keepAliveScheduler.cancel(false);
         }).then(Mono.fromCallable(() -> {
             authSessionMap.values().forEach(AuthSession::close);
             return null;
@@ -351,7 +351,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
                 log.error("Auth session is not found: {}", session.getId());
                 return;
             }
-            
+
             try {
                 JSONRPCMessage jsonRpcMessage = AcpSchema.deserializeJsonRpcMessage(XDataUtils.MCP_JSON_MAPPER, message);
                 log.debug("Received Acp message: {}", jsonRpcMessage);

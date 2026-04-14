@@ -1,8 +1,8 @@
 package io.github.siyukio.application.acp;
 
+import com.agentclientprotocol.sdk.agent.transport.AuthSession;
 import com.agentclientprotocol.sdk.error.AcpProtocolException;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
-import io.github.siyukio.application.acp.transport.AuthSession;
 import io.github.siyukio.tools.acp.AcpSchemaExt;
 import io.github.siyukio.tools.acp.AcpSessionContext;
 import io.github.siyukio.tools.api.token.Token;
