@@ -52,14 +52,22 @@ public class SimpleAcpClientTest {
             SIMPLE_ACP_CLIENT = SimpleAcpClient.builder(serverUri)
                     .requestTimeout(Duration.ofSeconds(60))
                     .authorization(authorization)
+                    .writeTextFileHandler(request -> {
+                        log.debug("WriteTextFileRequest: {}", request);
+                        return new AcpSchema.WriteTextFileResponse();
+                    })
+                    .readTextFileHandler(request -> {
+                        log.debug("ReadTextFileRequest: {}", request);
+                        try {
+                            Thread.sleep(15000);
+                        } catch (InterruptedException ignored) {
+                        }
+                        return new AcpSchema.ReadTextFileResponse("Hello, world!");
+                    })
                     .terminalHandler(new SimpleAcpClient.TerminalHandler() {
                         @Override
                         public SimpleAcpClient.CreateTerminalHandler createTerminalHandler() {
                             return request -> {
-                                try {
-                                    Thread.sleep(15000);
-                                } catch (InterruptedException ignored) {
-                                }
                                 return new AcpSchema.CreateTerminalResponse(IdUtils.getUniqueId());
                             };
                         }
@@ -172,6 +180,22 @@ public class SimpleAcpClientTest {
     void testExecute() {
         TokenResponse response = SIMPLE_ACP_CLIENT.callTool(
                 "execute",
+                TokenResponse.class);
+        log.info("{}", XDataUtils.toPrettyJSONString(response));
+    }
+
+    @Test
+    void testReadFile() {
+        TokenResponse response = SIMPLE_ACP_CLIENT.callTool(
+                "readFile",
+                TokenResponse.class);
+        log.info("{}", XDataUtils.toPrettyJSONString(response));
+    }
+
+    @Test
+    void testWriteFile() {
+        TokenResponse response = SIMPLE_ACP_CLIENT.callTool(
+                "writeFile",
                 TokenResponse.class);
         log.info("{}", XDataUtils.toPrettyJSONString(response));
     }

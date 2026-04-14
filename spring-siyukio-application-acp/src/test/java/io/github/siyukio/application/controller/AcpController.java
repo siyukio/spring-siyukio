@@ -109,4 +109,18 @@ public class AcpController {
         return TokenResponse.builder()
                 .name(result.output()).build();
     }
+
+    @ApiMapping(path = "/readFile", acpAvailable = true)
+    public TokenResponse readFile(Token token, AcpSessionContext acpSessionContext) {
+        CommandResult result = acpSessionContext.readFile("/README.md", Duration.ofSeconds(10));
+        return TokenResponse.builder()
+                .name(result.output()).build();
+    }
+
+    @ApiMapping(path = "/writeFile", acpAvailable = true)
+    public TokenResponse writeFile(Token token, AcpSessionContext acpSessionContext) {
+        CommandResult result = acpSessionContext.writeFile("/README.md", "Hello, world!", Duration.ofSeconds(10));
+        return TokenResponse.builder()
+                .name(result.output()).build();
+    }
 }

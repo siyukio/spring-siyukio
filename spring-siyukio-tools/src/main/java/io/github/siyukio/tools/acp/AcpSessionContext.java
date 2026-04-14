@@ -149,4 +149,24 @@ public class AcpSessionContext {
                 .onErrorReturn(TimeoutException.class, new CommandResult("Client terminal timeout", 1, true))
                 .block();
     }
+
+    public CommandResult readFile(String path, Duration duration) {
+        return this.promptContext.readFile(path)
+                .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
+                .timeout(duration)
+                .map(result -> new CommandResult(result, 0))
+                .onErrorReturn(AcpCapabilityException.class, new CommandResult("Client read file not supported", 1))
+                .onErrorReturn(TimeoutException.class, new CommandResult("Client read file timeout", 1, true))
+                .block();
+    }
+
+    public CommandResult writeFile(String path, String content, Duration duration) {
+        return this.promptContext.writeFile(path, content)
+                .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
+                .timeout(duration)
+                .thenReturn(new CommandResult("Client write file completed", 0))
+                .onErrorReturn(AcpCapabilityException.class, new CommandResult("Client write file not supported", 1))
+                .onErrorReturn(TimeoutException.class, new CommandResult("Client write file timeout", 1, true))
+                .block();
+    }
 }

@@ -195,6 +195,20 @@ public class SimpleAcpClient {
 
     }
 
+    @FunctionalInterface
+    public interface ReadTextFileHandler {
+
+        AcpSchema.ReadTextFileResponse handle(AcpSchema.ReadTextFileRequest request);
+
+    }
+
+    @FunctionalInterface
+    public interface WriteTextFileHandler {
+
+        AcpSchema.WriteTextFileResponse handle(AcpSchema.WriteTextFileRequest request);
+
+    }
+
     public interface TerminalHandler {
 
         CreateTerminalHandler createTerminalHandler();
@@ -213,15 +227,11 @@ public class SimpleAcpClient {
         private final List<SessionNotificationHandler> sessionNotificationHandlers = new ArrayList<>();
         private RequestPermissionHandler requestPermissionHandler = null;
         private TerminalHandler terminalHandler = null;
+        private ReadTextFileHandler readTextFileHandler = null;
+        private WriteTextFileHandler writeTextFileHandler = null;
         private Duration requestTimeout = Duration.ofSeconds(60);
         private Duration connectTimeout = Duration.ofSeconds(12);
         private String authorization = "";
-
-        // Can read client text file
-        private boolean readTextFile = false;
-
-        // Can write client text file
-        private boolean writeTextFile = false;
 
         public Builder(String uri) {
             this.uri = uri;
@@ -242,13 +252,13 @@ public class SimpleAcpClient {
             return this;
         }
 
-        public Builder readTextFile(boolean readTextFile) {
-            this.readTextFile = readTextFile;
+        public Builder readTextFileHandler(ReadTextFileHandler readTextFileHandler) {
+            this.readTextFileHandler = readTextFileHandler;
             return this;
         }
 
-        public Builder writeTextFile(boolean writeTextFile) {
-            this.writeTextFile = writeTextFile;
+        public Builder writeTextFileHandler(WriteTextFileHandler writeTextFileHandler) {
+            this.writeTextFileHandler = writeTextFileHandler;
             return this;
         }
 
@@ -296,9 +306,20 @@ public class SimpleAcpClient {
                         .releaseTerminalHandler(releaseTerminalRequest -> Mono.just(this.terminalHandler.releaseTerminalHandler().handle(releaseTerminalRequest)));
             }
 
+            boolean readTextFile = false;
+            if (this.readTextFileHandler != null) {
+                readTextFile = true;
+                simpleAsyncSpec.readTextFileHandler(request -> Mono.just(this.readTextFileHandler.handle(request)));
+            }
+            boolean writeTextFile = false;
+            if (this.writeTextFileHandler != null) {
+                writeTextFile = true;
+                simpleAsyncSpec.writeTextFileHandler(request -> Mono.just(this.writeTextFileHandler.handle(request)));
+            }
+            
             AcpAsyncClient acpAsyncClient = simpleAsyncSpec.build();
 
-            AcpSchema.FileSystemCapability fileSystemCapability = new AcpSchema.FileSystemCapability(this.readTextFile, this.writeTextFile);
+            AcpSchema.FileSystemCapability fileSystemCapability = new AcpSchema.FileSystemCapability(readTextFile, writeTextFile);
             AcpSchema.ClientCapabilities clientCapabilities = new AcpSchema.ClientCapabilities(fileSystemCapability, terminal);
             AcpSchema.InitializeRequest initializeRequest = new AcpSchema.InitializeRequest(1, clientCapabilities);
 
