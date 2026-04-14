@@ -6,7 +6,10 @@ set -e
 export DOCKER_BUILDKIT=1
 
 IMAGE_NAME="siyukio-bootstrap"
-IMAGE_TAG="latest"
+# Use pom.xml version + git commit hash as image tag
+POM_VERSION=$(grep "<version>" pom.xml | head -1 | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+COMMIT_HASH=$(git rev-parse --short HEAD)
+IMAGE_TAG="${POM_VERSION}-${COMMIT_HASH}"
 REGISTRY="localhost:5000"
 FULL_IMAGE_NAME="${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
 ENABLE_INGRESS=${ENABLE_INGRESS:-true}
@@ -24,7 +27,8 @@ minikube image load ${IMAGE_NAME}:${IMAGE_TAG}
 echo "========================================="
 echo "Deploying to Kubernetes..."
 echo "========================================="
-kubectl apply -f k8s/deployment.yaml
+# Replace IMAGE_TAG placeholder in deployment.yaml with actual version
+sed "s/IMAGE_TAG/${IMAGE_TAG}/g" k8s/deployment.yaml | kubectl apply -f -
 
 if [ "$ENABLE_INGRESS" = "true" ]; then
   echo "========================================="
