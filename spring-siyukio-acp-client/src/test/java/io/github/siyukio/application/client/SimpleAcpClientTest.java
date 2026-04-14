@@ -3,7 +3,6 @@ package io.github.siyukio.application.client;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import io.github.siyukio.application.dto.CreateAuthorizationRequest;
 import io.github.siyukio.application.dto.CreateAuthorizationResponse;
-import io.github.siyukio.application.dto.RefreshAuthorizationRequest;
 import io.github.siyukio.client.SimpleAcpClient;
 import io.github.siyukio.tools.acp.AcpSchemaExt;
 import io.github.siyukio.tools.api.dto.TokenResponse;
@@ -114,7 +113,13 @@ public class SimpleAcpClientTest {
     }
 
     @Test
-    void testAcpAsyncClient() {
+    void testListTools() {
+        AcpSchemaExt.ListToolsResult listToolsResult = SIMPLE_ACP_CLIENT.listTools();
+        log.info("{}", XDataUtils.toPrettyJSONString(listToolsResult));
+    }
+
+    @Test
+    void testToolCall() {
         CreateAuthorizationRequest createAuthorizationRequest = CreateAuthorizationRequest.builder()
                 .uid("test").name("test").roles(List.of()).build();
         CreateAuthorizationResponse createAuthorizationResponse = SIMPLE_ACP_CLIENT.callTool(
@@ -130,34 +135,6 @@ public class SimpleAcpClientTest {
                 "toolCallProgress",
                 TokenResponse.class);
         log.info("{}", XDataUtils.toPrettyJSONString(tokenResponse));
-    }
-
-    @Test
-    void testException() {
-        RefreshAuthorizationRequest refreshAuthorizationRequest = RefreshAuthorizationRequest.builder()
-                .refreshToken("test_token").build();
-        CreateAuthorizationResponse createAuthorizationResponse = SIMPLE_ACP_CLIENT.callTool(
-                "authorization.refreshException",
-                refreshAuthorizationRequest,
-                CreateAuthorizationResponse.class);
-        log.info("{}", XDataUtils.toPrettyJSONString(createAuthorizationResponse));
-    }
-
-    @Test
-    void testRequestTimeout() {
-        RefreshAuthorizationRequest refreshAuthorizationRequest = RefreshAuthorizationRequest.builder()
-                .refreshToken("test_token").build();
-        CreateAuthorizationResponse createAuthorizationResponse = SIMPLE_ACP_CLIENT.callTool(
-                "authorization.refreshTimeout",
-                refreshAuthorizationRequest,
-                CreateAuthorizationResponse.class);
-        log.info("{}", XDataUtils.toPrettyJSONString(createAuthorizationResponse));
-    }
-
-    @Test
-    void testListTools() {
-        AcpSchemaExt.ListToolsResult listToolsResult = SIMPLE_ACP_CLIENT.listTools();
-        log.info("{}", XDataUtils.toPrettyJSONString(listToolsResult));
     }
 
     @Test

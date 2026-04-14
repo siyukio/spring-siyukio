@@ -3,9 +3,12 @@ package io.github.siyukio.application.controller;
 import io.github.siyukio.application.dto.CreateAuthorizationRequest;
 import io.github.siyukio.application.dto.CreateAuthorizationResponse;
 import io.github.siyukio.application.dto.RefreshAuthorizationRequest;
+import io.github.siyukio.tools.acp.AcpSchemaExt;
+import io.github.siyukio.tools.acp.AcpSessionContext;
 import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.api.annotation.ApiController;
 import io.github.siyukio.tools.api.annotation.ApiMapping;
+import io.github.siyukio.tools.api.dto.TokenResponse;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.XDataUtils;
@@ -49,19 +52,21 @@ public class AcpController {
                 .build();
     }
 
-    @ApiMapping(path = "/authorization/refreshException", authorization = false)
-    public CreateAuthorizationResponse refreshException(RefreshAuthorizationRequest refreshAuthorizationRequest) {
-        throw new ApiException("Business exception");
-    }
-
-    @ApiMapping(path = "/authorization/refreshTimeout", authorization = false)
-    public CreateAuthorizationResponse refreshTimeout(RefreshAuthorizationRequest refreshAuthorizationRequest) {
-        try {
-            Thread.sleep(40000);
-        } catch (InterruptedException ignored) {
+    @ApiMapping(path = "/toolCallProgress", acpAvailable = true)
+    public TokenResponse toolCallProgress(Token token, AcpSessionContext acpSessionContext) {
+        if (acpSessionContext != null) {
+            log.info("toolProgress: {}", acpSessionContext.getSessionId());
+            for (int i = 0; i < 3; i++) {
+                JSONObject messageJson = new JSONObject();
+                messageJson.put("data", i);
+                AcpSchemaExt.ProgressNotification progressNotification = AcpSchemaExt.ProgressNotification.create(
+                        i + 1, 3, XDataUtils.toJSONString(messageJson)
+                );
+                acpSessionContext.sendToolCallProgress(progressNotification);
+            }
         }
-        return CreateAuthorizationResponse.builder()
-                .accessToken("ok").build();
+        return TokenResponse.builder()
+                .name("ok").build();
     }
 
 }

@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.github.siyukio</groupId>
         <artifactId>spring-siyukio</artifactId>
-        <version>3.5.10</version>
+        <version>3.5.11</version>
     </parent>
 
     <artifactId>spring-siyukio-bootstrap</artifactId>
@@ -14,7 +14,7 @@
     <dependencies>
         <dependency>
             <groupId>io.github.siyukio</groupId>
-            <artifactId>spring-siyukio-application</artifactId>
+            <artifactId>spring-siyukio-application-acp</artifactId>
         </dependency>
     </dependencies>
 
