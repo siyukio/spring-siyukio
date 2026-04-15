@@ -22,6 +22,12 @@ minikube dashboard
 minikube image ls --format table
 ```
 
+# Install tools
+
+```
+apt update && apt install -y dnsutils
+```
+
 # Check status
 
 ```
