@@ -46,9 +46,12 @@ public class SimpleAcpClientTest {
     @BeforeEach
     void setUp() {
         if (SIMPLE_ACP_CLIENT == null) {
-            String authorization = this.tokenProvider.createAuthorization(Token.builder().uid("321").build());
+            String authorization = this.tokenProvider.createAuthorization(Token.builder()
+                    .uid("siyukio").name("siyukio").build());
+            log.debug("authorization: {}", authorization);
             String serverUri = "ws://localhost:8080";
             SIMPLE_ACP_CLIENT = SimpleAcpClient.builder(serverUri)
+//                    .loadBalance(true)
                     .requestTimeout(Duration.ofSeconds(60))
                     .authorization(authorization)
                     .writeTextFileHandler(request -> {
@@ -179,14 +182,14 @@ public class SimpleAcpClientTest {
 
     @Test
     void testLoadSession() {
-        String sessionId = SIMPLE_ACP_CLIENT.getCallToolSessionId();
+        String sessionId = "";
         AcpSchema.LoadSessionResponse loadSessionResponse = SIMPLE_ACP_CLIENT.loadSession(sessionId);
         log.info("{}", XDataUtils.toPrettyJSONString(loadSessionResponse));
     }
 
     @Test
     void testCancel() {
-        String sessionId = SIMPLE_ACP_CLIENT.getCallToolSessionId();
+        String sessionId = "";
         SIMPLE_ACP_CLIENT.cancel(sessionId);
     }
 

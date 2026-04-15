@@ -8,9 +8,9 @@ import io.github.siyukio.client.transport.WebSocketAcpClientTransport;
 import io.github.siyukio.tools.acp.AcpSchemaExt;
 import io.github.siyukio.tools.acp.Invoke;
 import io.github.siyukio.tools.api.ApiException;
+import io.github.siyukio.tools.util.HttpClientUtils;
 import io.github.siyukio.tools.util.IdUtils;
 import io.github.siyukio.tools.util.XDataUtils;
-import io.modelcontextprotocol.util.Assert;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
@@ -19,12 +19,14 @@ import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
+import java.net.URI;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  *
@@ -34,116 +36,170 @@ import java.util.concurrent.TimeoutException;
 public class SimpleAcpClient {
 
     private final static String IN_PROGRESS = "in_progress";
+    private final URI uri;
+    private final SimpleAsyncAcpClientBuilder simpleAsyncAcpClientBuilder;
 
-    private final AcpAsyncClient acpAsyncClient;
+    private final boolean loadBalance;
 
-    private final Map<String, String> toolCallUpdateCache;
+    private final Lock lock = new ReentrantLock();
 
-    @Getter
-    private final String callToolSessionId;
+    private volatile List<SimpleAsyncAcpClient> resolvedSimpleAcpAsyncClients = new ArrayList<>();
 
-    private SimpleAcpClient(AcpAsyncClient acpAsyncClient,
-                            Map<String, String> toolCallUpdateCache,
-                            String callToolSessionId) {
-        this.acpAsyncClient = acpAsyncClient;
-        this.toolCallUpdateCache = toolCallUpdateCache;
-        this.callToolSessionId = callToolSessionId;
+    private volatile long lastResolvedTime = 0L;
+
+    private SimpleAcpClient(URI uri, SimpleAsyncAcpClientBuilder simpleAsyncAcpClientBuilder,
+                            boolean loadBalance) {
+        this.uri = uri;
+        this.simpleAsyncAcpClientBuilder = simpleAsyncAcpClientBuilder;
+        if (loadBalance) {
+            String schema = this.uri.getScheme();
+            loadBalance = "ws".equals(schema) || "http".equals(schema);
+        }
+        this.loadBalance = loadBalance;
+        if (!this.loadBalance) {
+            SimpleAsyncAcpClient simpleAsyncAcpClient = this.simpleAsyncAcpClientBuilder.build(this.uri);
+            this.resolvedSimpleAcpAsyncClients.add(simpleAsyncAcpClient);
+        }
     }
 
     public static Builder builder(String uri) {
         return new Builder(uri);
     }
 
-    public <T> T callTool(String tool, Object params, Class<T> typeClass) {
-        if (!StringUtils.hasText(this.callToolSessionId)) {
-            throw new ApiException("Unsupported callTool");
-        }
-        Invoke invoke = Invoke.create(tool, params);
-        String toolCallText = WebSocketAcpClientTransport.createAcpToolCall(invoke);
-        List<AcpSchema.ContentBlock> prompts = new ArrayList<>();
-        prompts.add(new AcpSchema.TextContent(toolCallText));
+    private URI buildUri(URI originalUri, String ip) {
+        String scheme = originalUri.getScheme();
+        int port = originalUri.getPort();
+        String path = originalUri.getPath();
 
-        this.toolCallUpdateCache.put(invoke.toolCallId(), IN_PROGRESS);
+        StringBuilder sb = new StringBuilder();
+        sb.append(scheme).append("://").append(ip);
+        if (port > 0) {
+            sb.append(":").append(port);
+        }
+        if (path != null && !path.isEmpty()) {
+            sb.append(path);
+        }
+        return URI.create(sb.toString());
+    }
+
+    private void ensureResolved() {
+        lock.lock();
+        if (System.currentTimeMillis() - this.lastResolvedTime < 15000) {
+            return;
+        }
+        String host = this.uri.getHost();
         try {
-            AcpSchema.PromptRequest promptRequest = new AcpSchema.PromptRequest(this.callToolSessionId, prompts);
-            AcpSchema.PromptResponse promptResponse = this.acpAsyncClient.prompt(promptRequest).block();
-            log.debug("{}", XDataUtils.toPrettyJSONString(promptResponse));
-            String cacheValue = this.toolCallUpdateCache.get(invoke.toolCallId());
-            if (!cacheValue.equals(IN_PROGRESS)) {
-                if (typeClass.equals(Void.class)) {
-                    return null;
-                } else {
-                    return XDataUtils.parse(cacheValue, typeClass);
-                }
+            List<String> resolvedIps = HttpClientUtils.resolveDomain(host);
+            log.debug("Resolved {} ips: {}", host, resolvedIps);
+            List<SimpleAsyncAcpClient> newSimpleAcpAsyncClients = new ArrayList<>();
+            if (CollectionUtils.isEmpty(resolvedIps)) {
+                SimpleAsyncAcpClient simpleAsyncAcpClient = this.simpleAsyncAcpClientBuilder.build(this.uri);
+                newSimpleAcpAsyncClients.add(simpleAsyncAcpClient);
+                this.resolvedSimpleAcpAsyncClients = newSimpleAcpAsyncClients;
+                this.lastResolvedTime = System.currentTimeMillis();
+                return;
             }
-        } catch (AcpClientSession.AcpError ex) {
-            throw new ApiException(ex.getCode(), ex.getMessage());
-        } catch (Exception ex) {
-            Throwable t = ex.getCause();
-            if (t instanceof TimeoutException) {
-                throw new ApiException("CallTool timeout: " + invoke.tool() + "," + invoke.toolCallId());
-            } else {
-                throw new ApiException("CallTool error: " + invoke.tool() + "," + invoke.toolCallId() + ex.getMessage());
-            }
-        } finally {
-            this.toolCallUpdateCache.remove(invoke.toolCallId());
-        }
 
-        throw new ApiException("CallTool no response:" + invoke.tool() + "," + invoke.toolCallId());
+            Set<String> newIps = new HashSet<>(resolvedIps);
+            this.resolvedSimpleAcpAsyncClients.forEach(simpleAsyncAcpClient -> {
+                String ip = simpleAsyncAcpClient.getUri().getHost();
+                if (newIps.contains(ip)) {
+                    newSimpleAcpAsyncClients.add(simpleAsyncAcpClient);
+                    newIps.remove(ip);
+                }
+            });
+            if (!CollectionUtils.isEmpty(newIps)) {
+                newIps.forEach(ip -> {
+                    URI newUri = this.buildUri(this.uri, ip);
+                    SimpleAsyncAcpClient simpleAsyncAcpClient = this.simpleAsyncAcpClientBuilder.build(newUri);
+                    newSimpleAcpAsyncClients.add(simpleAsyncAcpClient);
+                });
+            }
+
+            this.resolvedSimpleAcpAsyncClients = newSimpleAcpAsyncClients;
+            this.lastResolvedTime = System.currentTimeMillis();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private SimpleAsyncAcpClient selectRandomClient() {
+        if (!this.loadBalance) {
+            return this.resolvedSimpleAcpAsyncClients.getLast();
+        }
+        this.ensureResolved();
+        if (this.resolvedSimpleAcpAsyncClients.size() == 1) {
+            return this.resolvedSimpleAcpAsyncClients.getFirst();
+        }
+        int index = ThreadLocalRandom.current().nextInt(this.resolvedSimpleAcpAsyncClients.size());
+        SimpleAsyncAcpClient simpleAsyncAcpClient = this.resolvedSimpleAcpAsyncClients.get(index);
+        log.debug("Selected simpleAsyncAcpClient: {}, {}, {}", this.uri, simpleAsyncAcpClient.getUri(), index);
+        return simpleAsyncAcpClient;
+    }
+
+
+    public <T> T callTool(String tool, Object params, Class<T> typeClass) {
+        SimpleAsyncAcpClient simpleAsyncAcpClient = this.selectRandomClient();
+        return simpleAsyncAcpClient.callTool(tool, params, typeClass);
     }
 
     public <T> T callTool(String tool, Class<T> typeClass) {
-        return this.callTool(tool, new JSONObject(), typeClass);
+        SimpleAsyncAcpClient simpleAsyncAcpClient = this.selectRandomClient();
+        return simpleAsyncAcpClient.callTool(tool, new JSONObject(), typeClass);
     }
 
     public void callTool(String tool) {
-        this.callTool(tool, new JSONObject(), Void.class);
+        SimpleAsyncAcpClient simpleAsyncAcpClient = this.selectRandomClient();
+        simpleAsyncAcpClient.callTool(tool, new JSONObject(), Void.class);
     }
 
     public void callTool(String tool, Object params) {
-        this.callTool(tool, params, Void.class);
+        SimpleAsyncAcpClient simpleAsyncAcpClient = this.selectRandomClient();
+        simpleAsyncAcpClient.callTool(tool, params, Void.class);
     }
 
     public AcpSchemaExt.ListToolsResult listTools() {
-        return this.callTool(AcpSchemaExt.LIST_TOOLS, new JSONObject(), AcpSchemaExt.ListToolsResult.class);
+        SimpleAsyncAcpClient simpleAsyncAcpClient = this.selectRandomClient();
+        return simpleAsyncAcpClient.listTools();
     }
 
     public AcpSchema.NewSessionResponse newSession() {
-        String cwd = "/" + IdUtils.getUniqueId();
-        AcpSchema.NewSessionRequest newSessionRequest = new AcpSchema.NewSessionRequest(cwd, List.of(), Map.of());
-        return this.acpAsyncClient.newSession(newSessionRequest).block();
+        SimpleAsyncAcpClient simpleAsyncAcpClient = this.selectRandomClient();
+        return simpleAsyncAcpClient.newSession();
     }
 
     public AcpSchema.LoadSessionResponse loadSession(String sessionId) {
-        String cwd = "/" + IdUtils.getUniqueId();
-        AcpSchema.LoadSessionRequest loadSessionRequest = new AcpSchema.LoadSessionRequest(sessionId, cwd, List.of(), Map.of());
-        return this.acpAsyncClient.loadSession(loadSessionRequest).block();
+        SimpleAsyncAcpClient simpleAsyncAcpClient = this.selectRandomClient();
+        return simpleAsyncAcpClient.loadSession(sessionId);
     }
 
     public void cancel(String sessionId) {
-        AcpSchema.CancelNotification cancelNotification = new AcpSchema.CancelNotification(sessionId);
-        this.acpAsyncClient.cancel(cancelNotification).block();
+        SimpleAsyncAcpClient simpleAsyncAcpClient = this.selectRandomClient();
+        simpleAsyncAcpClient.cancel(sessionId);
     }
 
     public AcpSchema.SetSessionModeResponse setSessionMode(String sessionId, String modeId) {
-        AcpSchema.SetSessionModeRequest setModeRequest = new AcpSchema.SetSessionModeRequest(sessionId, modeId);
-        return this.acpAsyncClient.setSessionMode(setModeRequest).block();
+        SimpleAsyncAcpClient simpleAsyncAcpClient = this.selectRandomClient();
+        return simpleAsyncAcpClient.setSessionMode(sessionId, modeId);
     }
 
     public AcpSchema.SetSessionModelResponse setSessionModel(String sessionId, String modelId) {
-        AcpSchema.SetSessionModelRequest setModelRequest = new AcpSchema.SetSessionModelRequest(sessionId, modelId);
-        return this.acpAsyncClient.setSessionModel(setModelRequest).block();
+        SimpleAsyncAcpClient simpleAsyncAcpClient = this.selectRandomClient();
+        return simpleAsyncAcpClient.setSessionModel(sessionId, modelId);
     }
 
     public AcpSchema.PromptResponse prompt(String sessionId, String prompt) {
-        List<AcpSchema.ContentBlock> prompts = new ArrayList<>();
-        prompts.add(new AcpSchema.TextContent(prompt));
-        AcpSchema.PromptRequest promptRequest = new AcpSchema.PromptRequest(sessionId, prompts);
-        return this.acpAsyncClient.prompt(promptRequest).block();
+        SimpleAsyncAcpClient simpleAsyncAcpClient = this.selectRandomClient();
+        return simpleAsyncAcpClient.prompt(sessionId, prompt);
     }
 
     public void close() {
-        this.acpAsyncClient.close();
+        this.resolvedSimpleAcpAsyncClients.forEach(simpleAsyncAcpClient -> {
+            try {
+                simpleAsyncAcpClient.close();
+            } catch (Exception ignored) {
+            }
+        });
     }
 
     @FunctionalInterface
@@ -220,11 +276,179 @@ public class SimpleAcpClient {
         ReleaseTerminalHandler releaseTerminalHandler();
     }
 
+    private record SimpleAsyncAcpClientBuilder(
+            List<ProgressNotificationHandler> progressNotificationHandlers,
+            List<SessionNotificationHandler> sessionNotificationHandlers,
+            RequestPermissionHandler requestPermissionHandler,
+            TerminalHandler terminalHandler,
+            ReadTextFileHandler readTextFileHandler,
+            WriteTextFileHandler writeTextFileHandler,
+            Duration requestTimeout,
+            Duration connectTimeout,
+            String authorization
+    ) {
+
+        public SimpleAsyncAcpClient build(URI uri) {
+            Map<String, String> toolCallUpdateCache = new ConcurrentHashMap<>();
+            WebSocketAcpClientTransport clientTransport = new WebSocketAcpClientTransport(uri.toString(), Map.of("authorization", this.authorization))
+                    .connectTimeout(this.connectTimeout);
+            SessionUpdateNotificationHandler sessionUpdateNotificationHandler = new SessionUpdateNotificationHandler(
+                    this.progressNotificationHandlers, this.sessionNotificationHandlers, toolCallUpdateCache);
+            SimpleAsyncSpec simpleAsyncSpec = new SimpleAsyncSpec(clientTransport)
+                    .requestTimeout(this.requestTimeout)
+                    .notificationHandler(AcpSchema.METHOD_SESSION_UPDATE, sessionUpdateNotificationHandler);
+            if (this.requestPermissionHandler != null) {
+                simpleAsyncSpec.requestPermissionHandler(request -> Mono.just(this.requestPermissionHandler.handle(request)));
+            }
+            boolean terminal = false;
+            if (this.terminalHandler != null) {
+                terminal = true;
+                simpleAsyncSpec.createTerminalHandler(request ->
+                                Mono.just(this.terminalHandler.createTerminalHandler().handle(request)))
+                        .waitForTerminalExitHandler(request ->
+                                Mono.just(this.terminalHandler.waitForTerminalExitHandler().handle(request)))
+                        .terminalOutputHandler(request -> Mono.just(this.terminalHandler.terminalOutputHandler().handle(request)))
+                        .releaseTerminalHandler(releaseTerminalRequest -> Mono.just(this.terminalHandler.releaseTerminalHandler().handle(releaseTerminalRequest)));
+            }
+
+            boolean readTextFile = false;
+            if (this.readTextFileHandler != null) {
+                readTextFile = true;
+                simpleAsyncSpec.readTextFileHandler(request -> Mono.just(this.readTextFileHandler.handle(request)));
+            }
+            boolean writeTextFile = false;
+            if (this.writeTextFileHandler != null) {
+                writeTextFile = true;
+                simpleAsyncSpec.writeTextFileHandler(request -> Mono.just(this.writeTextFileHandler.handle(request)));
+            }
+
+            AcpAsyncClient acpAsyncClient = simpleAsyncSpec.build();
+
+            AcpSchema.FileSystemCapability fileSystemCapability = new AcpSchema.FileSystemCapability(readTextFile, writeTextFile);
+            AcpSchema.ClientCapabilities clientCapabilities = new AcpSchema.ClientCapabilities(fileSystemCapability, terminal);
+            AcpSchema.InitializeRequest initializeRequest = new AcpSchema.InitializeRequest(1, clientCapabilities);
+
+            AcpSchema.InitializeResponse initializeResponse = acpAsyncClient.initialize(initializeRequest).block();
+            log.debug("Init async acp client: {}, {}", uri, XDataUtils.toJSONString(initializeResponse));
+            String callToolSessionId = "";
+            assert initializeResponse != null;
+            if (!CollectionUtils.isEmpty(initializeResponse.authMethods())) {
+                for (AcpSchema.AuthMethod authMethod : initializeResponse.authMethods()) {
+                    if (authMethod.name().equals(AcpSchemaExt.DEFAULT_AUTH_METHOD_NAME)) {
+                        callToolSessionId = authMethod.id();
+                        break;
+                    }
+                }
+            }
+            return new SimpleAsyncAcpClient(
+                    uri,
+                    acpAsyncClient,
+                    callToolSessionId,
+                    toolCallUpdateCache);
+        }
+    }
+
+    public static class SimpleAsyncAcpClient {
+        @Getter
+        private final URI uri;
+        private final AcpAsyncClient acpAsyncClient;
+        private final String callToolSessionId;
+        private final Map<String, String> toolCallUpdateCache;
+
+        public SimpleAsyncAcpClient(URI uri, AcpAsyncClient acpAsyncClient, String callToolSessionId, Map<String, String> toolCallUpdateCache) {
+            this.uri = uri;
+            this.acpAsyncClient = acpAsyncClient;
+            this.callToolSessionId = callToolSessionId;
+            this.toolCallUpdateCache = toolCallUpdateCache;
+        }
+
+        public <T> T callTool(String tool, Object params, Class<T> typeClass) {
+            if (!StringUtils.hasText(this.callToolSessionId)) {
+                throw new ApiException("Unsupported callTool");
+            }
+            Invoke invoke = Invoke.create(tool, params);
+            String toolCallText = WebSocketAcpClientTransport.createAcpToolCall(invoke);
+            List<AcpSchema.ContentBlock> prompts = new ArrayList<>();
+            prompts.add(new AcpSchema.TextContent(toolCallText));
+
+            this.toolCallUpdateCache.put(invoke.toolCallId(), IN_PROGRESS);
+            try {
+                AcpSchema.PromptRequest promptRequest = new AcpSchema.PromptRequest(this.callToolSessionId, prompts);
+                AcpSchema.PromptResponse promptResponse = this.acpAsyncClient.prompt(promptRequest).block();
+                log.debug("{}", XDataUtils.toPrettyJSONString(promptResponse));
+                String cacheValue = this.toolCallUpdateCache.get(invoke.toolCallId());
+                if (!cacheValue.equals(IN_PROGRESS)) {
+                    if (typeClass.equals(Void.class)) {
+                        return null;
+                    } else {
+                        return XDataUtils.parse(cacheValue, typeClass);
+                    }
+                }
+            } catch (AcpClientSession.AcpError ex) {
+                throw new ApiException(ex.getCode(), ex.getMessage());
+            } catch (Exception ex) {
+                Throwable t = ex.getCause();
+                if (t instanceof TimeoutException) {
+                    throw new ApiException("CallTool timeout: " + invoke.tool() + "," + invoke.toolCallId());
+                } else {
+                    throw new ApiException("CallTool error: " + invoke.tool() + "," + invoke.toolCallId() + ex.getMessage());
+                }
+            } finally {
+                this.toolCallUpdateCache.remove(invoke.toolCallId());
+            }
+
+            throw new ApiException("CallTool no response:" + invoke.tool() + "," + invoke.toolCallId());
+        }
+
+        public AcpSchemaExt.ListToolsResult listTools() {
+            return this.callTool(AcpSchemaExt.LIST_TOOLS, new JSONObject(), AcpSchemaExt.ListToolsResult.class);
+        }
+
+        public AcpSchema.NewSessionResponse newSession() {
+            String cwd = "/" + IdUtils.getUniqueId();
+            AcpSchema.NewSessionRequest newSessionRequest = new AcpSchema.NewSessionRequest(cwd, List.of(), Map.of());
+            return this.acpAsyncClient.newSession(newSessionRequest).block();
+        }
+
+        public AcpSchema.LoadSessionResponse loadSession(String sessionId) {
+            String cwd = "/" + IdUtils.getUniqueId();
+            AcpSchema.LoadSessionRequest loadSessionRequest = new AcpSchema.LoadSessionRequest(sessionId, cwd, List.of(), Map.of());
+            return this.acpAsyncClient.loadSession(loadSessionRequest).block();
+        }
+
+        public void cancel(String sessionId) {
+            AcpSchema.CancelNotification cancelNotification = new AcpSchema.CancelNotification(sessionId);
+            this.acpAsyncClient.cancel(cancelNotification).block();
+        }
+
+        public AcpSchema.SetSessionModeResponse setSessionMode(String sessionId, String modeId) {
+            AcpSchema.SetSessionModeRequest setModeRequest = new AcpSchema.SetSessionModeRequest(sessionId, modeId);
+            return this.acpAsyncClient.setSessionMode(setModeRequest).block();
+        }
+
+        public AcpSchema.SetSessionModelResponse setSessionModel(String sessionId, String modelId) {
+            AcpSchema.SetSessionModelRequest setModelRequest = new AcpSchema.SetSessionModelRequest(sessionId, modelId);
+            return this.acpAsyncClient.setSessionModel(setModelRequest).block();
+        }
+
+        public AcpSchema.PromptResponse prompt(String sessionId, String prompt) {
+            List<AcpSchema.ContentBlock> prompts = new ArrayList<>();
+            prompts.add(new AcpSchema.TextContent(prompt));
+            AcpSchema.PromptRequest promptRequest = new AcpSchema.PromptRequest(sessionId, prompts);
+            return this.acpAsyncClient.prompt(promptRequest).block();
+        }
+
+        public void close() {
+            this.acpAsyncClient.close();
+        }
+    }
+
     public static class Builder {
 
         private final String uri;
         private final List<ProgressNotificationHandler> progressNotificationHandlers = new ArrayList<>();
         private final List<SessionNotificationHandler> sessionNotificationHandlers = new ArrayList<>();
+        private final Map<String, String> toolCallUpdateCache = new ConcurrentHashMap<>();
         private RequestPermissionHandler requestPermissionHandler = null;
         private TerminalHandler terminalHandler = null;
         private ReadTextFileHandler readTextFileHandler = null;
@@ -232,6 +456,7 @@ public class SimpleAcpClient {
         private Duration requestTimeout = Duration.ofSeconds(60);
         private Duration connectTimeout = Duration.ofSeconds(12);
         private String authorization = "";
+        private boolean loadBalance = false;
 
         public Builder(String uri) {
             this.uri = uri;
@@ -244,6 +469,11 @@ public class SimpleAcpClient {
 
         public Builder connectTimeout(Duration connectTimeout) {
             this.connectTimeout = connectTimeout;
+            return this;
+        }
+
+        public Builder loadBalance(boolean loadBalance) {
+            this.loadBalance = loadBalance;
             return this;
         }
 
@@ -283,59 +513,21 @@ public class SimpleAcpClient {
         }
 
         public SimpleAcpClient build() {
-            Assert.hasText(uri, "uri is required");
-            WebSocketAcpClientTransport clientTransport = new WebSocketAcpClientTransport(this.uri, Map.of("authorization", this.authorization))
-                    .connectTimeout(this.connectTimeout);
-            final Map<String, String> toolCallUpdateCache = new ConcurrentHashMap<>();
-            SessionUpdateNotificationHandler sessionUpdateNotificationHandler = new SessionUpdateNotificationHandler(
-                    this.progressNotificationHandlers, this.sessionNotificationHandlers, toolCallUpdateCache);
-            SimpleAsyncSpec simpleAsyncSpec = new SimpleAsyncSpec(clientTransport)
-                    .requestTimeout(this.requestTimeout)
-                    .notificationHandler(AcpSchema.METHOD_SESSION_UPDATE, sessionUpdateNotificationHandler);
-            if (this.requestPermissionHandler != null) {
-                simpleAsyncSpec.requestPermissionHandler(request -> Mono.just(this.requestPermissionHandler.handle(request)));
+            SimpleAsyncAcpClientBuilder simpleAsyncAcpClientBuilder = new SimpleAsyncAcpClientBuilder(
+                    this.progressNotificationHandlers, this.sessionNotificationHandlers,
+                    this.requestPermissionHandler, this.terminalHandler, this.readTextFileHandler, this.writeTextFileHandler,
+                    this.requestTimeout, this.connectTimeout, this.authorization
+            );
+            URI uri = URI.create(this.uri);
+            if ("http".equals(uri.getScheme())) {
+                uri = URI.create("ws://" + uri.getHost() + ":" + uri.getPort() + uri.getPath());
+            } else if ("https".equals(uri.getScheme())) {
+                uri = URI.create("wss://" + uri.getHost() + ":" + uri.getPort() + uri.getPath());
             }
-            boolean terminal = false;
-            if (this.terminalHandler != null) {
-                terminal = true;
-                simpleAsyncSpec.createTerminalHandler(request ->
-                                Mono.just(this.terminalHandler.createTerminalHandler().handle(request)))
-                        .waitForTerminalExitHandler(request ->
-                                Mono.just(this.terminalHandler.waitForTerminalExitHandler().handle(request)))
-                        .terminalOutputHandler(request -> Mono.just(this.terminalHandler.terminalOutputHandler().handle(request)))
-                        .releaseTerminalHandler(releaseTerminalRequest -> Mono.just(this.terminalHandler.releaseTerminalHandler().handle(releaseTerminalRequest)));
-            }
-
-            boolean readTextFile = false;
-            if (this.readTextFileHandler != null) {
-                readTextFile = true;
-                simpleAsyncSpec.readTextFileHandler(request -> Mono.just(this.readTextFileHandler.handle(request)));
-            }
-            boolean writeTextFile = false;
-            if (this.writeTextFileHandler != null) {
-                writeTextFile = true;
-                simpleAsyncSpec.writeTextFileHandler(request -> Mono.just(this.writeTextFileHandler.handle(request)));
-            }
-            
-            AcpAsyncClient acpAsyncClient = simpleAsyncSpec.build();
-
-            AcpSchema.FileSystemCapability fileSystemCapability = new AcpSchema.FileSystemCapability(readTextFile, writeTextFile);
-            AcpSchema.ClientCapabilities clientCapabilities = new AcpSchema.ClientCapabilities(fileSystemCapability, terminal);
-            AcpSchema.InitializeRequest initializeRequest = new AcpSchema.InitializeRequest(1, clientCapabilities);
-
-            AcpSchema.InitializeResponse initializeResponse = acpAsyncClient.initialize(initializeRequest).block();
-            log.debug("Init acp client: {}, {}", this.uri, XDataUtils.toJSONString(initializeResponse));
-            String callToolSessionId = "";
-            assert initializeResponse != null;
-            if (!CollectionUtils.isEmpty(initializeResponse.authMethods())) {
-                for (AcpSchema.AuthMethod authMethod : initializeResponse.authMethods()) {
-                    if (authMethod.name().equals(AcpSchemaExt.DEFAULT_AUTH_METHOD_NAME)) {
-                        callToolSessionId = authMethod.id();
-                        break;
-                    }
-                }
-            }
-            return new SimpleAcpClient(acpAsyncClient, toolCallUpdateCache, callToolSessionId);
+            return new SimpleAcpClient(
+                    uri,
+                    simpleAsyncAcpClientBuilder,
+                    this.loadBalance);
         }
     }
 

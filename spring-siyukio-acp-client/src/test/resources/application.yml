@@ -1,21 +1,25 @@
-API_JWT_PUBLIC_KEY: |
-  -----BEGIN PUBLIC KEY-----
-  MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEIvOb3WiWoNrQ1ggpeoYz44jxjY+S
-  jcIQ4NmtOvfRRYdq4YTTyN4IoMT2mfOO72GfmYYyXhhKP1KonShHvxmBXA==
-  -----END PUBLIC KEY-----
-
-API_JWT_PRIVATE_KEY: |
-  -----BEGIN PRIVATE KEY-----
-  MEECAQAwEwYHKoZIzj0CAQYIKoZIzj0DAQcEJzAlAgEBBCAhiWxwhbZlhG5K2f4Z
-  hCSvly9hfoK2z2UcpfAyD/n0KQ==
-  -----END PRIVATE KEY-----
-
-API_SIGNATURE_SALT: siyukio
-
 logging:
   level:
     root: INFO
     io:
       github:
         siyukio: DEBUG
-  port: 8081
+spring:
+  siyukio:
+    jwt:
+      public-key: |
+        -----BEGIN PUBLIC KEY-----
+        MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEIvOb3WiWoNrQ1ggpeoYz44jxjY+S
+        jcIQ4NmtOvfRRYdq4YTTyN4IoMT2mfOO72GfmYYyXhhKP1KonShHvxmBXA==
+        -----END PUBLIC KEY-----
+      private-key: |
+        -----BEGIN PRIVATE KEY-----
+        MEECAQAwEwYHKoZIzj0CAQYIKoZIzj0DAQcEJzAlAgEBBCAhiWxwhbZlhG5K2f4Z
+        hCSvly9hfoK2z2UcpfAyD/n0KQ==
+        -----END PRIVATE KEY-----
+      password: siyukio
+    signature:
+      salt: siyukio
+    profiles:
+      docs: true
+      active: dev
