@@ -2,9 +2,7 @@ package io.github.siyukio.client;
 
 import io.github.siyukio.tools.api.annotation.client.ApiClient;
 import org.json.JSONObject;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.service.annotation.GetExchange;
-import org.springframework.web.service.annotation.PostExchange;
 
 /**
  *
@@ -12,8 +10,8 @@ import org.springframework.web.service.annotation.PostExchange;
  */
 @ApiClient(url = "${spring.siyukio.api-docs.url}", headers = {
         "Authorization=${spring.siyukio.api-docs.authorization}"
-})
-public interface ApiTestClient {
+}, loadBalance = true)
+public interface LoadBalanceApiClient {
 
     /**
      * Get product information.
@@ -24,13 +22,4 @@ public interface ApiTestClient {
      */
     @GetExchange("/api-docs")
     JSONObject apiDocs();
-
-    @GetExchange("/actuator/health")
-    Health health();
-
-    @PostExchange("/authorization/create")
-    JSONObject createAuthorization(@RequestBody JSONObject request);
-
-    record Health(String status) {
-    }
 }

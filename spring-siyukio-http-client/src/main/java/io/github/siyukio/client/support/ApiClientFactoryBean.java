@@ -5,6 +5,7 @@ import io.github.siyukio.client.interceptor.GzipResponseInterceptor;
 import io.github.siyukio.client.interceptor.LoadBalanceInterceptor;
 import io.github.siyukio.client.interceptor.UnifiedErrorResponseInterceptor;
 import io.github.siyukio.tools.api.annotation.client.ApiClient;
+import io.github.siyukio.tools.util.HttpClientUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.Getter;
 import lombok.Setter;
@@ -75,14 +76,7 @@ public class ApiClientFactoryBean implements FactoryBean<Object>, InitializingBe
     private Object newInstance() {
         ApiClient apiClient = this.beanClass.getAnnotation(ApiClient.class);
 
-        String baseUrl = apiClient.url();
-
-        HttpClient.Builder httpClientBuilder = HttpClient.newBuilder()
-                .version(apiClient.version())
-                .connectTimeout(Duration.ofSeconds(6))
-                .followRedirects(HttpClient.Redirect.NORMAL);
-
-        HttpClient httpClient = httpClientBuilder.build();
+        HttpClient httpClient = HttpClientUtils.getHttpClient(apiClient.version());
 
         int readTimeout = apiClient.readTimeout();
         if (readTimeout <= 0) {

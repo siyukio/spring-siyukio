@@ -24,10 +24,12 @@ public class HttpClientUtilsTest {
 
     @Test
     void testResolveDomain() {
-        String domain = "www.codebuddy.com";
+        String domain = "codebuddy.com";
         List<String> ips = this.resolveDomain(domain);
         assertFalse(ips.isEmpty());
         assertNotNull(ips.getFirst());
+        this.resolveDomain("vercel.com");
+        this.resolveDomain("github.com");
 
         this.resolveDomain("siyukio.local");
         this.resolveDomain("siyukio-bootstrap");

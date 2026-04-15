@@ -32,7 +32,7 @@ public abstract class HttpClientUtils {
         return HTTP_CLIENT_CACHE.computeIfAbsent(version, v ->
                 HttpClient.newBuilder()
                         .version(v)
-                        .connectTimeout(Duration.ofSeconds(6))
+                        .connectTimeout(Duration.ofSeconds(12))
                         .executor(AsyncUtils.VIRTUAL_EXECUTOR_SERVICE)
                         .followRedirects(HttpClient.Redirect.NORMAL)
                         .build()

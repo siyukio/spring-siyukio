@@ -14,15 +14,15 @@ import org.springframework.boot.test.context.SpringBootTest;
  */
 @SpringBootTest
 @Slf4j
-class ApiTestClientTest {
+class CommonApiClientTest {
 
     @Autowired
-    private ApiTestClient apiTestClient;
+    private CommonApiClient commonApiClient;
 
     @Test
     void testApiDocs() {
 
-        JSONObject result = apiTestClient.apiDocs();
+        JSONObject result = commonApiClient.apiDocs();
 
         log.info("api docs: {}", XDataUtils.toPrettyJSONString(result));
     }
@@ -30,7 +30,7 @@ class ApiTestClientTest {
     @Test
     void testHealth() {
 
-        ApiTestClient.Health result = apiTestClient.health();
+        CommonApiClient.Health result = commonApiClient.health();
 
         log.info("api health: {}", XDataUtils.toPrettyJSONString(result));
     }
@@ -41,7 +41,7 @@ class ApiTestClientTest {
         request.put("uid", "1234567890");
         request.put("name", "test");
 //        request.put("roles", List.of("admin"));
-        JSONObject result = apiTestClient.createAuthorization(request);
+        JSONObject result = commonApiClient.createAuthorization(request);
 
         log.info("api createAuthorization: {}", XDataUtils.toPrettyJSONString(result));
     }

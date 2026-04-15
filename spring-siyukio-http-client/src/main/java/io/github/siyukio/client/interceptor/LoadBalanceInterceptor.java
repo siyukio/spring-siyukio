@@ -1,17 +1,17 @@
 package io.github.siyukio.client.interceptor;
 
+import io.github.siyukio.tools.util.HttpClientUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
-import org.xbill.DNS.*;
-import org.xbill.DNS.Record;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,103 +26,62 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bugee
  */
 @Slf4j
-public class DnsUrlRewriteInterceptor implements org.springframework.http.client.ClientHttpRequestInterceptor {
+public class LoadBalanceInterceptor implements ClientHttpRequestInterceptor {
 
-    private final String dnsServer;
-    private final int dnsPort;
-    private final boolean useTcp;
-    private final String originalHost;
-
-    private final List<String> resolvedIps = new ArrayList<>();
     private final Lock lock = new ReentrantLock();
-    private volatile boolean initialized = false;
+    private volatile List<String> resolvedIps = new ArrayList<>();
+    private volatile long lastResolvedTime = 0L;
 
-    public DnsUrlRewriteInterceptor(String dnsServer, int dnsPort, boolean useTcp, String originalHost) {
-        this.dnsServer = dnsServer;
-        this.dnsPort = dnsPort;
-        this.useTcp = useTcp;
-        this.originalHost = originalHost;
-    }
-
-    private void ensureResolved() {
-        if (initialized) {
+    private void ensureResolved(String host) {
+        lock.lock();
+        if (System.currentTimeMillis() - this.lastResolvedTime < 15000) {
             return;
         }
-        lock.lock();
         try {
-            if (initialized) {
-                return;
-            }
-            if (dnsServer == null || dnsServer.isBlank()) {
-                log.debug("No DNS server configured, skipping resolution");
-                initialized = true;
-                return;
-            }
-            try {
-                resolveUsingDnsJava();
-                if (resolvedIps.isEmpty()) {
-                    resolvedIps.add(originalHost);
-                }
-                log.debug("Resolved {} via DNS {} (TCP={}) to IPs: {}", originalHost, dnsServer, useTcp, resolvedIps);
-            } catch (Exception e) {
-                log.warn("Failed to resolve {} via DNS {}: {}", originalHost, dnsServer, e.getMessage());
-                resolvedIps.add(originalHost);
-            }
-            initialized = true;
+            this.resolvedIps = HttpClientUtils.resolveDomain(host);
+            this.lastResolvedTime = System.currentTimeMillis();
+            log.debug("Resolved {} ips: {}", host, this.resolvedIps);
         } finally {
             lock.unlock();
         }
     }
 
-    private void resolveUsingDnsJava() throws UnknownHostException, TextParseException {
-        SimpleResolver resolver = new SimpleResolver(dnsServer);
-        resolver.setPort(dnsPort);
-        if (useTcp) {
-            resolver.setTCP(true);
-        }
-        Lookup lookup = new Lookup(originalHost, Type.A);
-        lookup.setResolver(resolver);
-        Record[] records = lookup.run();
-        if (records != null) {
-            for (Record record : records) {
-                String ip = record.rdataToString();
-                if (ip != null && !ip.isBlank()) {
-                    resolvedIps.add(ip);
-                }
-            }
-        }
-    }
-
-    private String selectRandomIp() {
-        ensureResolved();
+    private String selectRandomIp(String host) {
+        ensureResolved(host);
         if (resolvedIps.isEmpty()) {
-            return originalHost;
+            return "";
         }
         if (resolvedIps.size() == 1) {
             return resolvedIps.getFirst();
         }
-        return resolvedIps.get(ThreadLocalRandom.current().nextInt(resolvedIps.size()));
+        int index = ThreadLocalRandom.current().nextInt(resolvedIps.size());
+        String ip = resolvedIps.get(index);
+        log.debug("Selected ip: {}, {}, {}, {}", host, ip, index, resolvedIps);
+        return ip;
     }
 
     @Override
     public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
         URI originalUri = request.getURI();
         String host = originalUri.getHost();
-
-        if (host != null && host.equals(originalHost)) {
-            String selectedIp = selectRandomIp();
-            URI newUri = buildRewrittenUri(originalUri, selectedIp);
-            HttpRequest rewrittenRequest = new RewrittenRequest(request, newUri);
-            log.debug("Rewriting URL from {} to {}", originalUri, newUri);
-            return execution.execute(rewrittenRequest, body);
+        String schema = originalUri.getScheme();
+        if (StringUtils.hasText(host) && "http".equals(schema)) {
+            String selectedIp = selectRandomIp(host);
+            if (StringUtils.hasText(selectedIp)) {
+                URI newUri = buildRewrittenUri(originalUri, selectedIp);
+                HttpRequest rewrittenRequest = new RewrittenRequest(request, newUri);
+                rewrittenRequest.getHeaders().put("Host", List.of(host));
+                log.debug("Rewriting URL from {} to {}", originalUri, newUri);
+                return execution.execute(rewrittenRequest, body);
+            }
+            return execution.execute(request, body);
         }
-
         return execution.execute(request, body);
     }
 
     private URI buildRewrittenUri(URI originalUri, String ip) {
         String scheme = originalUri.getScheme();
-        int port = dnsPort > 0 ? dnsPort : originalUri.getPort();
+        int port = originalUri.getPort();
         String path = originalUri.getPath();
         String query = originalUri.getQuery();
         String fragment = originalUri.getFragment();
