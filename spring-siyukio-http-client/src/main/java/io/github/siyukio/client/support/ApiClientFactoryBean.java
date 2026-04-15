@@ -1,11 +1,10 @@
 package io.github.siyukio.client.support;
 
 import io.github.siyukio.client.interceptor.BrotliResponseInterceptor;
-import io.github.siyukio.client.interceptor.DnsUrlRewriteInterceptor;
 import io.github.siyukio.client.interceptor.GzipResponseInterceptor;
+import io.github.siyukio.client.interceptor.LoadBalanceInterceptor;
 import io.github.siyukio.client.interceptor.UnifiedErrorResponseInterceptor;
 import io.github.siyukio.tools.api.annotation.client.ApiClient;
-import io.github.siyukio.tools.api.annotation.client.DnsResolver;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,13 +23,11 @@ import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.http.converter.xml.MappingJackson2XmlHttpMessageConverter;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 import org.springframework.util.StringValueResolver;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
-import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.List;
@@ -85,20 +82,6 @@ public class ApiClientFactoryBean implements FactoryBean<Object>, InitializingBe
                 .connectTimeout(Duration.ofSeconds(6))
                 .followRedirects(HttpClient.Redirect.NORMAL);
 
-        DnsResolver dnsResolver = apiClient.dnsResolver();
-        DnsUrlRewriteInterceptor dnsUrlRewriteInterceptor = null;
-
-        if (dnsResolver != null) {
-            String dns = dnsResolver.dns();
-            if (StringUtils.hasText(dns) && StringUtils.hasText(baseUrl)) {
-                String originalHost = URI.create(baseUrl).getHost();
-                dnsUrlRewriteInterceptor = new DnsUrlRewriteInterceptor(dns,
-                        dnsResolver.port(), dnsResolver.useTcp(), originalHost);
-                log.debug("DNS rewrite interceptor created for host: {}, dns: {}:{}, useTcp: {}",
-                        originalHost, dns, dnsResolver.port(), dnsResolver.useTcp());
-            }
-        }
-
         HttpClient httpClient = httpClientBuilder.build();
 
         int readTimeout = apiClient.readTimeout();
@@ -130,8 +113,9 @@ public class ApiClientFactoryBean implements FactoryBean<Object>, InitializingBe
                         new MappingJackson2XmlHttpMessageConverter(XDataUtils.XML_MAPPER),
                         new FormHttpMessageConverter()
                 ));
-        if (dnsUrlRewriteInterceptor != null) {
-            restClientBuilder.requestInterceptor(dnsUrlRewriteInterceptor);
+
+        if (apiClient.loadBalance()) {
+            restClientBuilder.requestInterceptor(new LoadBalanceInterceptor());
         }
 
         RestClient restClient = restClientBuilder.build();

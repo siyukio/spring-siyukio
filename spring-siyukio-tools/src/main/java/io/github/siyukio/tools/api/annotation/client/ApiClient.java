@@ -46,7 +46,8 @@ public @interface ApiClient {
     HttpClient.Version version() default HttpClient.Version.HTTP_2;
 
     /**
-     * DNS resolver configuration.
+     * Enable load balancing, default is false.
      */
-    DnsResolver dnsResolver() default @DnsResolver;
+    boolean loadBalance() default false;
+
 }

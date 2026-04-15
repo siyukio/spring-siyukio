@@ -1,7 +1,14 @@
 package io.github.siyukio.tools.util;
 
+import lombok.extern.slf4j.Slf4j;
+
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -10,6 +17,7 @@ import java.util.concurrent.ConcurrentMap;
  *
  * @author Bugee
  */
+@Slf4j
 public abstract class HttpClientUtils {
 
     private static final ConcurrentMap<HttpClient.Version, HttpClient> HTTP_CLIENT_CACHE = new ConcurrentHashMap<>();
@@ -46,4 +54,24 @@ public abstract class HttpClientUtils {
     public static void clearCache() {
         HTTP_CLIENT_CACHE.clear();
     }
+
+    /**
+     * Resolve domain name to list of IP addresses.
+     *
+     * @param domain the domain name to resolve
+     * @return an unmodifiable list of IP addresses, or empty list if resolution fails
+     */
+    public static List<String> resolveDomain(String domain) {
+        try {
+            InetAddress[] addresses = InetAddress.getAllByName(domain);
+            return Arrays.stream(addresses)
+                    .filter(addr -> addr instanceof Inet4Address)
+                    .filter(addr -> !addr.isLoopbackAddress())
+                    .map(InetAddress::getHostAddress).toList();
+        } catch (Exception e) {
+            log.error("Resolve domain {} error: {}", domain, e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
 }

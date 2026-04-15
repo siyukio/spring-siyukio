@@ -1,4 +1,4 @@
-package io.github.siyukio.k8s;
+package io.github.siyukio.tools.k8s;
 
 import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -63,7 +63,7 @@ public class KubernetesTestHelper implements AutoCloseable {
             helper.uploadDirectory(Path.of(projectRoot), "/app");
 
             // Execute command in pod
-            String command = "cd /app && mvn test -Dgroups=k8s -DskipTests=false -pl spring-siyukio-http-client -am";
+            String command = "cd /app && mvn test -Dgroups=k8s -DskipTests=false -pl spring-siyukio-tools -am";
             ExecResult result = helper.execInPod("sh", "-c", command);
             log.info("Exit code: {}", result.exitCode());
         }
