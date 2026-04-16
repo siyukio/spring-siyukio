@@ -98,7 +98,7 @@ public final class TokenProvider {
 
     public String createAuthorization(Token token, Duration duration) {
         if (duration == null) {
-            duration = token.refresh() ? this.refreshTokenDuration : this.accessTokenDuration;
+            duration = token.refresh() != null && token.refresh() ? this.refreshTokenDuration : this.accessTokenDuration;
         }
 
         Instant issuedAt = Instant.now();
@@ -110,11 +110,9 @@ public final class TokenProvider {
                 .claim("e", token.name())
                 .claim("s", token.roles())
                 .claim("h", token.refresh())
-//                .issueTime(new Date(issuedAt.toEpochMilli()))
                 .expirationTime(new Date(expiresAt.toEpochMilli()))
                 .build();
         JWSHeader header = new JWSHeader.Builder(this.algorithm)
-                .type(JOSEObjectType.JWT)
                 .build();
 
         String plainText = claims.toPayload().toString();
@@ -154,9 +152,17 @@ public final class TokenProvider {
             String id = claims.getJWTID();
             String uid = claims.getSubject();
             String name = claims.getStringClaim("e");
+            if (name == null) {
+                name = "";
+            }
             List<String> roles = claims.getStringListClaim("s");
-            boolean refresh = claims.getBooleanClaim("h");
-
+            if (roles == null) {
+                roles = List.of();
+            }
+            Boolean refresh = claims.getBooleanClaim("h");
+            if (refresh == null) {
+                refresh = false;
+            }
             return Token.builder()
                     .id(id).uid(uid).name(name).roles(roles).refresh(refresh)
                     .build();

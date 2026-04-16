@@ -48,7 +48,7 @@ public class SimpleAcpClientTest {
     void setUp() {
         if (SIMPLE_ACP_CLIENT == null) {
             String authorization = this.tokenProvider.createAuthorization(Token.builder()
-                    .uid("siyukio").name("siyukio").build());
+                    .uid("siyukio").refresh(false).build());
             log.debug("authorization: {}", authorization);
             String serverUri = "ws://siyukio.local";
             SIMPLE_ACP_CLIENT = SimpleAcpClient.builder(serverUri)

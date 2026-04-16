@@ -35,11 +35,11 @@ public record Token(
         /*
          * Whether the token is used for refreshing the JWT token.
          */
-        boolean refresh
+        Boolean refresh
 ) {
 
     public Token createAccessToken() {
-        if (!this.refresh) {
+        if (this.refresh == null || !this.refresh) {
             throw new IllegalStateException("Only refresh token can be converted to access token.");
         }
         return Token.builder()
