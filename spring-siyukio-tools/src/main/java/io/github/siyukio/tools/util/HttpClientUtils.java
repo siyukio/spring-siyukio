@@ -66,7 +66,6 @@ public abstract class HttpClientUtils {
             InetAddress[] addresses = InetAddress.getAllByName(domain);
             return Arrays.stream(addresses)
                     .filter(addr -> addr instanceof Inet4Address)
-                    .filter(addr -> !addr.isLoopbackAddress())
                     .map(InetAddress::getHostAddress).toList();
         } catch (Exception e) {
             log.error("Resolve domain {} error: {}", domain, e.getMessage());

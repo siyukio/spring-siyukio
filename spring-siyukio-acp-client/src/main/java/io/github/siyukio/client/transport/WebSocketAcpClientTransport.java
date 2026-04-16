@@ -101,7 +101,7 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
         }
 
         return Mono.fromFuture(() -> {
-            log.info("Connecting to WebSocket server at {}", serverUri);
+            log.debug("Connecting to WebSocket server at {}", serverUri);
 
             // Set up inbound message handling
             handleIncomingMessages(handler);
