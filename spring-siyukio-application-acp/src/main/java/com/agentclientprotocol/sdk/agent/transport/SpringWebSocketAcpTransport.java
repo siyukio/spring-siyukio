@@ -289,7 +289,8 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
 
             Token token = tokenProvider.verifyToken(authorization);
             if (token == null || token.refresh()) {
-                throw new ApiException(HttpStatus.UNAUTHORIZED);
+                log.error("WebSocket Acp authorization failed: {}", authorization);
+                return false;
             }
             attributes.put(HttpHeaders.AUTHORIZATION, token);
             return this.handshakeHandler.doHandshake(request, response, wsHandler, attributes);
