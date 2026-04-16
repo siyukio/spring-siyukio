@@ -4,6 +4,7 @@ import com.agentclientprotocol.sdk.spec.AcpSchema;
 import io.github.siyukio.application.dto.CreateAuthorizationRequest;
 import io.github.siyukio.application.dto.CreateAuthorizationResponse;
 import io.github.siyukio.client.SimpleAcpClient;
+import io.github.siyukio.client.SimpleAsyncAcpClient;
 import io.github.siyukio.tools.acp.AcpSchemaExt;
 import io.github.siyukio.tools.api.dto.TokenResponse;
 import io.github.siyukio.tools.api.token.Token;
@@ -66,30 +67,30 @@ public class SimpleAcpClientTest {
                         }
                         return new AcpSchema.ReadTextFileResponse("Hello, world!");
                     })
-                    .terminalHandler(new SimpleAcpClient.TerminalHandler() {
+                    .terminalHandler(new SimpleAsyncAcpClient.TerminalHandler() {
                         @Override
-                        public SimpleAcpClient.CreateTerminalHandler createTerminalHandler() {
+                        public SimpleAsyncAcpClient.CreateTerminalHandler createTerminalHandler() {
                             return request -> {
                                 return new AcpSchema.CreateTerminalResponse(IdUtils.getUniqueId());
                             };
                         }
 
                         @Override
-                        public SimpleAcpClient.WaitForTerminalExitHandler waitForTerminalExitHandler() {
+                        public SimpleAsyncAcpClient.WaitForTerminalExitHandler waitForTerminalExitHandler() {
                             return request -> {
                                 return new AcpSchema.WaitForTerminalExitResponse(0, null);
                             };
                         }
 
                         @Override
-                        public SimpleAcpClient.TerminalOutputHandler terminalOutputHandler() {
+                        public SimpleAsyncAcpClient.TerminalOutputHandler terminalOutputHandler() {
                             return request -> {
                                 return new AcpSchema.TerminalOutputResponse("Darwin bogon 25.3.0 Darwin Kernel Version 25.3.0: Wed Jan 28 20:53:05 PST 2026; root:xnu-12377.81.4~5/RELEASE_ARM64_T6020 arm64", true, new AcpSchema.TerminalExitStatus(0, null));
                             };
                         }
 
                         @Override
-                        public SimpleAcpClient.ReleaseTerminalHandler releaseTerminalHandler() {
+                        public SimpleAsyncAcpClient.ReleaseTerminalHandler releaseTerminalHandler() {
                             return request -> {
                                 return new AcpSchema.ReleaseTerminalResponse();
                             };
