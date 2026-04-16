@@ -1,5 +1,6 @@
 package io.github.siyukio.client.transport;
 
+import com.agentclientprotocol.sdk.error.AcpProtocolException;
 import com.agentclientprotocol.sdk.spec.AcpClientTransport;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.agentclientprotocol.sdk.util.Assert;
@@ -9,6 +10,7 @@ import io.github.siyukio.tools.util.HttpClientUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import io.modelcontextprotocol.json.TypeRef;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
@@ -123,10 +125,12 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
         }).doOnError(e -> {
             log.error("Failed to connect to WebSocket server at {}", serverUri, e);
             isConnected.set(false);
+            connectionReady.tryEmitError(new AcpProtocolException(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED.getReasonPhrase()));
             exceptionHandler.accept(e);
         }).doOnCancel(() -> {
             log.debug("WebSocket connection cancelled");
             isConnected.set(false);
+            connectionReady.tryEmitError(new AcpProtocolException(HttpStatus.NOT_EXTENDED.value(), "WebSocket connection cancelled"));
         }).then();
     }
 
