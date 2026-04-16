@@ -79,6 +79,10 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
                 + "</" + DEFAULT_ACP_INVOKE_TAG + ">";
     }
 
+    public boolean isClosing() {
+        return isClosing.get();
+    }
+
     /**
      * Sets the connection timeout for WebSocket establishment.
      *

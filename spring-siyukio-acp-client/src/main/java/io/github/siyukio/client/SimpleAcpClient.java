@@ -290,11 +290,12 @@ public class SimpleAcpClient {
 
         public SimpleAsyncAcpClient build(URI uri) {
             Map<String, String> toolCallUpdateCache = new ConcurrentHashMap<>();
-            WebSocketAcpClientTransport clientTransport = new WebSocketAcpClientTransport(uri.toString(), Map.of("authorization", this.authorization))
+            WebSocketAcpClientTransport webSocketAcpClientTransport = new WebSocketAcpClientTransport(uri.toString(), Map.of("authorization", this.authorization))
                     .connectTimeout(this.connectTimeout);
+
             SessionUpdateNotificationHandler sessionUpdateNotificationHandler = new SessionUpdateNotificationHandler(
                     this.progressNotificationHandlers, this.sessionNotificationHandlers, toolCallUpdateCache);
-            SimpleAsyncSpec simpleAsyncSpec = new SimpleAsyncSpec(clientTransport)
+            SimpleAsyncSpec simpleAsyncSpec = new SimpleAsyncSpec(webSocketAcpClientTransport)
                     .requestTimeout(this.requestTimeout)
                     .notificationHandler(AcpSchema.METHOD_SESSION_UPDATE, sessionUpdateNotificationHandler);
             if (this.requestPermissionHandler != null) {
@@ -342,27 +343,34 @@ public class SimpleAcpClient {
             }
             return new SimpleAsyncAcpClient(
                     uri,
+                    webSocketAcpClientTransport,
                     acpAsyncClient,
-                    callToolSessionId,
-                    toolCallUpdateCache);
+                    callToolSessionId, toolCallUpdateCache);
         }
     }
 
     public static class SimpleAsyncAcpClient {
         @Getter
         private final URI uri;
+        private final WebSocketAcpClientTransport webSocketAcpClientTransport;
         private final AcpAsyncClient acpAsyncClient;
         private final String callToolSessionId;
         private final Map<String, String> toolCallUpdateCache;
 
-        public SimpleAsyncAcpClient(URI uri, AcpAsyncClient acpAsyncClient, String callToolSessionId, Map<String, String> toolCallUpdateCache) {
+        public SimpleAsyncAcpClient(URI uri, WebSocketAcpClientTransport webSocketAcpClientTransport, AcpAsyncClient acpAsyncClient, String callToolSessionId, Map<String, String> toolCallUpdateCache) {
             this.uri = uri;
+            this.webSocketAcpClientTransport = webSocketAcpClientTransport;
             this.acpAsyncClient = acpAsyncClient;
             this.callToolSessionId = callToolSessionId;
             this.toolCallUpdateCache = toolCallUpdateCache;
         }
 
+        public boolean isClosed() {
+            return this.webSocketAcpClientTransport.isClosing();
+        }
+
         public <T> T callTool(String tool, Object params, Class<T> typeClass) {
+
             if (!StringUtils.hasText(this.callToolSessionId)) {
                 throw new ApiException("Unsupported callTool");
             }
@@ -448,7 +456,6 @@ public class SimpleAcpClient {
         private final String uri;
         private final List<ProgressNotificationHandler> progressNotificationHandlers = new ArrayList<>();
         private final List<SessionNotificationHandler> sessionNotificationHandlers = new ArrayList<>();
-        private final Map<String, String> toolCallUpdateCache = new ConcurrentHashMap<>();
         private RequestPermissionHandler requestPermissionHandler = null;
         private TerminalHandler terminalHandler = null;
         private ReadTextFileHandler readTextFileHandler = null;
