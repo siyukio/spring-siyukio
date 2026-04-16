@@ -41,7 +41,7 @@ public class SimpleAcpClientTest {
     @BeforeEach
     void setUp() {
         if (SIMPLE_ACP_CLIENT == null) {
-            String authorization = "eyJhbGciOiJFUzI1NiJ9.SjZLV3YyRi9DMWt3Vnl5WFFlQ1hLVDZkR2hkQmxCbnorZkFYRFBKK1FTa2RaZ2pWTEkxWWU5VXd4SkRlZVRad0N4anFralhkWTczeEdRa1JKOVJWeXNZODUxcVg3UVhsc1hNUDlmUlB5TTdKY0hvRm1OMkVSMUZwaE8zalhBYm5QcWpXS0UrdQ.s4OTqp-ccREChR373yFiBBahlevj3HspA07Q32hDDTD3Zr8RlbLRD9R_nZ5Mal6rEW7eMhpbe3QjzMzluU0Ggg";
+            String authorization = "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.Yk5VQTl5VFNEbTFmL09lMnNYUE5rRjNBV1lEcTRlazZ4MzRmSjJUek8vZ2ZtN2t3V1d6WFYrRjJ4Y0tnOThZRG14WGtvSytkSzFjdUVwUjdGZys5QTZEUkVPa3R5dk5KdkU3K1FYcHVqUHBrME1VSmtDdjB2eU9kVU9CdFFMTnY2RTJYbWMzZm53PT0.sgTkEf_CIG7lmriOhpm0VXB2BsQRfY6lqX6pyle6-ctwv81DRxEIaaGyJ8uEvsckdd5QeOQCEda98SEm9ctRUw";
             String serverUri = "ws://siyukio.local";
             SIMPLE_ACP_CLIENT = SimpleAcpClient.builder(serverUri)
 //                    .loadBalance(true)

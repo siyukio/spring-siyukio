@@ -1,6 +1,8 @@
 package io.github.siyukio.client;
 
 import com.agentclientprotocol.sdk.spec.AcpSchema;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.siyukio.client.loadbalancer.DirectAcpClientLoadBalancer;
 import io.github.siyukio.client.loadbalancer.DnsRandomAcpClientLoadBalancer;
 import io.github.siyukio.client.loadbalancer.SimpleAsyncAcpClientLoadBalancer;
@@ -12,6 +14,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -95,6 +98,10 @@ public class SimpleAcpClient {
         private final String uri;
         private final List<SimpleAsyncAcpClient.ProgressNotificationHandler> progressNotificationHandlers = new ArrayList<>();
         private final List<SimpleAsyncAcpClient.SessionNotificationHandler> sessionNotificationHandlers = new ArrayList<>();
+        private final Cache<String, String> toolCallUpdateCache = Caffeine.newBuilder()
+                .maximumSize(100_000)
+                .expireAfterWrite(15, TimeUnit.MINUTES)
+                .build();
         private SimpleAsyncAcpClient.RequestPermissionHandler requestPermissionHandler = null;
         private SimpleAsyncAcpClient.TerminalHandler terminalHandler = null;
         private SimpleAsyncAcpClient.ReadTextFileHandler readTextFileHandler = null;
@@ -160,8 +167,9 @@ public class SimpleAcpClient {
 
         public SimpleAcpClient build() {
             SimpleAsyncAcpClient.Builder builder = new SimpleAsyncAcpClient.Builder(
-                    this.progressNotificationHandlers, this.sessionNotificationHandlers,
-                    this.requestPermissionHandler, this.terminalHandler, this.readTextFileHandler, this.writeTextFileHandler,
+                    this.toolCallUpdateCache, this.progressNotificationHandlers,
+                    this.sessionNotificationHandlers, this.requestPermissionHandler,
+                    this.terminalHandler, this.readTextFileHandler, this.writeTextFileHandler,
                     this.requestTimeout, this.connectTimeout, this.authorization
             );
             URI uri = URI.create(this.uri);
