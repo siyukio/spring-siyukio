@@ -7,15 +7,12 @@ import io.github.siyukio.client.SimpleAcpClient;
 import io.github.siyukio.client.SimpleAsyncAcpClient;
 import io.github.siyukio.tools.acp.AcpSchemaExt;
 import io.github.siyukio.tools.api.dto.TokenResponse;
-import io.github.siyukio.tools.api.token.Token;
-import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.IdUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.Duration;
@@ -34,9 +31,6 @@ public class SimpleAcpClientTest {
 
     private static String SESSION_ID = null;
 
-    @Autowired
-    private TokenProvider tokenProvider;
-
     @AfterAll
     static void setAfter() {
         if (SIMPLE_ACP_CLIENT != null) {
@@ -47,9 +41,7 @@ public class SimpleAcpClientTest {
     @BeforeEach
     void setUp() {
         if (SIMPLE_ACP_CLIENT == null) {
-            String authorization = this.tokenProvider.createAuthorization(Token.builder()
-                    .uid("siyukio").refresh(false).build());
-            log.debug("authorization: {}", authorization);
+            String authorization = "eyJhbGciOiJFUzI1NiJ9.SjZLV3YyRi9DMWt3Vnl5WFFlQ1hLVDZkR2hkQmxCbnorZkFYRFBKK1FTa2RaZ2pWTEkxWWU5VXd4SkRlZVRad0N4anFralhkWTczeEdRa1JKOVJWeXNZODUxcVg3UVhsc1hNUDlmUlB5TTdKY0hvRm1OMkVSMUZwaE8zalhBYm5QcWpXS0UrdQ.s4OTqp-ccREChR373yFiBBahlevj3HspA07Q32hDDTD3Zr8RlbLRD9R_nZ5Mal6rEW7eMhpbe3QjzMzluU0Ggg";
             String serverUri = "ws://siyukio.local";
             SIMPLE_ACP_CLIENT = SimpleAcpClient.builder(serverUri)
 //                    .loadBalance(true)
