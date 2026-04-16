@@ -49,7 +49,7 @@ public class SimpleAcpClientTest {
             String authorization = this.tokenProvider.createAuthorization(Token.builder()
                     .uid("siyukio").name("siyukio").build());
             log.debug("authorization: {}", authorization);
-            String serverUri = "ws://localhost:8080";
+            String serverUri = "ws://siyukio.local";
             SIMPLE_ACP_CLIENT = SimpleAcpClient.builder(serverUri)
 //                    .loadBalance(true)
                     .requestTimeout(Duration.ofSeconds(60))
