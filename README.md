@@ -92,6 +92,15 @@ PostgreSQL entity management with automatic schema synchronization.
 - **Master-Slave Architecture** — One master with multiple slaves
 - **Spring-Native Integration** — Full `@Transactional` and bean injection support
 
+## Integrate with Codex
+
+Copy the skills folder to Codex so it can understand how to use Siyukio for coding.
+
+```bash
+# Copy all skills to Codex
+cp -r ./skills/* ~/.codex/skills
+```
+
 ## License
 
 This project is licensed under the [MIT License](./LICENSE).
