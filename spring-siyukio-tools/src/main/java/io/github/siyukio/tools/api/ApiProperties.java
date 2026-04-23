@@ -72,7 +72,7 @@ public class ApiProperties {
          * <p>
          * Provides an extra layer of security for JWT token operations.
          */
-        private String password = "siyukio";
+        private String password = "";
 
         /**
          * Duration for access token validity.

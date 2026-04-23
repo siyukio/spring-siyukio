@@ -3,6 +3,7 @@ package io.github.siyukio.application.test;
 import io.github.siyukio.application.dto.CreateAuthorizationRequest;
 import io.github.siyukio.tools.api.ApiMock;
 import io.github.siyukio.tools.api.token.Token;
+import io.github.siyukio.tools.api.token.TokenProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,18 @@ class AuthorizationControllerTests {
 
     @Autowired
     private ApiMock apiMock;
+
+    @Autowired
+    private TokenProvider tokenProvider;
+
+    @Test
+    void testTokenProvider() {
+        Token token = Token.builder().uid("123").build();
+        String auth = this.tokenProvider.createAuthorization(token);
+        log.info("{}", auth);
+        token = this.tokenProvider.verifyToken(auth);
+        log.info("{}", token);
+    }
 
     @Test
     void testCreateAuthorization() {

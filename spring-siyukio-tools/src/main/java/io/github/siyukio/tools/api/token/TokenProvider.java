@@ -6,6 +6,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import io.github.siyukio.tools.util.CryptoUtils;
 import io.github.siyukio.tools.util.IdUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -116,10 +117,14 @@ public final class TokenProvider {
                 .build();
 
         String plainText = claims.toPayload().toString();
-        String cipherText = CryptoUtils.encrypt(this.password, plainText);
-        Payload payload = new Payload(cipherText);
+        String payload;
+        if (StringUtils.hasText(this.password)) {
+            payload = CryptoUtils.encrypt(this.password, plainText);
+        } else {
+            payload = plainText;
+        }
 
-        JWSObject jwsObject = new JWSObject(header, payload);
+        JWSObject jwsObject = new JWSObject(header, new Payload(payload));
 
         try {
             jwsObject.sign(this.signer);
@@ -139,7 +144,12 @@ public final class TokenProvider {
             }
 
             String cipherText = jwsObject.getPayload().toString();
-            String plainText = CryptoUtils.decrypt(this.password, cipherText);
+            String plainText;
+            if (StringUtils.hasText(this.password)) {
+                plainText = CryptoUtils.decrypt(this.password, cipherText);
+            } else {
+                plainText = cipherText;
+            }
             JWTClaimsSet claims = JWTClaimsSet.parse(plainText);
 
             // validate expiration time
