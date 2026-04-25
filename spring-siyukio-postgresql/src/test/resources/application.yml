@@ -40,4 +40,6 @@ logging:
     io:
       github:
         siyukio:
+          tools:
+            entity: DEBUG
           postgresql: DEBUG

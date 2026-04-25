@@ -56,6 +56,9 @@ public class CryptoEntityExecutor implements EntityExecutor {
     }
 
     private void decrypt(JSONObject entityJson) {
+        if (entityJson == null) {
+            return;
+        }
         String salt = entityJson.optString(EntityConstants.SALT_COLUMN, "");
         if (!StringUtils.hasText(salt)) {
             String id = entityJson.optString(this.getEntityDefinition().keyDefinition().fieldName(), "");

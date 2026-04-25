@@ -18,7 +18,8 @@ public record EntityDefinition(
         Partition partition,
         KeyDefinition keyDefinition,
         List<ColumnDefinition> columnDefinitions,
-        List<IndexDefinition> indexDefinitions
+        List<IndexDefinition> indexDefinitions,
+        CacheDefinition cacheDefinition
 ) {
     /**
      * Partitioning strategy for table partitioning.

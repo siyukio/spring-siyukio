@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 @SpringBootTest
 public class RecordEventEntityTests {
 
-    private final String id = "test";
+    private final String id = "aH8Hrnk0bLSrJTkmC7QMV";
 
     @Autowired
     private PgEntityDao<RecordEventEntity> recordEventPgEntityDao;
@@ -91,6 +91,9 @@ public class RecordEventEntityTests {
     @Test
     public void testQueryWithId() {
         RecordEventEntity recordEventEntity = this.recordEventPgEntityDao.queryById(this.id);
+        log.info("{}", XDataUtils.toPrettyJSONString(recordEventEntity));
+
+        recordEventEntity = this.recordEventPgEntityDao.queryById(this.id);
         log.info("{}", XDataUtils.toPrettyJSONString(recordEventEntity));
     }
 

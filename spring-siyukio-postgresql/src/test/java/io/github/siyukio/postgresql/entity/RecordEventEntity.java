@@ -2,6 +2,7 @@ package io.github.siyukio.postgresql.entity;
 
 import com.fasterxml.jackson.databind.EnumNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.EnumNaming;
+import io.github.siyukio.tools.entity.annotation.CacheConfig;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgColumn;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgEntity;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgIndex;
@@ -21,7 +22,7 @@ import java.util.List;
         @PgIndex(columns = {"type"}),
         @PgIndex(columns = {"error", "rating"}),
         @PgIndex(columns = {"teamId", "userId"}, unique = true)
-})
+}, cacheConfig = @CacheConfig(maximumSize = 10000))
 @Builder
 @With
 public record RecordEventEntity(

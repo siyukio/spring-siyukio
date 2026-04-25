@@ -4,10 +4,9 @@ import io.github.siyukio.postgresql.registrar.PostgresqlEntityRegistrar;
 import io.github.siyukio.tools.entity.ColumnType;
 import io.github.siyukio.tools.entity.EntityConstants;
 import io.github.siyukio.tools.entity.EntityExecutor;
-import io.github.siyukio.tools.entity.definition.ColumnDefinition;
-import io.github.siyukio.tools.entity.definition.EntityDefinition;
-import io.github.siyukio.tools.entity.definition.IndexDefinition;
-import io.github.siyukio.tools.entity.definition.KeyDefinition;
+import io.github.siyukio.tools.entity.annotation.CacheConfig;
+import io.github.siyukio.tools.entity.definition.*;
+import io.github.siyukio.tools.entity.executor.CacheEntityExecutor;
 import io.github.siyukio.tools.entity.executor.CryptoEntityExecutor;
 import io.github.siyukio.tools.entity.postgresql.PgEntityDao;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgColumn;
@@ -272,10 +271,22 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             indexDefinitions = this.getPartitionedIndexDefinitions(table, keyDefinition, pgEntity.indexes());
         }
 
+        CacheDefinition cacheDefinition = null;
+        CacheConfig cacheConfig = pgEntity.cacheConfig();
+        if (cacheConfig.maximumSize() > 0) {
+            cacheDefinition = new CacheDefinition(
+                    cacheConfig.maximumSize(),
+                    cacheConfig.softValues(),
+                    cacheConfig.expireUnit(),
+                    cacheConfig.expireAfterAccess(),
+                    cacheConfig.expireAfterWrite());
+        }
+
         return new EntityDefinition(dbName, schema, table, pgEntity.comment(),
                 pgEntity.createTableAuto(), pgEntity.addColumnAuto(), pgEntity.createIndexAuto(),
                 encrypted, keyInfo, pgEntity.partition(),
-                keyDefinition, columnDefinitions, indexDefinitions);
+                keyDefinition, columnDefinitions, indexDefinitions,
+                cacheDefinition);
     }
 
     private Map<String, InformationIndex> queryIndexes(EntityDefinition entityDefinition, JdbcTemplate jdbcTemplate) {
@@ -500,6 +511,10 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         EntityExecutor entityExecutor = new PgEntityExecutor(entityDefinition, multiJdbcTemplate);
         if (entityDefinition.encrypted()) {
             entityExecutor = new CryptoEntityExecutor(entityExecutor);
+        }
+
+        if (entityDefinition.cacheDefinition() != null) {
+            entityExecutor = new CacheEntityExecutor(entityExecutor, entityDefinition.cacheDefinition());
         }
 
         if (entityDefinition.partition() != EntityDefinition.Partition.NONE) {
