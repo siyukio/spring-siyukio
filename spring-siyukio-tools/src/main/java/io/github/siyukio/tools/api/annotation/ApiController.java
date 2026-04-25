@@ -46,4 +46,14 @@ public @interface ApiController {
      */
     String[] roles() default {};
 
+    /**
+     * Whether the API requires parameter signature validation.
+     */
+    boolean signature() default false;
+
+    /**
+     * Whether available for ACP protocol calls.
+     */
+    boolean acpAvailable() default false;
+
 }

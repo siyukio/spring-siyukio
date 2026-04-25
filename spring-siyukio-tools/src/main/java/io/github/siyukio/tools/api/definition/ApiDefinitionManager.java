@@ -188,6 +188,17 @@ public final class ApiDefinitionManager {
         if (roles.length == 0) {
             roles = apiController.roles();
         }
+
+        boolean signature = apiMapping.signature();
+        if (!signature) {
+            signature = apiController.signature();
+        }
+
+        boolean acpAvailable = apiMapping.acpAvailable();
+        if (!acpAvailable) {
+            acpAvailable = apiController.acpAvailable();
+        }
+
         ApiDefinition.ApiDefinitionBuilder builder = ApiDefinition.builder();
         builder.id(type.getSimpleName() + "_" + method.getName())
                 .paths(new ArrayList<>())
@@ -195,9 +206,9 @@ public final class ApiDefinitionManager {
                 .deprecated(apiMapping.deprecated())
                 .description(apiMapping.description())
                 .authorization(apiMapping.authorization())
-                .signature(apiMapping.signature())
+                .signature(signature)
                 .tags(List.of(apiController.tags()))
-                .acpAvailable(apiMapping.acpAvailable())
+                .acpAvailable(acpAvailable)
                 .roles(List.of(roles))
                 .returnType(method.getReturnType())
                 .realReturnType(returnValueType)
