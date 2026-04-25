@@ -188,6 +188,7 @@ public class SimpleAcpClient {
         private final List<SimpleAsyncAcpClient.SessionNotificationHandler> sessionNotificationHandlers = new ArrayList<>();
         private final Cache<String, String> toolCallUpdateCache = Caffeine.newBuilder()
                 .maximumSize(100_000)
+                .softValues()
                 .expireAfterWrite(15, TimeUnit.MINUTES)
                 .build();
         private SimpleAsyncAcpClient.RequestPermissionHandler requestPermissionHandler = null;

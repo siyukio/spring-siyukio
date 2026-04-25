@@ -1,18 +1,24 @@
 package io.github.siyukio.tools.api.signature;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.siyukio.tools.api.ApiException;
-import io.github.siyukio.tools.collection.ConcurrentCache;
 import io.github.siyukio.tools.util.CryptoUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Buddy
  */
 public class SignatureProvider {
 
-    private final ConcurrentCache<String, String> cache = new ConcurrentCache<>(10000);
+    private final Cache<String, String> cache = Caffeine.newBuilder()
+            .maximumSize(100_000)
+            .softValues()
+            .expireAfterWrite(30, TimeUnit.MINUTES)
+            .build();
 
     private final String salt;
 
@@ -36,7 +42,7 @@ public class SignatureProvider {
         if (timestamp < System.currentTimeMillis() - Duration.ofDays(1).toMillis()) {
             throw ApiException.getInvalidApiException("signature error: timestamp expired");
         }
-        String value = this.cache.get(nonce);
+        String value = this.cache.getIfPresent(nonce);
         if (value != null) {
             throw ApiException.getInvalidApiException("signature error: nonce used");
         }
