@@ -19,7 +19,7 @@ To enable Codex to understand and use Siyukio framework, copy the skills folder 
 
 ```bash
 # Copy all skills to Codex
-cp -r ../skills ~/.codex/skills
+cp -r ./skills ~/.codex/skills
 ```
 
 After copying, Codex will be able to:
@@ -170,11 +170,13 @@ Every development task must follow this sequence:
 - For projects that don't need MR, you can simplify the workflow (e.g., commit directly to main)
 - The workflow should match your team's development practices
 - oh-my-codex will follow this workflow when executing tasks
-- **PR/MR Integration**: If your workflow requires creating Pull Requests (PR) or Merge Requests (MR), you can ask Codex to create a custom skill for it. For example:
+- **PR/MR Integration**: If your workflow requires creating Pull Requests (PR) or Merge Requests (MR), you can ask Codex
+  to create a custom skill for it. For example:
   ```
   $skill-creator
   ```
-  Then describe the PR/MR creation process for your Git platform (GitHub, GitLab, etc.). Once created, you can add it to your `AGENTS.md` workflow steps.
+  Then describe the PR/MR creation process for your Git platform (GitHub, GitLab, etc.). Once created, you can add it to
+  your `AGENTS.md` workflow steps.
 
 Create the file:
 
