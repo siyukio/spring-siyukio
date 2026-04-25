@@ -19,7 +19,7 @@ To enable Codex to understand and use Siyukio framework, copy the skills folder 
 
 ```bash
 # Copy all skills to Codex
-cp -r ./skills ~/.codex/skills
+cp -rf ./skills/* ~/.codex/skills
 ```
 
 After copying, Codex will be able to:
