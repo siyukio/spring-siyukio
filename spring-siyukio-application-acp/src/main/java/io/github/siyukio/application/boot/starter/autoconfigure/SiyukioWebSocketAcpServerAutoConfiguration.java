@@ -32,28 +32,32 @@ public class SiyukioWebSocketAcpServerAutoConfiguration implements WebSocketConf
     @Bean
     public SpringWebSocketAcpTransport webSocketAcpTransport(ObjectProvider<AcpSessionHandler> acpSessionHandlerProvider) {
         AcpSessionHandler acpSessionHandler = acpSessionHandlerProvider.getIfAvailable(() -> {
-            throw new IllegalStateException("""
-                    AcpSessionHandler not found, please implement AcpSessionHandler and register it as a bean.
-                    
+
+            String warning = """
+                    AcpSessionHandler bean not found, using default implementation.
+                    It is recommended to register an AcpSessionHandler implementation bean to avoid potential functional issues.
                     Example implementation:
-                    
+
                         @Slf4j
                         @Service
                         public class AcpSessionHandlerImpl implements AcpSessionHandler {
-                    
+
                             @Override
                             public AcpSchema.InitializeResponse handleInit(Token token, AcpSchema.InitializeRequest req) {
                                 log.debug("AcpSchema.InitializeRequest: {}, {}", token, req);
                                 return AcpSessionHandler.super.init(token, req);
                             }
-                    
+
                             @Override
                             public AcpSchema.NewSessionResponse handleNewSession(Token token, AcpSchema.NewSessionRequest req) {
                                 log.debug("AcpSchema.NewSessionResponse: {}, {}", token, req);
                                 return AcpSessionHandler.super.newSession(token, req);
                             }
                         }
-                    """);
+                    """;
+            log.warn("{}", warning);
+            return new AcpSessionHandler() {
+            };
         });
         TokenProvider tokenProvider = this.applicationContext.getBean(TokenProvider.class);
         return new SpringWebSocketAcpTransport(tokenProvider, acpSessionHandler);
