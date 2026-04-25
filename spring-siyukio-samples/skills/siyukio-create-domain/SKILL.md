@@ -378,11 +378,29 @@ Most properties have sensible defaults. Only set when needed.
 | `partition`       | NONE    | Partition strategy: NONE, YEAR, MONTH, DAY, HOUR |
 | `keyInfo`         | ""      | Context for encryption key derivation            |
 | `indexes`         | {}      | Index definitions                                |
+| `cacheConfig`     | @CacheConfig(maximumSize = 0) | Cache settings (see below)               |
+
+### @PgEntity cacheConfig
+
+When `CacheConfig.maximumSize() > 0`, entity-level caching is enabled using Caffeine cache.
+
+|| Property             | Default        | Description                                               |
+| -------------------- | -------------- | --------------------------------------------------------- |
+| `maximumSize`        | 0              | Max cache entries. **0 = caching disabled**              |
+| `softValues`         | false          | Use soft values (GC on low memory)                        |
+| `expireUnit`         | MINUTES        | Time unit for expiration                                  |
+| `expireAfterAccess`  | 60             | Minutes before entry expires after last access           |
+| `expireAfterWrite`   | 15             | Minutes before entry expires after write                  |
 
 ```java
 // Minimal: only comment is required
 @PgEntity(comment = "user account table")
 public record User(String id, String name) {}
+
+// Entity with caching enabled (1000 entries, 30min access expire)
+@PgEntity(comment = "user account table",
+          cacheConfig = @CacheConfig(maximumSize = 1000, expireAfterAccess = 30))
+public record User(String id, String email, String name, boolean active) {}
 
 // Full configuration
 @PgEntity(schema = "user_mgmt", table = "user_account", comment = "user account table",
