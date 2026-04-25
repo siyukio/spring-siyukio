@@ -60,9 +60,22 @@ From the argument, extract:
 - Operations: which operations are needed (get, create, update, list, delete)
 - Policy methods: check existence, check uniqueness, etc.
 
-## Step 2: Verify Prerequisites
+## Step 2: Verify/Setup Policy
 
-Ensure domain model and policy exist. If not, create them first using respective skills.
+When implementing methods that require querying and validating Entity, follow this workflow:
+
+1. **Check existing Policy**: Look for `{project-name}/{project-name}-domain-{domain}/src/main/java/{package-path}/{domain}/domain/policy/{Domain}Policy.java`
+
+2. **If Policy does not exist**: Create it first using `$siyukio-create-domain` skill with "add policy" trigger
+
+3. **If Policy exists but lacks required method**: Add the validation method to the existing Policy
+
+4. **Common Policy methods needed**:
+   - `check{Entity}Exists(id)` - Query by ID, throw exception if not found
+   - `check{Entity}Enabled(id)` - Query by ID, throw exception if not found or disabled
+   - `check{Entity}NameUnique(...)` - Validate uniqueness of name field
+
+5. **Service never directly uses PgEntityDao for validation**: Always delegate to Policy
 
 ## Step 3: Generate Application Service
 
@@ -75,6 +88,7 @@ Location: `{project-name}/{project-name}-domain-{domain}/src/main/java/{package-
 - Inject `{Context}Policy` for validation and business rule checks
 - Use `Token` parameter if user context is needed
 - Use `XDataUtils` for DTO ↔ Entity conversions
+- Add `@Transactional` annotation on methods that involve multiple record operations (insert, update, delete)
 
 ```java
 package {package-name}.{domain}.application;
@@ -95,6 +109,7 @@ import io.github.siyukio.tools.entity.sort.SortOrder;
 import io.github.siyukio.tools.util.XDataUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -208,15 +223,18 @@ public class {Context}Service {
 | Item             | Convention                                                                        |
 | ---------------- | --------------------------------------------------------------------------------- |
 | Package          | `{package-name}.{domain}.application`                                             |
+| Package Path     | `{package-path}/{domain}/application/`                                            |
 | Service class    | `{Context}Service.java` with `@Service`                                           |
-| DAO injection    | `@Autowired private PgEntityDao<Entity> {entity}PgEntityDao`                     |
-| Policy injection | `@Autowired private {Entity}Policy {entity}Policy`                                |
+| DAO injection    | `@Autowired private PgEntityDao<Entity> {entity}PgEntityDao` (only for batch queries) |
+| Policy injection | `@Autowired private {Domain}Policy {domain}Policy`                                |
+| Validation       | Always use Policy for Entity validation, never query directly via DAO             |
 | DTO conversion   | Use `XDataUtils.copy(source, TargetClass.class)` for Entity → DTO                 |
 | DTO merge        | Use `XDataUtils.mergeNotNul(source, target)` for DTO → Entity update              |
 | User context     | Add `Token token` parameter if user information is needed                         |
 | Pagination       | Use `PageRequest<T>` and `PageResponse<T>` from `io.github.siyukio.tools.api.dto` |
 | Query building   | Use `BoolQueryBuilder` + `QueryBuilders.termQuery()` for complex conditions      |
 | Sorting          | Use `SortBuilders.fieldSort()` with `SortOrder.DESC/ASC`                         |
+| Transaction      | Add `@Transactional` on methods with multiple insert/update/delete operations     |
 
 </Key_Conventions>
 

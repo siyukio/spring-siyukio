@@ -229,6 +229,7 @@ public class {Context}Controller {
 | Item         | Convention                                                               |
 | ------------ | ------------------------------------------------------------------------ |
 | Package      | `{package-name}.{domain}.api`                                            |
+| Package Path | `{package-path}/{domain}/api/`                                           |
 | Paths        | `{Context}Paths.java` interface with path constants in `api/paths/`      |
 | Controller   | `{Context}Controller.java` with `@ApiController`                          |
 | Request DTO  | `{Context}Request.java` **must use record** implements `Validated`        |

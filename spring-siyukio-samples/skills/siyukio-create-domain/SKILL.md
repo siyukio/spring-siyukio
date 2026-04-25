@@ -283,6 +283,8 @@ See `siyukio-create-application` skill for Application Service patterns. Domain 
 
 | Item              | Convention                                           |
 | ----------------- | ---------------------------------------------------- |
+| Package           | `{package-name}.{domain}.domain`                     |
+| Package Path      | `{package-path}/{domain}/domain/`                    |
 | Entity Package    | `{package-name}.{domain}.domain.model`              |
 | Errors Package    | `{package-name}.{domain}.domain.errors`             |
 | Policy Package    | `{package-name}.{domain}.domain.policy`             |
