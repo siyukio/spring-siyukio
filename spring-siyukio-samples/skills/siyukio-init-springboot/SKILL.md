@@ -46,19 +46,20 @@ Location: `./{project-name}/pom.xml`
 If `{project-name}/pom.xml` does not exist, create it:
 
 ```xml
+
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.github.siyukio</groupId>
         <artifactId>spring-siyukio</artifactId>
-        <version>3.5.13-M2</version>
+        <version>3.5.13-SNAPSHOT</version>
     </parent>
     <groupId>{package-name}</groupId>
     <artifactId>{project-name}</artifactId>
     <version>{project-version}-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>{project-name}</name>
+    <name>{Project Name}</name>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -114,6 +115,7 @@ Location: `./{project-name}/{project-name}-common/pom.xml`
 Update `./{project-name}/pom.xml`:
 
 ```xml
+
 <modules>
     <module>{project-name}-common</module>
 </modules>
@@ -124,6 +126,7 @@ Update `./{project-name}/pom.xml`:
 Update `./{project-name}/pom.xml`:
 
 ```xml
+
 <dependencyManagement>
     <dependencies>
         <dependency>
@@ -209,10 +212,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 @SpringBootApplication
-public class {project-name}Main {
+public class {project-name}
 
-    public static void main(String[] args) {
-        new SpringApplicationBuilder({project-name}Main.class)
+Main {
+
+    public static void main (String[]args){
+        new SpringApplicationBuilder({project - name}Main.class)
                 .build()
                 .run(args);
     }
@@ -257,7 +262,7 @@ spring:
         password: ${SIYUKIO_DB_MASTER_PASSWORD:}
 
 server:
-  port: ${SERVER_PORT:8090}
+  port: ${SERVER_PORT:8080}
 ```
 
 ## Step 6: Add Bootstrap Module to Parent pom.xml
@@ -267,6 +272,7 @@ server:
 Update `./{project-name}/pom.xml`:
 
 ```xml
+
 <modules>
     <module>{project-name}-common</module>
     <module>{project-name}-bootstrap</module>
@@ -278,6 +284,7 @@ Update `./{project-name}/pom.xml`:
 Update `./{project-name}/pom.xml`:
 
 ```xml
+
 <dependencyManagement>
     <dependencies>
         <dependency>
@@ -368,10 +375,10 @@ After execution, the project structure will be:
 |------------------|----------------------------|
 | Parent Artifact  | `{project-name}`           |
 | Package          | `{package-name}`           |
-| Package Path     | `{package-path}`          |
+| Package Path     | `{package-path}`           |
 | Common Module    | `{project-name}-common`    |
 | Bootstrap Module | `{project-name}-bootstrap` |
-| Siyukio Version  | `3.5.13-M2`                |
+| Siyukio Version  | `3.5.13-SNAPSHOT`          |
 | Java Version     | 21                         |
 
 </Key_Conventions>

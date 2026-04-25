@@ -19,7 +19,6 @@
         <module>spring-siyukio-http-client</module>
         <module>spring-siyukio-application-acp</module>
         <module>spring-siyukio-acp-client</module>
-        <module>spring-siyukio-samples</module>
     </modules>
 
     <properties>
