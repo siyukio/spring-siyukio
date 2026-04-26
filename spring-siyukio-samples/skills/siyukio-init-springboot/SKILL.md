@@ -334,6 +334,9 @@ Location: `./{project-name}/.gitignore`
 # Build output
 **/target/
 
+# Local profile configurations (secrets for unit tests)
+**/*-local.*
+
 # OMX
 .omx/
 
@@ -356,7 +359,7 @@ Thumbs.db
 .classpath
 ```
 
-This ensures that build artifacts, IDE configurations, and system files are not committed to the repository.
+This ensures that build artifacts, IDE configurations, system files, and local configuration files with secrets are not committed to the repository.
 
 </Execution_Protocol>
 
