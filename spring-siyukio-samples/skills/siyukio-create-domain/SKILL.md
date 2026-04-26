@@ -63,45 +63,7 @@ Ensure `{project-name}-domain-{domain}/pom.xml` has:
 </dependency>
 ```
 
-## Step 3: Verify/Add Database Configuration
-
-Check if `{project-name}-domain-{domain}/src/test/resources/application.yml` contains PostgreSQL datasource configuration. If missing, add the following:
-
-```yaml
-spring:
-  datasource:
-    postgres:
-      master-key: { your-master-key }
-      hikari:
-        maximum-pool-size: 20
-        minimum-idle: 20
-        idle-timeout: 600000
-        max-lifetime: 1800000
-      master:
-        url: jdbc:postgresql://localhost:5432/{database}
-        username: { username }
-        password: { password }
-      slaves:
-        - url: jdbc:postgresql://localhost:5432/{database}
-          username: { username }
-          password: { password }
-```
-
-| Property                    | Description                                                                                                                        |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `master-key`                | **Required if** entity has `@PgColumn(encrypted = true)`. Random 256-bit base64 key. Generate with `CryptoUtils.randomMasterKey()` |
-| `hikari.maximum-pool-size`  | Maximum number of connections in pool                                                                                              |
-| `hikari.minimum-idle`       | Should equal `maximum-pool-size` when using virtual threads                                                                        |
-| `master.url`                | Master database connection URL                                                                                                     |
-| `slaves`                    | Read replica URLs (optional, for read-write splitting)                                                                             |
-
-> **Note:** If any Entity uses encrypted columns (`@PgColumn(encrypted = true)`), you must generate a master key:
->
-> ```java
-> String masterKey = io.github.siyukio.tools.util.CryptoUtils.randomMasterKey();
-> ```
-
-## Step 4: Generate Entity Record
+## Step 3: Generate Entity Record
 
 Location: `{project-name}/{project-name}-domain-{domain}/src/main/java/{package-path}/{domain}/domain/model/{Entity}.java`
 
