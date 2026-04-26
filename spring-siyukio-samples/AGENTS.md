@@ -46,35 +46,15 @@ maven-version: 3.9
 3. Update parent `pom.xml` to include the new module
 4. Implement the sample following the framework's best practices
 
-### Build and Test
+### Local Environment Configuration
 
-**Important:** Always use the project's `mvnw` (Maven Wrapper) for building and testing to ensure consistent Maven
-version.
+**Required Environment Variables for Local Test:
 
-```bash
-# Build all samples
-./mvnw clean install -DskipTests
-
-# Build specific sample
-cd spring-siyukio-sample-domain-{domain}
-../../mvnw clean install -DskipTests
-
-# Run tests
-./mvnw test
-
-# Run specific test
-./mvnw test -Dtest=ClassName
-```
-
-### Initialize Maven Wrapper
-
-If `mvnw` does not exist in the project, use the `$siyukio-init-springboot` skill to initialize the project structure:
-
-```
-$siyukio-init-springboot
-```
-
-This will generate the `mvnw` and `mvnw.cmd` files along with the `.mvn` directory.
+| Variable                   | Purpose           | Test Value                            |
+|----------------------------|-------------------|---------------------------------------|
+| SIYUKIO_DB_MASTER_URL      | Database url      | jdbc:postgresql://localhost:5432/root |
+| SIYUKIO_DB_MASTER_USERNAME | Database username | root                                  |
+| SIYUKIO_DB_MASTER_PASSWORD | Database password | FYm7JqaEcptxUTgy                      |
 
 ## Language Policy
 

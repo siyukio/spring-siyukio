@@ -53,7 +53,7 @@ public class MultiDataSourceProperties {
      * to form the complete AES-256 key for encrypting/decrypting sensitive fields.
      * Must be configured via environment variable for security.
      */
-    private String masterKey = "";
+    private String masterKey = "06CVrBQL+6VZzbXYhxfXYIm40I/cS4Ern2DW7beR5JU=";
 
     public HikariConfig getHikari() {
         return hikari;
