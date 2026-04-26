@@ -253,6 +253,9 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             schema = PgSqlUtils.DEFAULT_SCHEMA;
         }
 
+        PgDataProvider dataProvider = PostgresqlEntityRegistrar.getPgDataProvider(dbName);
+        schema = dataProvider.registerTestSchema(schema);
+
         String table = pgEntity.table();
         if (table.isEmpty()) {
             table = EntityUtils.getTableName(this.entityClass);
@@ -525,8 +528,8 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         }
 
         if (entityDefinition.cacheDefinition() != null) {
-            PgCacheProvider cacheProvider = PostgresqlEntityRegistrar.getPgCacheProvider(entityDefinition.dbName());
-            Cache<String, JSONObject> cache = cacheProvider.registerCache(entityDefinition);
+            PgDataProvider dataProvider = PostgresqlEntityRegistrar.getPgDataProvider(entityDefinition.dbName());
+            Cache<String, JSONObject> cache = dataProvider.registerCache(entityDefinition);
             entityExecutor = new CacheEntityExecutor(entityExecutor, cache);
         }
 

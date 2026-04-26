@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * @author Bugee
  */
-@PgEntity(schema = "test", comment = "record event", indexes = {
+@PgEntity(comment = "record event", indexes = {
         @PgIndex(columns = {"type"}),
         @PgIndex(columns = {"error", "rating"}),
         @PgIndex(columns = {"teamId", "userId"}, unique = true)

@@ -2,9 +2,7 @@ package io.github.siyukio.postgresql.support;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import io.github.siyukio.tools.entity.definition.EntityDefinition;
-import io.github.siyukio.tools.util.AsyncUtils;
-import io.github.siyukio.tools.util.CacheUtils;
-import io.github.siyukio.tools.util.XDataUtils;
+import io.github.siyukio.tools.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.postgresql.PGConnection;
@@ -14,7 +12,9 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -25,14 +25,20 @@ import java.util.concurrent.TimeUnit;
  * @author Bugee
  */
 @Slf4j
-public class PgCacheProvider {
+public class PgDataProvider {
+
+    private final String suffix = IdUtils.getUniqueId();
+
+    private final Set<String> testSchemaSet = new HashSet<>();
+
+    private final boolean junit = ProfilesUtils.isJUnit();
 
     private final MultiJdbcTemplate multiJdbcTemplate;
     // Map of schema.table to cache instance
     private final Map<String, Cache<String, JSONObject>> cacheMap = new ConcurrentHashMap<>();
     private volatile Connection listenConnection;
 
-    public PgCacheProvider(MultiJdbcTemplate multiJdbcTemplate) {
+    public PgDataProvider(MultiJdbcTemplate multiJdbcTemplate) {
         this.multiJdbcTemplate = multiJdbcTemplate;
     }
 
@@ -75,7 +81,7 @@ public class PgCacheProvider {
         }
     }
 
-    public void closeConnection() {
+    private void closeConnection() {
         if (listenConnection != null) {
             try {
                 listenConnection.close();
@@ -83,6 +89,23 @@ public class PgCacheProvider {
                 log.error("Error closing PostgreSQL LISTEN connection", e);
             }
         }
+    }
+
+    private void dropTestSchemas() {
+        testSchemaSet.forEach(schema -> {
+            try {
+                String sql = PgSqlUtils.dropSchemaSql(schema);
+                multiJdbcTemplate.getMaster().execute(sql);
+                log.info("Drop PostgreSQL test schema: {}", schema);
+            } catch (Exception e) {
+                log.error("Error dropping PostgreSQL test schema: {}", schema, e);
+            }
+        });
+    }
+
+    public void destroy() {
+        closeConnection();
+        dropTestSchemas();
     }
 
     public void start() {
@@ -95,6 +118,18 @@ public class PgCacheProvider {
                 log.error("Error polling PostgreSQL notifications", e);
             }
         }, 1000, 1000, TimeUnit.MILLISECONDS);
+    }
+
+    public String registerTestSchema(String schema) {
+        if (junit) {
+            String testSchema = schema + "_" + suffix;
+            if (!testSchemaSet.contains(testSchema)) {
+                log.info("Create PostgreSQL test schema: {}", testSchema);
+                testSchemaSet.add(testSchema);
+            }
+            return testSchema;
+        }
+        return schema;
     }
 
     /**

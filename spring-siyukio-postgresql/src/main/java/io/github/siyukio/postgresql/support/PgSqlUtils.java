@@ -156,6 +156,10 @@ public abstract class PgSqlUtils {
         return "CREATE SCHEMA IF NOT EXISTS " + schemaName;
     }
 
+    public static String dropSchemaSql(String schemaName) {
+        return "DROP SCHEMA IF EXISTS " + schemaName + " CASCADE;";
+    }
+
     private static String getKeyDefinitionSql(KeyDefinition keyDefinition) {
         List<String> partList = new ArrayList<>();
         String name = keyDefinition.columnName();
