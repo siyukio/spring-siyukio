@@ -1,0 +1,26 @@
+# Build output
+**/target/
+
+# Local profile configurations (secrets for unit tests)
+**/*-local.*
+
+# OMX
+.omx/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+.settings/
+.project
+.classpath
