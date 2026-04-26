@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.github.siyukio.samples</groupId>
         <artifactId>spring-siyukio-samples</artifactId>
-        <version>3.5.13-SNAPSHOT</version>
+        <version>3.5.13</version>
     </parent>
 
     <artifactId>spring-siyukio-samples-common</artifactId>

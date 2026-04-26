@@ -19,7 +19,7 @@ spring-siyukio-samples/
 
 ```yaml
 project-name: spring-siyukio-samples
-project-version: 3.5.13-SNAPSHOT
+project-version: 3.5.13
 package-name: io.github.siyukio.samples
 package-path: /io/github/siyukio/samples
 java-version: 21

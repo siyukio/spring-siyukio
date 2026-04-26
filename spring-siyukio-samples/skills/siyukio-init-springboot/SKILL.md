@@ -53,7 +53,7 @@ If `{project-name}/pom.xml` does not exist, create it:
     <parent>
         <groupId>io.github.siyukio</groupId>
         <artifactId>spring-siyukio</artifactId>
-        <version>3.5.13-SNAPSHOT</version>
+        <version>3.5.13</version>
     </parent>
     <groupId>{package-name}</groupId>
     <artifactId>{project-name}</artifactId>
@@ -357,7 +357,8 @@ Thumbs.db
 .classpath
 ```
 
-This ensures that build artifacts, IDE configurations, system files, and local configuration files with secrets are not committed to the repository.
+This ensures that build artifacts, IDE configurations, system files, and local configuration files with secrets are not
+committed to the repository.
 
 </Execution_Protocol>
 
@@ -392,7 +393,7 @@ After execution, the project structure will be:
 | Package Path     | `{package-path}`           |
 | Common Module    | `{project-name}-common`    |
 | Bootstrap Module | `{project-name}-bootstrap` |
-| Siyukio Version  | `3.5.13-SNAPSHOT`          |
+| Siyukio Version  | `3.5.13`                   |
 | Java Version     | 21                         |
 
 </Key_Conventions>
