@@ -19,21 +19,25 @@ public class MultiJdbcTemplate {
     private final JdbcTemplate master;
 
     @Getter
-    private final DataSource dataSource;
+    private final DataSource masterDataSource;
 
     private final List<JdbcTemplate> slaves;
 
     @Getter
     private final String masterKey;
 
-    public MultiJdbcTemplate(DataSource masterDataSource, List<DataSource> slaveDataSources, String masterKey) {
-        this.dataSource = masterDataSource;
+    @Getter
+    private final String dbName;
+
+    public MultiJdbcTemplate(String dbName, DataSource masterDataSource, List<DataSource> slaveDataSources, String masterKey) {
+        this.masterDataSource = masterDataSource;
         this.master = new JdbcTemplate(masterDataSource);
         this.slaves = new ArrayList<>();
         for (DataSource slave : slaveDataSources) {
             this.slaves.add(new JdbcTemplate(slave));
         }
         this.masterKey = masterKey;
+        this.dbName = dbName;
     }
 
     public JdbcTemplate getRandomSlave() {

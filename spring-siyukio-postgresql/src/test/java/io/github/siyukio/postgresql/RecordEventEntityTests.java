@@ -92,9 +92,6 @@ public class RecordEventEntityTests {
     public void testQueryWithId() {
         RecordEventEntity recordEventEntity = this.recordEventPgEntityDao.queryById(this.id);
         log.info("{}", XDataUtils.toPrettyJSONString(recordEventEntity));
-
-        recordEventEntity = this.recordEventPgEntityDao.queryById(this.id);
-        log.info("{}", XDataUtils.toPrettyJSONString(recordEventEntity));
     }
 
     @Test

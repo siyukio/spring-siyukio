@@ -2,18 +2,21 @@ package io.github.siyukio.postgresql.registrar;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import io.github.siyukio.postgresql.support.MultiJdbcTemplate;
-import io.github.siyukio.postgresql.support.PgEntityFactoryBean;
+import io.github.siyukio.postgresql.support.*;
 import io.github.siyukio.tools.datasource.MultiDataSourceProperties;
 import io.github.siyukio.tools.entity.postgresql.PgEntityDao;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgEntity;
 import io.github.siyukio.tools.registrar.AbstractDataSourceRegistrar;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.context.ResourceLoaderAware;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -24,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Bugee
@@ -32,11 +36,23 @@ import java.util.Map;
 public class PostgresqlEntityRegistrar extends AbstractDataSourceRegistrar implements ImportBeanDefinitionRegistrar, ResourceLoaderAware, EnvironmentAware {
 
     private final static Map<String, MultiJdbcTemplate> JDBC_TEMPLATE_MAP = new HashMap<>();
+    private final static ConcurrentHashMap<String, PgCacheProvider> PG_CACHE_MANAGER_MAP = new ConcurrentHashMap<>();
+    private final static PgCacheManager PG_CACHE_MANAGER = new PgCacheManager();
 
     public static MultiJdbcTemplate getMultiJdbcTemplate(String dbName) {
         MultiJdbcTemplate multiJdbcTemplate = JDBC_TEMPLATE_MAP.get(dbName);
         Assert.state(multiJdbcTemplate != null, "No postgres db set: " + dbName);
         return multiJdbcTemplate;
+    }
+
+    public static PgCacheProvider getPgCacheProvider(String dbName) {
+        return PG_CACHE_MANAGER_MAP.computeIfAbsent(dbName, k -> {
+            MultiJdbcTemplate multiJdbcTemplate = getMultiJdbcTemplate(dbName);
+            PgCacheProvider pgCacheProvider = new PgCacheProvider(multiJdbcTemplate);
+            pgCacheProvider.start();
+            PG_CACHE_MANAGER.register(dbName, pgCacheProvider);
+            return pgCacheProvider;
+        });
     }
 
     @Override
@@ -60,12 +76,20 @@ public class PostgresqlEntityRegistrar extends AbstractDataSourceRegistrar imple
     }
 
     @Override
-    protected HikariDataSource createDataSource() {
-        HikariDataSource masterDataSource = null;
+    protected DataSource createDataSource(BeanDefinitionRegistry registry) {
+        // Register PgCacheProvider
+        BeanDefinition dataSourceBeanDefinition = BeanDefinitionBuilder
+                .genericBeanDefinition(PgCacheManager.class, () -> PG_CACHE_MANAGER)
+                .setPrimary(true)
+                .getBeanDefinition();
+        registry.registerBeanDefinition("pgCacheManager", dataSourceBeanDefinition);
+        log.info("PostgreSQL set default PgCacheManager: {}", dataSourceBeanDefinition);
+
+        MultiJdbcTemplate multiJdbcTemplate = null;
         //bind spring.datasource.postgres
         MultiDataSourceProperties multiDataSourceProperties = XDataUtils.safeBind(MultiDataSourceProperties.CONFIG_PREFIX, Bindable.of(MultiDataSourceProperties.class), this.environment);
         if (multiDataSourceProperties != null) {
-            masterDataSource = this.createMultiJdbcTemplate("", multiDataSourceProperties);
+            multiJdbcTemplate = this.createMultiJdbcTemplate("", multiDataSourceProperties);
         } else {
             //bind spring.datasource.postgres-multi
             Map<String, MultiDataSourceProperties> groupMap = XDataUtils.safeBind(
@@ -73,18 +97,19 @@ public class PostgresqlEntityRegistrar extends AbstractDataSourceRegistrar imple
                     Bindable.mapOf(String.class, MultiDataSourceProperties.class), this.environment);
             if (groupMap != null) {
                 for (Map.Entry<String, MultiDataSourceProperties> entry : groupMap.entrySet()) {
-                    if (masterDataSource == null) {
-                        masterDataSource = this.createMultiJdbcTemplate(entry.getKey(), entry.getValue());
+                    if (multiJdbcTemplate == null) {
+                        multiJdbcTemplate = this.createMultiJdbcTemplate(entry.getKey(), entry.getValue());
                     } else {
                         this.createMultiJdbcTemplate(entry.getKey(), entry.getValue());
                     }
                 }
             }
         }
-        if (masterDataSource == null) {
+        if (multiJdbcTemplate == null) {
             throw new IllegalStateException("No postgres dataSource config set");
         }
-        return masterDataSource;
+
+        return multiJdbcTemplate.getMasterDataSource();
     }
 
     private HikariDataSource buildDataSource(String dbName, MultiDataSourceProperties.DbNode node, HikariConfig baseConfig, String nodeType) {
@@ -102,7 +127,7 @@ public class PostgresqlEntityRegistrar extends AbstractDataSourceRegistrar imple
         return new HikariDataSource(config);
     }
 
-    private HikariDataSource createMultiJdbcTemplate(String dbName, MultiDataSourceProperties dbProps) {
+    private MultiJdbcTemplate createMultiJdbcTemplate(String dbName, MultiDataSourceProperties dbProps) {
         HikariDataSource masterDataSource = this.buildDataSource(dbName, dbProps.getMaster(), dbProps.getHikari(), "master");
         List<DataSource> slaveDataSources = new ArrayList<>();
         if (!CollectionUtils.isEmpty(dbProps.getSlaves())) {
@@ -110,8 +135,13 @@ public class PostgresqlEntityRegistrar extends AbstractDataSourceRegistrar imple
                 slaveDataSources.add(this.buildDataSource(dbName, slave, dbProps.getHikari(), "slave"));
             }
         }
-        MultiJdbcTemplate multiJdbcTemplate = new MultiJdbcTemplate(masterDataSource, slaveDataSources, dbProps.getMasterKey());
+        MultiJdbcTemplate multiJdbcTemplate = new MultiJdbcTemplate(dbName, masterDataSource, slaveDataSources, dbProps.getMasterKey());
         JDBC_TEMPLATE_MAP.put(dbName, multiJdbcTemplate);
-        return masterDataSource;
+
+        // Create cache invalidation function
+        JdbcTemplate jdbcTemplate = multiJdbcTemplate.getMaster();
+        jdbcTemplate.execute(PgSqlUtils.CREATE_CACHE_INVALIDATION_FUNCTION_SQL);
+
+        return multiJdbcTemplate;
     }
 }

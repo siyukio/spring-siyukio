@@ -1,9 +1,7 @@
 package io.github.siyukio.tools.entity.executor;
 
 import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.siyukio.tools.entity.EntityExecutor;
-import io.github.siyukio.tools.entity.definition.CacheDefinition;
 import io.github.siyukio.tools.entity.definition.EntityDefinition;
 import io.github.siyukio.tools.entity.query.QueryBuilder;
 import io.github.siyukio.tools.entity.sort.SortBuilder;
@@ -11,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Bugee
@@ -22,21 +19,9 @@ public class CacheEntityExecutor implements EntityExecutor {
     private final EntityExecutor delegate;
     private final Cache<String, JSONObject> cache;
 
-    public CacheEntityExecutor(EntityExecutor delegate, CacheDefinition cacheDefinition) {
+    public CacheEntityExecutor(EntityExecutor delegate, Cache<String, JSONObject> cache) {
         this.delegate = delegate;
-        Caffeine<Object, Object> builder = Caffeine.newBuilder();
-        builder.maximumSize(cacheDefinition.maximumSize());
-        if (cacheDefinition.softValues()) {
-            builder.softValues();
-        }
-        TimeUnit expireUnit = cacheDefinition.expireUnit();
-        if (cacheDefinition.expireAfterAccess() > 0) {
-            builder.expireAfterAccess(cacheDefinition.expireAfterAccess(), expireUnit);
-        }
-        if (cacheDefinition.expireAfterWrite() > 0) {
-            builder.expireAfterWrite(cacheDefinition.expireAfterWrite(), expireUnit);
-        }
-        this.cache = builder.build();
+        this.cache = cache;
     }
 
     private String buildCacheKey(JSONObject entityJson) {
@@ -126,7 +111,7 @@ public class CacheEntityExecutor implements EntityExecutor {
         String cacheKey = String.valueOf(id);
         JSONObject cached = this.cache.getIfPresent(cacheKey);
         if (cached != null) {
-            log.debug("Cache hit: {}", cacheKey);
+            log.debug("Cache hit: {}, {}", this.delegate.getEntityDefinition().table(), cacheKey);
             return cached;
         }
         JSONObject entityJson = this.delegate.queryById(id);

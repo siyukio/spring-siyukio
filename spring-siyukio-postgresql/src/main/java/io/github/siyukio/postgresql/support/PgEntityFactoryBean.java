@@ -1,5 +1,6 @@
 package io.github.siyukio.postgresql.support;
 
+import com.github.benmanes.caffeine.cache.Cache;
 import io.github.siyukio.postgresql.registrar.PostgresqlEntityRegistrar;
 import io.github.siyukio.tools.entity.ColumnType;
 import io.github.siyukio.tools.entity.EntityConstants;
@@ -265,21 +266,21 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         }
 
         List<IndexDefinition> indexDefinitions;
+        CacheDefinition cacheDefinition = null;
         if (pgEntity.partition() == EntityDefinition.Partition.NONE) {
             indexDefinitions = this.getIndexDefinitions(table, pgEntity.indexes());
+            // Only normal tables support caching
+            CacheConfig cacheConfig = pgEntity.cacheConfig();
+            if (cacheConfig.maximumSize() > 0) {
+                cacheDefinition = new CacheDefinition(
+                        cacheConfig.maximumSize(),
+                        cacheConfig.softValues(),
+                        cacheConfig.expireUnit(),
+                        cacheConfig.expireAfterAccess(),
+                        cacheConfig.expireAfterWrite());
+            }
         } else {
             indexDefinitions = this.getPartitionedIndexDefinitions(table, keyDefinition, pgEntity.indexes());
-        }
-
-        CacheDefinition cacheDefinition = null;
-        CacheConfig cacheConfig = pgEntity.cacheConfig();
-        if (cacheConfig.maximumSize() > 0) {
-            cacheDefinition = new CacheDefinition(
-                    cacheConfig.maximumSize(),
-                    cacheConfig.softValues(),
-                    cacheConfig.expireUnit(),
-                    cacheConfig.expireAfterAccess(),
-                    cacheConfig.expireAfterWrite());
         }
 
         return new EntityDefinition(dbName, schema, table, pgEntity.comment(),
@@ -312,6 +313,14 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
                 ));
     }
 
+    private void checkTrigger(EntityDefinition entityDefinition, JdbcTemplate jdbcTemplate) {
+        if (entityDefinition.cacheDefinition() != null) {
+            log.info("Create cache trigger: {}, {}", entityDefinition.schema(), entityDefinition.table());
+            String sql = PgSqlUtils.createCacheInvalidationTriggerSql(entityDefinition);
+            jdbcTemplate.execute(sql);
+        }
+    }
+
     private void checkIndex(EntityDefinition entityDefinition, JdbcTemplate jdbcTemplate) {
         if (!entityDefinition.createIndexAuto() || entityDefinition.indexDefinitions().isEmpty()) {
             return;
@@ -328,8 +337,8 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             }
         }
         if (!sqlList.isEmpty()) {
-            log.info("createIndex: {}, {}", entityDefinition.schema(), sqlList);
-            this.executeSqlScript("createIndex", entityDefinition.dbName(), sqlList);
+            log.info("Create index: {}, {}", entityDefinition.schema(), sqlList);
+            this.executeSqlScript("Create index", entityDefinition.dbName(), sqlList);
         }
     }
 
@@ -400,7 +409,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
     private void executeSqlScript(String title, String dbName, List<String> sqlList) {
         String sql = String.join(System.lineSeparator(), sqlList);
         MultiJdbcTemplate multiJdbcTemplate = PostgresqlEntityRegistrar.getMultiJdbcTemplate(dbName);
-        DataSource dataSource = multiJdbcTemplate.getDataSource();
+        DataSource dataSource = multiJdbcTemplate.getMasterDataSource();
 
         try (Connection conn = dataSource.getConnection()) {
             ByteArrayResource resource = new ByteArrayResource(sql.getBytes(StandardCharsets.UTF_8));
@@ -429,8 +438,8 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             return;
         }
         List<String> sqlList = PgSqlUtils.createTableAndCommentSql(entityDefinition);
-        log.info("createTable: {}, {}", entityDefinition.schema(), sqlList);
-        this.executeSqlScript("createTable", entityDefinition.dbName(), sqlList);
+        log.info("Create table: {}, {}", entityDefinition.schema(), sqlList);
+        this.executeSqlScript("Create table", entityDefinition.dbName(), sqlList);
     }
 
     private void createPartitionedTable(EntityDefinition entityDefinition, ColumnDefinition tsColumnDefinition) {
@@ -438,20 +447,20 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             return;
         }
         List<String> sqlList = PgSqlUtils.createPartitionedTableAndCommentSql(entityDefinition, tsColumnDefinition);
-        log.info("createPartitionedTable: {}, {}", entityDefinition.schema(), sqlList);
-        this.executeSqlScript("createPartitionedTable", entityDefinition.dbName(), sqlList);
+        log.info("Create partitioned table: {}, {}", entityDefinition.schema(), sqlList);
+        this.executeSqlScript("Create partitioned table", entityDefinition.dbName(), sqlList);
     }
 
     private void createPartition(EntityDefinition entityDefinition, String tableName, long from, long to) {
         List<String> sqlList = PgSqlUtils.createPartitionTableSql(entityDefinition, tableName, from, to);
-        log.info("createPartition: {}, {}", entityDefinition.schema(), sqlList);
-        this.executeSqlScript("createPartition", entityDefinition.dbName(), sqlList);
+        log.info("Create partition: {}, {}", entityDefinition.schema(), sqlList);
+        this.executeSqlScript("Create partition", entityDefinition.dbName(), sqlList);
     }
 
     private void checkTableSchema(EntityDefinition entityDefinition, JdbcTemplate jdbcTemplate) {
         if (StringUtils.hasText(entityDefinition.schema()) && !SCHEMA_SET.contains(entityDefinition.schema())) {
             String sql = PgSqlUtils.createSchemaIfNotExistsSql(entityDefinition.schema());
-            log.info("checkSchema: {}", sql);
+            log.info("Check schema: {}", sql);
             jdbcTemplate.execute(sql);
             SCHEMA_SET.add(entityDefinition.schema());
         }
@@ -469,6 +478,8 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         }
 
         this.checkIndex(entityDefinition, jdbcTemplate);
+
+        this.checkTrigger(entityDefinition, jdbcTemplate);
     }
 
     private void checkPartitionedTable(EntityDefinition entityDefinition, JdbcTemplate jdbcTemplate) {
@@ -514,7 +525,9 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         }
 
         if (entityDefinition.cacheDefinition() != null) {
-            entityExecutor = new CacheEntityExecutor(entityExecutor, entityDefinition.cacheDefinition());
+            PgCacheProvider cacheProvider = PostgresqlEntityRegistrar.getPgCacheProvider(entityDefinition.dbName());
+            Cache<String, JSONObject> cache = cacheProvider.registerCache(entityDefinition);
+            entityExecutor = new CacheEntityExecutor(entityExecutor, cache);
         }
 
         if (entityDefinition.partition() != EntityDefinition.Partition.NONE) {
@@ -529,7 +542,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             AsyncUtils.scheduleWithFixedDelay(() -> {
                 // check next partition
                 EntityUtils.PartitionTable nextPartitionTable = EntityUtils.getNextPartitionTable(entityDefinition);
-                log.info("check nextPartitionTable: {}, {}", entityDefinition.table(), nextPartitionTable.tableName());
+                log.info("Check nextPartitionTable: {}, {}", entityDefinition.table(), nextPartitionTable.tableName());
                 if (System.currentTimeMillis() + 18L * 60L * 1000L > nextPartitionTable.from()) {
                     this.checkPartition(entityDefinition, nextPartitionTable, multiJdbcTemplate.getMaster());
                 }

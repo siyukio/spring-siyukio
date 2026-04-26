@@ -42,7 +42,7 @@ public abstract class PgSqlUtils {
 
     public final static String QUERY_INDEXES_SQL = """
             SELECT
-                indexname, 
+                indexname,
                 indexdef
             FROM
                 pg_indexes
@@ -51,22 +51,37 @@ public abstract class PgSqlUtils {
                 AND tablename = ? ;
             """;
 
+    public final static String CREATE_CACHE_INVALIDATION_FUNCTION_SQL = """
+            CREATE OR REPLACE FUNCTION public.notify_entity_cache_invalidation()
+            RETURNS TRIGGER AS $$
+            BEGIN
+                PERFORM pg_notify(
+                    'entity_cache_invalidation',
+                    json_build_object(
+                        'schema', TG_TABLE_SCHEMA,
+                        'table', TG_TABLE_NAME,
+                        'id', CASE WHEN TG_OP = 'DELETE' THEN OLD.id ELSE NEW.id END,
+                        'operation', TG_OP
+                    )::text
+                );
+                RETURN COALESCE(NEW, OLD);
+            END;
+            $$ LANGUAGE plpgsql;
+            """;
+
+    private final static String CREATE_CACHE_INVALIDATION_TRIGGER_TEMPLATE =
+            "CREATE OR REPLACE TRIGGER %s AFTER UPDATE OR DELETE ON %s.%s FOR EACH ROW " +
+                    "EXECUTE FUNCTION public.notify_entity_cache_invalidation();";
     private final static String TABLE_COMMENT_TEMPLATE = "COMMENT ON TABLE %s IS '%s' ;";
-
     private final static String COLUMN_COMMENT_TEMPLATE = "COMMENT ON COLUMN %s IS '%s' ;";
-
     private final static String ADD_COLUMN_TEMPLATE = " ALTER TABLE %s.%s ADD COLUMN %s ;";
-
     private final static String ALTER_COLUMN_DEFAULT_TEMPLATE = " ALTER TABLE %s.%s ALTER COLUMN %s SET DEFAULT %s ;";
-
     private final static String ALTER_COLUMN_TYPE_TEMPLATE = " ALTER TABLE %s.%s ALTER COLUMN %s TYPE %s ;";
-
     private final static String CREATE_TABLE_TEMPLATE = """
             CREATE TABLE IF NOT EXISTS %s.%s (
                 %s
             );
             """;
-
     private final static String CREATE_PARTITIONED_TABLE_TEMPLATE = """
             CREATE TABLE IF NOT EXISTS %s.%s (
                 %s TEXT NOT NULL,
@@ -74,77 +89,68 @@ public abstract class PgSqlUtils {
                 PRIMARY KEY (%s, %s)
             )PARTITION BY RANGE (%s);
             """;
-
     private final static String CREATE_PARTITION_TABLE_TEMPLATE = """
             CREATE TABLE IF NOT EXISTS %s.%s
             PARTITION OF %s.%s
             FOR VALUES FROM (%d) TO (%d);
             """;
-
     private final static String CREATE_INDEX_TEMPLATE = "CREATE INDEX %s ON %s.%s ( %s ) ;";
-
     private final static String CREATE_UNIQUE_INDEX_TEMPLATE = "CREATE UNIQUE INDEX %s ON %s.%s ( %s ) ;";
-
     private final static String CREATE_PARTITIONED_INDEX_TEMPLATE = "CREATE INDEX %s ON %s.%s ( %s ) INCLUDE (%s);";
-
     private final static String CREATE_PARTITIONED_UNIQUE_INDEX_TEMPLATE = "CREATE UNIQUE INDEX %s ON %s.%s ( %s ) INCLUDE (%s);";
-
-
     private final static String INSERT_TEMPLATE = """
             INSERT INTO %s.%s ( %s )
             VALUES ( %s );
             """;
-
     private final static String INSERT_AND_RETURN_ID_TEMPLATE = """
             INSERT INTO %s.%s ( %s )
             VALUES ( %s )
             RETURNING %s;
             """;
-
     private final static String UPDATE_TEMPLATE = """
             UPDATE %s.%s
             SET %s
             WHERE %s;
             """;
-
     private final static String UPSERT_TEMPLATE = """
             INSERT INTO %s.%s ( %s )
             VALUES ( %s )
             ON CONFLICT ( %s )
             DO UPDATE SET %s ;
             """;
-
     private final static String DELETE_BY_QUERY_TEMPLATE = """
             DELETE FROM %s.%s
             WHERE %s;
             """;
-
     private final static String COUNT_TEMPLATE = """
             SELECT COUNT(*)
             FROM %s.%s;
             """;
-
     private final static String COUNT_BY_QUERY_TEMPLATE = """
             SELECT COUNT(*)
             FROM %s.%s
             WHERE %s;
             """;
-
     private final static String SORT_TEMPLATE = """
             ORDER BY %s
             """;
-
     private final static String QUERY_TEMPLATE = """
             SELECT * FROM %s.%s
             WHERE %s
             %s
             LIMIT ? OFFSET ?;
             """;
-
     private final static String QUERY_BY_ID_TEMPLATE = """
             SELECT * FROM %s.%s
             WHERE %s;
             """;
+
+    public static String createCacheInvalidationTriggerSql(EntityDefinition entityDefinition) {
+        String schema = entityDefinition.schema();
+        String table = entityDefinition.table();
+        String triggerName = "trg_" + table + "_inv";
+        return String.format(CREATE_CACHE_INVALIDATION_TRIGGER_TEMPLATE, triggerName, schema, table);
+    }
 
     public static String createSchemaIfNotExistsSql(String schemaName) {
         return "CREATE SCHEMA IF NOT EXISTS " + schemaName;
