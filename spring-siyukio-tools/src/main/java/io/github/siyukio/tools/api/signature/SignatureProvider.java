@@ -1,24 +1,19 @@
 package io.github.siyukio.tools.api.signature;
 
 import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.siyukio.tools.api.ApiException;
+import io.github.siyukio.tools.util.CacheUtils;
 import io.github.siyukio.tools.util.CryptoUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Buddy
  */
 public class SignatureProvider {
 
-    private final Cache<String, String> cache = Caffeine.newBuilder()
-            .maximumSize(100_000)
-            .softValues()
-            .expireAfterWrite(30, TimeUnit.MINUTES)
-            .build();
+    private final Cache<String, String> cache = CacheUtils.createCache(100_000);
 
     private final String salt;
 

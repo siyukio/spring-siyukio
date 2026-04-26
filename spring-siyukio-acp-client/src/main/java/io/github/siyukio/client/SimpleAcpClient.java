@@ -2,11 +2,11 @@ package io.github.siyukio.client;
 
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.siyukio.client.loadbalancer.DirectAcpClientLoadBalancer;
 import io.github.siyukio.client.loadbalancer.DnsRandomAcpClientLoadBalancer;
 import io.github.siyukio.client.loadbalancer.SimpleAsyncAcpClientLoadBalancer;
 import io.github.siyukio.tools.acp.AcpSchemaExt;
+import io.github.siyukio.tools.util.CacheUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 
@@ -14,7 +14,6 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Simplified ACP client that delegates requests to an underlying {@link SimpleAsyncAcpClient}
@@ -186,11 +185,7 @@ public class SimpleAcpClient {
         private final String uri;
         private final List<SimpleAsyncAcpClient.ProgressNotificationHandler> progressNotificationHandlers = new ArrayList<>();
         private final List<SimpleAsyncAcpClient.SessionNotificationHandler> sessionNotificationHandlers = new ArrayList<>();
-        private final Cache<String, String> toolCallUpdateCache = Caffeine.newBuilder()
-                .maximumSize(100_000)
-                .softValues()
-                .expireAfterWrite(15, TimeUnit.MINUTES)
-                .build();
+        private final Cache<String, String> toolCallUpdateCache = CacheUtils.createCache(100_000);
         private SimpleAsyncAcpClient.RequestPermissionHandler requestPermissionHandler = null;
         private SimpleAsyncAcpClient.TerminalHandler terminalHandler = null;
         private SimpleAsyncAcpClient.ReadTextFileHandler readTextFileHandler = null;

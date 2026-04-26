@@ -13,13 +13,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public abstract class AsyncUtils {
 
+    public final static ScheduledExecutorService SINGLE_EXECUTOR_SERVICE = Executors.newSingleThreadScheduledExecutor();
+    public final static Scheduler SINGLE_SCHEDULER = Schedulers.fromExecutor(SINGLE_EXECUTOR_SERVICE);
     private final static String ASYNC_THREAD_PREFIX = "siyukio-virtual-";
     public final static ExecutorService VIRTUAL_EXECUTOR_SERVICE = Executors.newThreadPerTaskExecutor(Thread.ofVirtual()
             .name(ASYNC_THREAD_PREFIX, 0)
             .factory());
     public final static Scheduler VIRTUAL_SCHEDULER = Schedulers.fromExecutor(VIRTUAL_EXECUTOR_SERVICE);
-    private final static ScheduledExecutorService SINGLE_EXECUTOR_SERVICE = Executors.newSingleThreadScheduledExecutor();
-    public final static Scheduler SINGLE_SCHEDULER = Schedulers.fromExecutor(SINGLE_EXECUTOR_SERVICE);
     private final static AtomicInteger ATOMIC_INTEGER = new AtomicInteger(0);
 
     public static boolean isAsyncThread() {
