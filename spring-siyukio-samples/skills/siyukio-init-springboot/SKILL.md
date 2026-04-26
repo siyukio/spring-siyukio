@@ -225,12 +225,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 @SpringBootApplication
-public class {project-name}
+public class {project-name}Main {
 
-Main {
-
-    public static void main (String[]args){
-        new SpringApplicationBuilder({project - name}Main.class)
+    public static void main(String[] args) {
+        new SpringApplicationBuilder({project-name}Main.class)
                 .build()
                 .run(args);
     }
