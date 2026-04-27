@@ -20,7 +20,6 @@ spring:
         MEECAQAwEwYHKoZIzj0CAQYIKoZIzj0DAQcEJzAlAgEBBCAhiWxwhbZlhG5K2f4Z
         hCSvly9hfoK2z2UcpfAyD/n0KQ==
         -----END PRIVATE KEY-----
-      password: siyukio
     signature:
       salt: siyukio
     profiles:

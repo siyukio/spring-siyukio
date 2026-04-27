@@ -19,7 +19,6 @@ import org.springframework.boot.web.servlet.context.ServletWebServerInitializedE
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.env.Environment;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -38,9 +37,6 @@ public class SiyukioApplicationAutoConfiguration {
 
     @Autowired
     protected ApplicationContext applicationContext;
-
-    @Autowired
-    protected Environment env;
 
     @Autowired
     private ServletContext servletContext;

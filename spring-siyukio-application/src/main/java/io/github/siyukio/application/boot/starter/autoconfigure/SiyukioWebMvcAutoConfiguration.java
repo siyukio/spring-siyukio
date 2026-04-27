@@ -63,7 +63,7 @@ public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
             @Qualifier("mvcContentNegotiationManager") ContentNegotiationManager contentNegotiationManager,
             @Qualifier("mvcConversionService") FormattingConversionService conversionService,
             @Qualifier("mvcResourceUrlProvider") ResourceUrlProvider resourceUrlProvider) {
-        log.info("disabled resourceHandlerMapping...");
+        log.info("Disabled resourceHandlerMapping...");
         return null;
     }
 
@@ -108,19 +108,24 @@ public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
             try {
                 publicKey = CryptoUtils.getPublicKeyFromPem(publicKeyText);
             } catch (Exception e) {
-                log.error("getPublicKeyFromPem error: {}", publicKey, e);
+                log.error("GetPublicKeyFromPem error: {}", publicKey, e);
             }
         }
 
         String privateKeyText = apiProperties.getJwt().getPrivateKey();
         PrivateKey privateKey = null;
-        if (StringUtils.hasText(publicKeyText)) {
+        if (StringUtils.hasText(privateKeyText)) {
             try {
                 privateKey = CryptoUtils.getPrivateKeyFromPem(privateKeyText);
             } catch (Exception e) {
-                log.error("getPrivateKeyFromPem error: {}", privateKey, e);
+                log.error("GetPrivateKeyFromPem error: {}", privateKey, e);
             }
         }
+
+        if (!StringUtils.hasText(publicKeyText) && !StringUtils.hasText(privateKeyText)) {
+            log.warn("JWT will use HS256 algorithm. It is recommended to configure spring.siyukio.jwt.public-key and spring.siyukio.jwt.private-key, use ES256 algorithm");
+        }
+
         String accessTokenDuration = apiProperties.getJwt().getAccessTokenDuration();
         Duration accessDuration = Duration.parse(accessTokenDuration);
 
@@ -129,7 +134,11 @@ public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
 
         String password = apiProperties.getJwt().getPassword();
 
-        log.info("init TokenProvider, accessTokenDuration:{} refreshTokenDuration:{}", accessTokenDuration, refreshTokenDuration);
+        if (!StringUtils.hasText(password)) {
+            log.info("JWT payload is not encrypted. It is recommended to configure spring.siyukio.jwt.password to encrypt the JWT payload");
+        }
+
+        log.info("Init TokenProvider, accessTokenDuration:{} refreshTokenDuration:{}", accessTokenDuration, refreshTokenDuration);
 
         return new TokenProvider(publicKey, privateKey, accessDuration, refreshDuration, password);
     }
@@ -137,7 +146,7 @@ public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
     @Bean
     public SignatureProvider signatureProvider(ApiProperties apiProperties) {
         String salt = apiProperties.getSignature().getSalt();
-        log.info("init SignatureProvider, salt:{}", salt);
+        log.info("Init SignatureProvider, salt:{}", salt);
         return new SignatureProvider(salt);
     }
 
@@ -150,7 +159,7 @@ public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
                 List<HandlerMethodReturnValueHandler> newReturnValueHandlers = new ArrayList<>(composite.getHandlers().size());
                 for (HandlerMethodReturnValueHandler originReturnValueHandler : composite.getHandlers()) {
                     if (originReturnValueHandler instanceof RequestResponseBodyMethodProcessor) {
-                        log.info("use ExceptionReturnValueHandler override RequestResponseBodyMethodProcessor for exception");
+                        log.info("Use ExceptionReturnValueHandler override RequestResponseBodyMethodProcessor for exception");
                         ExceptionReturnValueHandler exceptionReturnValueHandler = new ExceptionReturnValueHandler(originReturnValueHandler);
                         newReturnValueHandlers.add(exceptionReturnValueHandler);
                     } else {
@@ -172,14 +181,14 @@ public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
         SignatureProvider signatureProvider = applicationContext.getBean(SignatureProvider.class);
 
         registry.addInterceptor(new ValidateSignatureInterceptor(aipHandlerManager, signatureProvider)).addPathPatterns("/**").order(5);
-        log.info("init ValidateSignatureInterceptor");
+        log.info("Init ValidateSignatureInterceptor");
 
         registry.addInterceptor(new ValidateParameterInterceptor(aipHandlerManager)).addPathPatterns("/**").order(6);
-        log.info("init ValidateParameterInterceptor");
+        log.info("Init ValidateParameterInterceptor");
 
         TokenProvider tokenProvider = applicationContext.getBean(TokenProvider.class);
         registry.addInterceptor(new ValidateAuthorizationInterceptor(aipHandlerManager, tokenProvider)).addPathPatterns("/**").order(7);
-        log.info("init ValidateTokenInterceptor");
+        log.info("Init ValidateTokenInterceptor");
     }
 
     @Override
@@ -188,7 +197,7 @@ public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
         for (int index = 0; index < converters.size(); index++) {
             converter = converters.get(index);
             if (converter instanceof MappingJackson2HttpMessageConverter) {
-                log.info("override MappingJackson2HttpMessageConverter support JsonOrgModule,JavaTimeModule");
+                log.info("Override MappingJackson2HttpMessageConverter support JsonOrgModule,JavaTimeModule");
                 converters.set(index, new MappingJackson2HttpMessageConverter(XDataUtils.OBJECT_MAPPER));
             }
         }
@@ -197,10 +206,10 @@ public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
     @Override
     protected void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
 
-        log.info("init TokenArgumentResolver");
+        log.info("Init TokenArgumentResolver");
         argumentResolvers.add(new TokenArgumentResolver());
 
-        log.info("init RequestArgumentResolver");
+        log.info("Init RequestArgumentResolver");
         argumentResolvers.add(new RequestArgumentResolver());
     }
 
@@ -221,7 +230,7 @@ public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
                 List<HandlerMethodArgumentResolver> newArgumentResolvers = new ArrayList<>(originArgumentResolvers.size());
                 for (HandlerMethodArgumentResolver originArgumentResolver : originArgumentResolvers) {
                     if (originArgumentResolver instanceof RequestResponseBodyMethodProcessor) {
-                        log.info("use SkipRequestResponseBodyMethodProcessor override RequestResponseBodyMethodProcessor, skip @RequestBody");
+                        log.info("Use SkipRequestResponseBodyMethodProcessor override RequestResponseBodyMethodProcessor, skip @RequestBody");
                         SkipRequestResponseBodyMethodProcessor skipRequestResponseBodyMethodProcessor = new SkipRequestResponseBodyMethodProcessor(originArgumentResolver);
                         newArgumentResolvers.add(skipRequestResponseBodyMethodProcessor);
                     } else {
@@ -235,7 +244,7 @@ public class SiyukioWebMvcAutoConfiguration extends WebMvcConfigurationSupport {
                 List<HandlerMethodReturnValueHandler> newReturnValueHandlers = new ArrayList<>(originReturnValueHandlers.size());
                 for (HandlerMethodReturnValueHandler originReturnValueHandler : originReturnValueHandlers) {
                     if (originReturnValueHandler instanceof RequestResponseBodyMethodProcessor) {
-                        log.info("use JsonReturnValueHandler override RequestResponseBodyMethodProcessor for @ResponseBody");
+                        log.info("Use JsonReturnValueHandler override RequestResponseBodyMethodProcessor for @ResponseBody");
                         AipHandlerManager aipHandlerManager = this.applicationContext.getBean(AipHandlerManager.class);
                         ApiReturnValueHandler ApiReturnValueHandler = new ApiReturnValueHandler(aipHandlerManager, originReturnValueHandler);
                         newReturnValueHandlers.add(ApiReturnValueHandler);

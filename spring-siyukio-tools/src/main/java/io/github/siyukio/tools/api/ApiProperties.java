@@ -95,7 +95,6 @@ public class ApiProperties {
         }
 
         public void setPublicKey(String publicKey) {
-            Assert.hasText(publicKey, "JWT public key must not be empty");
             this.publicKey = publicKey;
         }
 
@@ -104,7 +103,6 @@ public class ApiProperties {
         }
 
         public void setPrivateKey(String privateKey) {
-            Assert.hasText(privateKey, "JWT private key must not be empty");
             this.privateKey = privateKey;
         }
 
@@ -113,7 +111,6 @@ public class ApiProperties {
         }
 
         public void setPassword(String password) {
-            Assert.hasText(password, "JWT password must not be empty");
             this.password = password;
         }
 
