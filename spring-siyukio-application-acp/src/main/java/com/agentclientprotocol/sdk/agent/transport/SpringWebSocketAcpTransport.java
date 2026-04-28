@@ -33,12 +33,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import org.springframework.web.socket.server.HandshakeFailureException;
 import org.springframework.web.socket.server.HandshakeHandler;
 import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.util.function.Tuple2;
@@ -272,13 +274,13 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
             String authorization = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
             if (!StringUtils.hasText(authorization)) {
-                authorization = request.getURI().getQuery();
-            }
-            if (!StringUtils.hasText(authorization)) {
-                if (StringUtils.hasText(protocol)) {
-                    if (!protocol.equalsIgnoreCase("acp")) {
-                        authorization = protocol;
-                        request.getHeaders().replace(WebSocketHttpHeaders.SEC_WEBSOCKET_PROTOCOL, List.of(""));
+                String query = request.getURI().getQuery();
+                if (StringUtils.hasText(query)) {
+                    MultiValueMap<String, String> params = UriComponentsBuilder.fromUri(request.getURI())
+                            .build().getQueryParams();
+                    authorization = params.getFirst("accessToken");
+                    if (!StringUtils.hasText(authorization)) {
+                        authorization = params.getFirst("token");
                     }
                 }
             }

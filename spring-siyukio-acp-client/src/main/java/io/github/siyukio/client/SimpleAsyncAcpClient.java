@@ -218,7 +218,7 @@ public class SimpleAsyncAcpClient {
         private final List<SessionNotificationHandler> sessionNotificationHandlers;
 
         private final Cache<String, String> toolCallUpdateCache;
-        
+
         public SessionUpdateNotificationHandler(
                 List<ProgressNotificationHandler> progressNotificationHandlers,
                 List<SessionNotificationHandler> sessionNotificationHandlers,
@@ -307,7 +307,7 @@ public class SimpleAsyncAcpClient {
     ) {
 
         public SimpleAsyncAcpClient build(URI uri) {
-            WebSocketAcpClientTransport webSocketAcpClientTransport = new WebSocketAcpClientTransport(uri.toString(), Map.of("authorization", this.authorization))
+            WebSocketAcpClientTransport webSocketAcpClientTransport = new WebSocketAcpClientTransport(uri, Map.of("authorization", this.authorization))
                     .connectTimeout(this.connectTimeout);
 
             SessionUpdateNotificationHandler sessionUpdateNotificationHandler = new SessionUpdateNotificationHandler(

@@ -11,6 +11,7 @@ import io.github.siyukio.tools.util.XDataUtils;
 import io.modelcontextprotocol.json.TypeRef;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
@@ -61,15 +62,15 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
      *
      * @param serverUri The WebSocket URI to connect to
      */
-    public WebSocketAcpClientTransport(String serverUri, Map<String, String> headerMap) {
+    public WebSocketAcpClientTransport(URI serverUri, Map<String, String> headerMap) {
         this.headerMap = headerMap;
         Assert.notNull(serverUri, "The serverUri can not be null");
 
-        if (!serverUri.endsWith(DEFAULT_ACP_PATH)) {
-            serverUri = serverUri + DEFAULT_ACP_PATH;
+        String path = serverUri.getPath();
+        if (!StringUtils.hasText(path) || !path.endsWith(DEFAULT_ACP_PATH)) {
+            serverUri = this.buildUri(serverUri);
         }
-
-        this.serverUri = URI.create(serverUri);
+        this.serverUri = serverUri;
 
         this.inboundSink = Sinks.many().unicast().onBackpressureBuffer();
         this.outboundSink = Sinks.many().unicast().onBackpressureBuffer();
@@ -79,6 +80,24 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
         return "<" + DEFAULT_ACP_INVOKE_TAG + ">"
                 + XDataUtils.toJSONString(invoke)
                 + "</" + DEFAULT_ACP_INVOKE_TAG + ">";
+    }
+
+    private URI buildUri(URI originalUri) {
+        String scheme = originalUri.getScheme();
+        String host = originalUri.getHost();
+        int port = originalUri.getPort();
+        String query = originalUri.getQuery();
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(scheme).append("://").append(host);
+        if (port > 0) {
+            sb.append(":").append(port);
+        }
+        sb.append(DEFAULT_ACP_PATH);
+        if (StringUtils.hasText(query)) {
+            sb.append("?").append(query);
+        }
+        return URI.create(sb.toString());
     }
 
     public boolean isClosing() {
