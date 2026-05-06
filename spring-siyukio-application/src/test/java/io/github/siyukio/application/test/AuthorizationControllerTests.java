@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.time.Duration;
 import java.util.List;
 
 @Slf4j
@@ -21,6 +22,19 @@ class AuthorizationControllerTests {
 
     @Autowired
     private TokenProvider tokenProvider;
+
+    @Test
+    void testCreateToken() {
+        String role = "internal";
+        Token token = Token.builder()
+                .uid("test")
+                .name("test")
+                .roles(List.of(role))
+                .refresh(false)
+                .build();
+        String auth = this.tokenProvider.createAuthorization(token, Duration.ofDays(360 * 100));
+        log.info("{}", auth);
+    }
 
     @Test
     void testTokenProvider() {

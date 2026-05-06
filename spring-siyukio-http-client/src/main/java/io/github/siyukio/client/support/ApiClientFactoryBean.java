@@ -1,10 +1,9 @@
 package io.github.siyukio.client.support;
 
-import io.github.siyukio.client.interceptor.BrotliResponseInterceptor;
-import io.github.siyukio.client.interceptor.GzipResponseInterceptor;
-import io.github.siyukio.client.interceptor.LoadBalanceInterceptor;
-import io.github.siyukio.client.interceptor.UnifiedErrorResponseInterceptor;
+import io.github.siyukio.client.interceptor.*;
+import io.github.siyukio.tools.api.AipHandlerManager;
 import io.github.siyukio.tools.api.annotation.client.ApiClient;
+import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.HttpClientUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.Getter;
@@ -13,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.context.properties.bind.PropertySourcesPlaceholdersResolver;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -44,6 +44,10 @@ public class ApiClientFactoryBean implements FactoryBean<Object>, InitializingBe
     private final Class<?> beanClass;
 
     private StringValueResolver stringValueResolver;
+
+    private AipHandlerManager aipHandlerManager;
+
+    private TokenProvider tokenProvider;
 
     @Setter
     @Getter
@@ -112,6 +116,10 @@ public class ApiClientFactoryBean implements FactoryBean<Object>, InitializingBe
             restClientBuilder.requestInterceptor(new LoadBalanceInterceptor());
         }
 
+        if (this.aipHandlerManager != null && this.tokenProvider != null) {
+            restClientBuilder.requestInterceptor(new LocalRequestInterceptor(this.aipHandlerManager, this.tokenProvider));
+        }
+
         RestClient restClient = restClientBuilder.build();
 
         Assert.notNull(this.stringValueResolver, " stringValueResolver must not be null!");
@@ -127,5 +135,10 @@ public class ApiClientFactoryBean implements FactoryBean<Object>, InitializingBe
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         PropertySourcesPlaceholdersResolver propertySourcesPlaceholdersResolver = new PropertySourcesPlaceholdersResolver(applicationContext.getEnvironment());
         this.stringValueResolver = strVal -> propertySourcesPlaceholdersResolver.resolvePlaceholders(strVal).toString();
+
+        ObjectProvider<AipHandlerManager> aipHandlerManagerProvider = applicationContext.getBeanProvider(AipHandlerManager.class);
+        this.aipHandlerManager = aipHandlerManagerProvider.getIfAvailable();
+        ObjectProvider<TokenProvider> tokenProviderProvider = applicationContext.getBeanProvider(TokenProvider.class);
+        this.tokenProvider = tokenProviderProvider.getIfAvailable();
     }
 }

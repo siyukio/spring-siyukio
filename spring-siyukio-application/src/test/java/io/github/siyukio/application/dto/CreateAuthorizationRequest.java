@@ -19,7 +19,7 @@ public record CreateAuthorizationRequest(
         @ApiParameter
         String name,
 
-        @ApiParameter
+        @ApiParameter(required = false)
         List<String> roles
 ) {
 }

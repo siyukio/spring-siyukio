@@ -1,5 +1,6 @@
 package io.github.siyukio.client;
 
+import io.github.siyukio.TestApplication;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
@@ -12,7 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  *
  * @author Bugee
  */
-@SpringBootTest
+@SpringBootTest(classes = TestApplication.class)
 @Slf4j
 class LoadBalanceApiClientTest {
 

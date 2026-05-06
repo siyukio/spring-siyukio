@@ -31,6 +31,9 @@ public interface CommonApiClient {
     @PostExchange("/authorization/create")
     JSONObject createAuthorization(@RequestBody JSONObject request);
 
+    @PostExchange("/token/get")
+    JSONObject getToken();
+
     record Health(String status) {
     }
 }

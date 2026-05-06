@@ -1,5 +1,6 @@
 package io.github.siyukio.client;
 
+import io.github.siyukio.TestApplication;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
@@ -12,7 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  *
  * @author Bugee
  */
-@SpringBootTest
+@SpringBootTest(classes = TestApplication.class)
 @Slf4j
 class CommonApiClientTest {
 
@@ -43,6 +44,13 @@ class CommonApiClientTest {
 //        request.put("roles", List.of("admin"));
         JSONObject result = commonApiClient.createAuthorization(request);
 
-        log.info("api createAuthorization: {}", XDataUtils.toPrettyJSONString(result));
+        log.info("Api createAuthorization: {}", XDataUtils.toPrettyJSONString(result));
+    }
+
+    @Test
+    void testGetToken() {
+        JSONObject result = commonApiClient.getToken();
+
+        log.info("Api getToken: {}", XDataUtils.toPrettyJSONString(result));
     }
 }
