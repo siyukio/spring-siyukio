@@ -478,7 +478,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
                         k = k.substring(1);
                     }
 
-                    k = k.replaceAll("/", ".");
+                    k = k.replace("/", ".");
                     toolHandlerMap.put(k, v);
                 }
             });
