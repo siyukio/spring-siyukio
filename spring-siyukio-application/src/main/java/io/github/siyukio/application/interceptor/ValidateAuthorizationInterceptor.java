@@ -23,6 +23,7 @@ import java.util.Set;
 
 /**
  * This interceptor used for validating authorization in incoming requests.
+ * support accessToken and token in query string.
  *
  * @author Buddy
  */
@@ -43,6 +44,15 @@ public final class ValidateAuthorizationInterceptor implements HandlerIntercepto
             Object attr = request.getAttribute(HttpHeaders.AUTHORIZATION);
             if (attr != null) {
                 authorization = attr.toString();
+            }
+        }
+        if (!StringUtils.hasText(authorization)) {
+            String query = request.getQueryString();
+            if (StringUtils.hasText(query)) {
+                authorization = request.getParameter("accessToken");
+                if (!StringUtils.hasText(authorization)) {
+                    authorization = request.getParameter("token");
+                }
             }
         }
         return authorization;
