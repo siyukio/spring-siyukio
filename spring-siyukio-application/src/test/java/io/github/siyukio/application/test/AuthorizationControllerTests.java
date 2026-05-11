@@ -25,10 +25,10 @@ class AuthorizationControllerTests {
 
     @Test
     void testCreateToken() {
-        String role = "internal";
+        String role = "INTERNAL";
         Token token = Token.builder()
-                .uid("test")
-                .name("test")
+                .uid("internal")
+                .name("internal")
                 .roles(List.of(role))
                 .refresh(false)
                 .build();
