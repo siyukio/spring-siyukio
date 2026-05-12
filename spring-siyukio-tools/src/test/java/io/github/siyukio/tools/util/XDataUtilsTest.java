@@ -9,6 +9,9 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * @author Bugee
  */
@@ -85,6 +88,43 @@ public class XDataUtilsTest {
     void testParseLocalDateTime() {
         LocalDateTime localDateTime = XDataUtils.parse("");
         log.info("testParseLocalDateTime: {}", localDateTime);
+    }
+
+    @Test
+    void testYamlConvert() {
+        String json = """
+                {
+                  "name": "siyukio",
+                  "enabled": true,
+                  "meta": {
+                    "version": 1
+                  }
+                }
+                """;
+
+        String yaml = XDataUtils.jsonToYAML(json);
+        JSONObject jsonObject = XDataUtils.parseYamlObject(yaml);
+        assertEquals("siyukio", jsonObject.optString("name"));
+        assertTrue(jsonObject.optBoolean("enabled"));
+        assertEquals(1, jsonObject.optJSONObject("meta").optInt("version"));
+    }
+
+    @Test
+    void testJsonYamlStringRoundTrip() {
+        String yaml = """
+                name: siyukio
+                enabled: true
+                meta:
+                  version: 1
+                """;
+
+        String json = XDataUtils.yamlToJSON(yaml);
+        JSONObject jsonObject = XDataUtils.parseObject(json);
+        assertEquals("siyukio", jsonObject.optString("name"));
+
+        String roundTripYaml = XDataUtils.jsonToYAML(json);
+        JSONObject roundTripObject = XDataUtils.parseYamlObject(roundTripYaml);
+        assertEquals(1, roundTripObject.optJSONObject("meta").optInt("version"));
     }
 
     @EnumNaming(EnumNamingStrategies.LowerCamelCaseStrategy.class)

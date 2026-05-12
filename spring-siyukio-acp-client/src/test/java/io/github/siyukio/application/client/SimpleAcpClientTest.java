@@ -42,7 +42,7 @@ public class SimpleAcpClientTest {
     void setUp() {
         if (SIMPLE_ACP_CLIENT == null) {
             String authorization = "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.Yk5VQTl5VFNEbTFmL09lMnNYUE5rRjNBV1lEcTRlazZ4MzRmSjJUek8vZ2ZtN2t3V1d6WFYrRjJ4Y0tnOThZRG14WGtvSytkSzFjdUVwUjdGZys5QTZEUkVPa3R5dk5KdkU3K1FYcHVqUHBrME1VSmtDdjB2eU9kVU9CdFFMTnY2RTJYbWMzZm53PT0.sgTkEf_CIG7lmriOhpm0VXB2BsQRfY6lqX6pyle6-ctwv81DRxEIaaGyJ8uEvsckdd5QeOQCEda98SEm9ctRUw";
-            String serverUri = "ws://siyukio.local";
+            String serverUri = "ws://localhost:8080";
             SIMPLE_ACP_CLIENT = SimpleAcpClient.builder(serverUri)
 //                    .loadBalance(true)
                     .requestTimeout(Duration.ofSeconds(60))

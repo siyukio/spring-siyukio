@@ -7,6 +7,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.annotation.EnumNaming;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.siyukio.tools.api.constants.ApiConstants;
@@ -41,6 +43,7 @@ public abstract class XDataUtils {
 
     public static final McpJsonMapper MCP_JSON_MAPPER = new JacksonMcpJsonMapper(OBJECT_MAPPER);
     public static final XmlMapper XML_MAPPER = new XmlMapper();
+    public static final YAMLMapper YAML_MAPPER = new YAMLMapper();
     private static final DateTimeFormatter DEFAULT_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter DEFAULT_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final List<DateTimeFormatter> DATE_TIME_FORMATTERS = List.of(
@@ -70,7 +73,7 @@ public abstract class XDataUtils {
         OBJECT_MAPPER.registerModule(new JsonOrgModule());
 
         // Ignore properties with null values
-        OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        OBJECT_MAPPER.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
 
         // Others...
         OBJECT_MAPPER.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
@@ -87,7 +90,16 @@ public abstract class XDataUtils {
 
         XML_MAPPER.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         XML_MAPPER.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-        XML_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        XML_MAPPER.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
+
+        // Config yaml
+        YAML_MAPPER.registerModule(javaTimeModule);
+        YAML_MAPPER.registerModule(new JsonOrgModule());
+
+        YAML_MAPPER.disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER);
+        YAML_MAPPER.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        YAML_MAPPER.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        YAML_MAPPER.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
     }
 
     public static void checkType(Class<?> clazz, Class<?> type) {
@@ -228,6 +240,52 @@ public abstract class XDataUtils {
         try {
             return OBJECT_MAPPER.writer().withDefaultPrettyPrinter().writeValueAsString(from);
         } catch (JsonProcessingException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public static JSONObject parseYamlObject(String yaml) {
+        if (yaml == null || yaml.isEmpty()) {
+            return new JSONObject();
+        }
+        try {
+            return YAML_MAPPER.reader().readValue(yaml, JSONObject.class);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public static String toYAMLString(Object from) {
+        if (from == null) {
+            return "";
+        }
+        try {
+            return YAML_MAPPER.writer().writeValueAsString(from);
+        } catch (JsonProcessingException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public static String jsonToYAML(String json) {
+        if (json == null || json.isEmpty()) {
+            return "{}";
+        }
+        try {
+            JsonNode jsonNode = OBJECT_MAPPER.reader().readTree(json);
+            return YAML_MAPPER.writer().writeValueAsString(jsonNode);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public static String yamlToJSON(String yaml) {
+        if (yaml == null || yaml.isEmpty()) {
+            return "{}";
+        }
+        try {
+            JsonNode jsonNode = YAML_MAPPER.reader().readTree(yaml);
+            return OBJECT_MAPPER.writer().writeValueAsString(jsonNode);
+        } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
     }
