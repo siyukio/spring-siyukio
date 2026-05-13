@@ -69,6 +69,26 @@ public abstract class PgSqlUtils {
             $$ LANGUAGE plpgsql;
             """;
 
+    public final static String CREATE_SQL_SCRIPT_TABLE_SQL = """
+            CREATE TABLE IF NOT EXISTS public.sql_execution_script (
+                id TEXT PRIMARY KEY,
+                table_name TEXT NOT NULL,
+                script_content TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                created_at_ts BIGINT NOT NULL
+            );
+            """;
+
+    public final static String INSERT_SQL_SCRIPT_SQL = """
+            INSERT INTO public.sql_execution_script (
+                id,
+                table_name,
+                script_content,
+                created_at,
+                created_at_ts
+            ) VALUES (?, ?, ?, ?, ?);
+            """;
+
     private final static String CREATE_CACHE_INVALIDATION_TRIGGER_TEMPLATE =
             "CREATE OR REPLACE TRIGGER %s AFTER UPDATE OR DELETE ON %s.%s FOR EACH ROW " +
                     "EXECUTE FUNCTION public.notify_entity_cache_invalidation();";

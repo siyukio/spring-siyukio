@@ -3,6 +3,7 @@ package io.github.siyukio.postgresql.support;
 import com.github.benmanes.caffeine.cache.Cache;
 import io.github.siyukio.tools.entity.definition.EntityDefinition;
 import io.github.siyukio.tools.util.*;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.postgresql.PGConnection;
@@ -31,6 +32,7 @@ public class PgDataProvider {
 
     private final Set<String> testSchemaSet = new HashSet<>();
 
+    @Getter
     private final boolean junit = ProfilesUtils.isJUnit();
 
     private final MultiJdbcTemplate multiJdbcTemplate;

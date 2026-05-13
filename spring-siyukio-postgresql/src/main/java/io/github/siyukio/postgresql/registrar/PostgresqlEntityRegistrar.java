@@ -151,6 +151,7 @@ public class PostgresqlEntityRegistrar extends AbstractCommonRegistrar implement
             }
         }
         MultiJdbcTemplate multiJdbcTemplate = new MultiJdbcTemplate(dbName, masterDataSource, slaveDataSources, dbProps.getMasterKey());
+        multiJdbcTemplate.getMaster().execute(PgSqlUtils.CREATE_SQL_SCRIPT_TABLE_SQL);
         JDBC_TEMPLATE_MAP.put(dbName, multiJdbcTemplate);
 
         // Create cache invalidation function

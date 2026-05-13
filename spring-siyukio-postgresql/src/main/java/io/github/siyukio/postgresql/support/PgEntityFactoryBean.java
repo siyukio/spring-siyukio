@@ -42,6 +42,7 @@ import java.sql.Connection;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -56,6 +57,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
     private final static Set<String> SCHEMA_SET = new HashSet<>();
 
     private final Class<?> entityClass;
+    private final List<String> tableSqlList = new CopyOnWriteArrayList<>();
 
     @Getter
     @Setter
@@ -417,8 +419,39 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         try (Connection conn = dataSource.getConnection()) {
             ByteArrayResource resource = new ByteArrayResource(sql.getBytes(StandardCharsets.UTF_8));
             ScriptUtils.executeSqlScript(conn, resource);
+            if (!sqlList.isEmpty()) {
+                this.tableSqlList.addAll(sqlList);
+            }
         } catch (SQLException e) {
             log.error("{} Postgresql error", title, e);
+        }
+    }
+
+    private void insertTableSqlScript(EntityDefinition entityDefinition, JdbcTemplate jdbcTemplate) {
+        if (this.tableSqlList.isEmpty()) {
+            return;
+        }
+        PgDataProvider dataProvider = PostgresqlEntityRegistrar.getPgDataProvider(entityDefinition.dbName());
+        if (dataProvider.isJunit()) {
+            this.tableSqlList.clear();
+            return;
+        }
+        long createdAtTs = System.currentTimeMillis();
+        String createdAt = XDataUtils.formatMs(createdAtTs);
+        String tableName = entityDefinition.table();
+        if (StringUtils.hasText(entityDefinition.schema())) {
+            tableName = entityDefinition.schema() + "." + tableName;
+        }
+        String sqlScript = String.join("\n", this.tableSqlList);
+        try {
+            jdbcTemplate.update(PgSqlUtils.INSERT_SQL_SCRIPT_SQL,
+                    UUID.randomUUID().toString(),
+                    tableName,
+                    sqlScript,
+                    createdAt,
+                    createdAtTs);
+        } catch (Exception e) {
+            log.error("Insert table sql script error, table: {}", tableName, e);
         }
     }
 
@@ -516,6 +549,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
     }
 
     private PgEntityDao<?> newInstance() {
+        this.tableSqlList.clear();
         EntityDefinition entityDefinition = this.getEntityDefinition();
         log.info("PgEntity: {}", entityDefinition.table());
         MultiJdbcTemplate multiJdbcTemplate = PostgresqlEntityRegistrar.getMultiJdbcTemplate(entityDefinition.dbName());
@@ -533,6 +567,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             entityExecutor = new CacheEntityExecutor(entityExecutor, cache);
         }
 
+        PgEntityDao<?> entityDao;
         if (entityDefinition.partition() != EntityDefinition.Partition.NONE) {
             // partitioned table
             this.checkPartitionedTable(entityDefinition, multiJdbcTemplate.getMaster());
@@ -550,11 +585,14 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
                     this.checkPartition(entityDefinition, nextPartitionTable, multiJdbcTemplate.getMaster());
                 }
             }, initialDelay, 6L * 60L, TimeUnit.SECONDS);
-            return new PgPartitionedEntityDaoImpl<>(this.entityClass, entityExecutor);
+            entityDao = new PgPartitionedEntityDaoImpl<>(this.entityClass, entityExecutor);
+        } else {
+            // common table
+            this.checkTable(entityDefinition, multiJdbcTemplate.getMaster());
+            entityDao = new PgEntityDaoImpl<>(this.entityClass, entityExecutor);
         }
 
-        // common table
-        this.checkTable(entityDefinition, multiJdbcTemplate.getMaster());
-        return new PgEntityDaoImpl<>(this.entityClass, entityExecutor);
+        this.insertTableSqlScript(entityDefinition, multiJdbcTemplate.getMaster());
+        return entityDao;
     }
 }
