@@ -82,6 +82,12 @@ public class AcpSessionContext {
                 .block();
     }
 
+    public void sendUpdate(AcpSchema.SessionUpdate sessionUpdate) {
+        this.promptContext.sendUpdate(this.getSessionId(), sessionUpdate)
+                .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
+                .block();
+    }
+
     public void sendMessage(String text) {
         this.promptContext.sendMessage(text)
                 .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
