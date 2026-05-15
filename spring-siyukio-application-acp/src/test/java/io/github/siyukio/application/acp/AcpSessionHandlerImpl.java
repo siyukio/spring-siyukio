@@ -2,11 +2,15 @@ package io.github.siyukio.application.acp;
 
 import com.agentclientprotocol.sdk.error.AcpProtocolException;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
+import io.github.siyukio.tools.acp.AcpSchemaExt;
+import io.github.siyukio.tools.acp.AcpSessionContext;
 import io.github.siyukio.tools.api.token.Token;
+import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -34,6 +38,16 @@ public class AcpSessionHandlerImpl implements AcpSessionHandler {
             return new AcpSchema.LoadSessionResponse(sessionModeState, sessionModelState);
         }
         throw new AcpProtocolException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Session not found:" + req.sessionId());
+    }
+
+    @Override
+    public AcpSchema.PromptResponse handlePrompt(Token token, AcpSchema.PromptRequest req, AcpSessionContext acpSessionContext) {
+        acpSessionContext.sendThought("Processing...");
+        AcpSchemaExt.SessionInfoUpdate sessionInfoUpdate = new AcpSchemaExt.SessionInfoUpdate(
+                "session_info_update", "test", XDataUtils.format(LocalDateTime.now())
+        );
+        acpSessionContext.sendUpdate(sessionInfoUpdate);
+        return new AcpSchema.PromptResponse(AcpSchema.StopReason.END_TURN);
     }
 
     @Override

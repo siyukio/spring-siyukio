@@ -1,10 +1,14 @@
 package io.github.siyukio.tools.acp;
 
 import com.agentclientprotocol.sdk.spec.AcpSchema;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.With;
 import org.json.JSONObject;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -21,6 +25,54 @@ public final class AcpSchemaExt {
     public static final String TOOL_CALL_UPDATE = "tool_call_update";
 
     private AcpSchemaExt() {
+    }
+
+    public enum SessionConfigOptionCategory {
+
+        @JsonProperty("mode")
+        MODE,
+        @JsonProperty("model")
+        MODEL,
+        @JsonProperty("thought_level")
+        THOUGHT_LEVEL
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record SessionInfoUpdate(
+            @JsonProperty("sessionUpdate")
+            String sessionUpdate,
+            @JsonProperty("title")
+            String title,
+            @JsonProperty("updatedAt")
+            String updatedAt,
+            @JsonProperty("_meta")
+            Map<String, Object> meta
+    ) implements AcpSchema.SessionUpdate {
+        public SessionInfoUpdate(String sessionUpdate, String title, String updatedAt) {
+            this(sessionUpdate, title, updatedAt, null);
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record ConfigOptionUpdate(
+            @JsonProperty("sessionUpdate")
+            String sessionUpdate,
+            @JsonProperty("id")
+            String id,
+            @JsonProperty("name")
+            String name,
+            @JsonProperty("description")
+            String description,
+            @JsonProperty("category")
+            SessionConfigOptionCategory category,
+            @JsonProperty("_meta")
+            Map<String, Object> meta
+    ) implements AcpSchema.SessionUpdate {
+        public ConfigOptionUpdate(String sessionUpdate, String id, String name) {
+            this(sessionUpdate, id, name, null, null, null);
+        }
     }
 
     public record TransportMessage(

@@ -1,7 +1,9 @@
 package io.github.siyukio.tools.util;
 
+import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.fasterxml.jackson.databind.EnumNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.EnumNaming;
+import io.github.siyukio.tools.acp.AcpSchemaExt;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
@@ -125,6 +127,16 @@ public class XDataUtilsTest {
         String roundTripYaml = XDataUtils.jsonToYAML(json);
         JSONObject roundTripObject = XDataUtils.parseYamlObject(roundTripYaml);
         assertEquals(1, roundTripObject.optJSONObject("meta").optInt("version"));
+    }
+
+    @Test
+    void test() {
+        AcpSchemaExt.SessionInfoUpdate sessionInfoUpdate = new AcpSchemaExt.SessionInfoUpdate("session_info_update", "test", "test");
+        String json = XDataUtils.toPrettyJSONString(sessionInfoUpdate);
+        log.info("{}", json);
+
+        AcpSchema.SessionUpdate sessionUpdate = XDataUtils.parse(json, AcpSchema.SessionUpdate.class);
+        log.info("{}", sessionUpdate);
     }
 
     @EnumNaming(EnumNamingStrategies.LowerCamelCaseStrategy.class)

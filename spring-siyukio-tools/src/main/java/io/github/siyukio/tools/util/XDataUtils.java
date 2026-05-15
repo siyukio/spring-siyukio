@@ -8,11 +8,13 @@ import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.annotation.EnumNaming;
+import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.github.siyukio.tools.acp.AcpSchemaExt;
 import io.github.siyukio.tools.api.constants.ApiConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
@@ -61,6 +63,19 @@ public abstract class XDataUtils {
     );
 
     static {
+        // AcpSchema ext
+        OBJECT_MAPPER.registerSubtypes(
+                new NamedType(
+                        AcpSchemaExt.SessionInfoUpdate.class,
+                        "session_info_update"
+                )
+        );
+        OBJECT_MAPPER.registerSubtypes(
+                new NamedType(
+                        AcpSchemaExt.ConfigOptionUpdate.class,
+                        "config_option_update"
+                )
+        );
         // LocalDateTime
         JavaTimeModule javaTimeModule = new JavaTimeModule();
         javaTimeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSmartSerializer());
