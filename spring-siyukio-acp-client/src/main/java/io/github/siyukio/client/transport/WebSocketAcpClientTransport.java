@@ -1,6 +1,7 @@
 package io.github.siyukio.client.transport;
 
 import com.agentclientprotocol.sdk.error.AcpProtocolException;
+import com.agentclientprotocol.sdk.json.TypeRef;
 import com.agentclientprotocol.sdk.spec.AcpClientTransport;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.agentclientprotocol.sdk.util.Assert;
@@ -8,7 +9,6 @@ import io.github.siyukio.tools.acp.Invoke;
 import io.github.siyukio.tools.util.AsyncUtils;
 import io.github.siyukio.tools.util.HttpClientUtils;
 import io.github.siyukio.tools.util.XDataUtils;
-import io.modelcontextprotocol.json.TypeRef;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
@@ -168,7 +168,7 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
                 .subscribe(message -> {
                     if (message != null && !isClosing.get() && webSocket != null) {
                         try {
-                            String jsonMessage = XDataUtils.MCP_JSON_MAPPER.writeValueAsString(message);
+                            String jsonMessage = XDataUtils.ACP_JSON_MAPPER.writeValueAsString(message);
                             log.debug("Sending WebSocket message: {}", jsonMessage);
                             webSocket.sendText(jsonMessage, true).join();
                         } catch (Exception e) {
@@ -215,7 +215,7 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
 
     @Override
     public <T> T unmarshalFrom(Object data, TypeRef<T> typeRef) {
-        return XDataUtils.MCP_JSON_MAPPER.convertValue(data, typeRef);
+        return XDataUtils.ACP_JSON_MAPPER.convertValue(data, typeRef);
     }
 
     /**
@@ -248,7 +248,7 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
             log.debug("Received WebSocket message: {}", fullData);
 
             try {
-                AcpSchema.JSONRPCMessage jsonRpcMessage = AcpSchema.deserializeJsonRpcMessage(XDataUtils.MCP_JSON_MAPPER, fullData);
+                AcpSchema.JSONRPCMessage jsonRpcMessage = AcpSchema.deserializeJsonRpcMessage(XDataUtils.ACP_JSON_MAPPER, fullData);
                 if (!inboundSink.tryEmitNext(jsonRpcMessage).isSuccess()) {
                     if (!isClosing.get()) {
                         log.error("Failed to enqueue inbound message");

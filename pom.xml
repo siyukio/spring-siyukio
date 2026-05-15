@@ -8,7 +8,7 @@
     </parent>
     <groupId>io.github.siyukio</groupId>
     <artifactId>spring-siyukio</artifactId>
-    <version>3.5.14-M6</version>
+    <version>3.5.14-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Siyukio Parent</name>
 
@@ -22,11 +22,11 @@
     </modules>
 
     <properties>
-        <siyukio.version>3.5.14-M6</siyukio.version>
+        <siyukio.version>3.5.14-SNAPSHOT</siyukio.version>
         <java.version>25</java.version>
         <spring.ai.version>1.1.4</spring.ai.version>
         <mcp.version>0.17.2</mcp.version>
-        <acp.version>0.10.0</acp.version>
+        <acp.version>0.11.0</acp.version>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
         <maven.compiler.release>25</maven.compiler.release>

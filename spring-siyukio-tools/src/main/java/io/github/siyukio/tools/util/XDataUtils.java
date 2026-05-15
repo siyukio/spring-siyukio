@@ -1,5 +1,7 @@
 package io.github.siyukio.tools.util;
 
+import com.agentclientprotocol.sdk.json.AcpJsonMapper;
+import com.agentclientprotocol.sdk.json.JacksonAcpJsonMapper;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
@@ -12,8 +14,6 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.siyukio.tools.api.constants.ApiConstants;
-import io.modelcontextprotocol.json.McpJsonMapper;
-import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -41,7 +41,7 @@ public abstract class XDataUtils {
 
     public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    public static final McpJsonMapper MCP_JSON_MAPPER = new JacksonMcpJsonMapper(OBJECT_MAPPER);
+    public static final AcpJsonMapper ACP_JSON_MAPPER = new JacksonAcpJsonMapper(OBJECT_MAPPER);
     public static final XmlMapper XML_MAPPER = new XmlMapper();
     public static final YAMLMapper YAML_MAPPER = new YAMLMapper();
     private static final DateTimeFormatter DEFAULT_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

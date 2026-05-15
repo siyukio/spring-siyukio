@@ -7,6 +7,7 @@ package com.agentclientprotocol.sdk.agent.transport;
 import com.agentclientprotocol.sdk.agent.AcpAgent;
 import com.agentclientprotocol.sdk.agent.PromptContext;
 import com.agentclientprotocol.sdk.error.AcpProtocolException;
+import com.agentclientprotocol.sdk.json.TypeRef;
 import com.agentclientprotocol.sdk.spec.AcpAgentTransport;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.agentclientprotocol.sdk.spec.AcpSchema.JSONRPCMessage;
@@ -24,7 +25,6 @@ import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.AsyncUtils;
 import io.github.siyukio.tools.util.OpenApiUtils;
 import io.github.siyukio.tools.util.XDataUtils;
-import io.modelcontextprotocol.json.TypeRef;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
@@ -183,7 +183,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
 
     private void sendMessage(AuthSession authSession, JSONRPCMessage message) {
         try {
-            String jsonMessage = XDataUtils.MCP_JSON_MAPPER.writeValueAsString(message);
+            String jsonMessage = XDataUtils.ACP_JSON_MAPPER.writeValueAsString(message);
             log.debug("Sending Acp message: {}", jsonMessage);
             authSession.sendTextMessage(jsonMessage);
         } catch (IOException ignored) {
@@ -228,6 +228,11 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
     }
 
     @Override
+    public <T> T unmarshalFrom(Object data, TypeRef<T> typeRef) {
+        return XDataUtils.ACP_JSON_MAPPER.convertValue(data, typeRef);
+    }
+
+    @Override
     public Mono<Void> closeGracefully() {
         return Mono.fromRunnable(() -> {
             log.debug("WebSocket Acp transport closing gracefully");
@@ -249,11 +254,6 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
     @Override
     public Mono<Void> awaitTermination() {
         return terminationSink.asMono();
-    }
-
-    @Override
-    public <T> T unmarshalFrom(Object data, TypeRef<T> typeRef) {
-        return XDataUtils.MCP_JSON_MAPPER.convertValue(data, typeRef);
     }
 
     public class WebSocketAcpHandler extends TextWebSocketHandler implements HandshakeHandler {
@@ -356,7 +356,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
             }
 
             try {
-                JSONRPCMessage jsonRpcMessage = AcpSchema.deserializeJsonRpcMessage(XDataUtils.MCP_JSON_MAPPER, message);
+                JSONRPCMessage jsonRpcMessage = AcpSchema.deserializeJsonRpcMessage(XDataUtils.ACP_JSON_MAPPER, message);
                 log.debug("Received Acp message: {}", jsonRpcMessage);
                 AcpSchemaExt.TransportMessage transportMessage = new AcpSchemaExt.TransportMessage(session.getId(), jsonRpcMessage);
                 Sinks.EmitResult emitResult = inboundSink.tryEmitNext(transportMessage);
