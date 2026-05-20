@@ -51,7 +51,7 @@ public class XDataUtilsTest {
                 }
                 """;
 
-        JSONObject jsonObject = XDataUtils.parseObject(text);
+        JSONObject jsonObject = XDataUtils.parse(text, JSONObject.class);
         log.info("{}", XDataUtils.toPrettyJSONString(jsonObject));
     }
 
@@ -121,7 +121,7 @@ public class XDataUtilsTest {
                 """;
 
         String json = XDataUtils.yamlToJSON(yaml);
-        JSONObject jsonObject = XDataUtils.parseObject(json);
+        JSONObject jsonObject = XDataUtils.parse(json, JSONObject.class);
         assertEquals("siyukio", jsonObject.optString("name"));
 
         String roundTripYaml = XDataUtils.jsonToYAML(json);

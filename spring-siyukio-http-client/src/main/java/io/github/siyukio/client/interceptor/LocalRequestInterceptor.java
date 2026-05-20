@@ -98,7 +98,7 @@ public class LocalRequestInterceptor implements ClientHttpRequestInterceptor {
      * Creates a local ClientHttpResponse.
      */
     private ClientHttpResponse createLocalResponse(ApiHandler apiHandler, Token token, ApiRequest apiRequest) {
-        JSONObject requestJson = XDataUtils.parseObject(apiRequest.body());
+        JSONObject requestJson = XDataUtils.parse(apiRequest.body(), JSONObject.class);
         requestJson = apiHandler.requestValidator().validate(requestJson);
         Object[] params;
         if (token == null) {

@@ -42,7 +42,7 @@ public final class ArrayRequestValidator extends AbstractRequestValidator {
                 str = "[]";
             }
             try {
-                value = XDataUtils.parseArray(str);
+                value = XDataUtils.parse(str, JSONArray.class);
             } catch (RuntimeException ex) {
                 log.error("parseArray error: {}", ex.getMessage());
                 throw this.createApiException(ApiConstants.ERROR_PARAMETER_PARSE_ARRAY_FORMAT);

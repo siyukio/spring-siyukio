@@ -123,8 +123,8 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
                 case ColumnType.BIGINT -> Long.parseLong(defaultValueStr);
                 case ColumnType.DOUBLE -> Double.parseDouble(defaultValueStr);
                 case ColumnType.BOOLEAN -> Boolean.valueOf(defaultValueStr);
-                case ColumnType.JSON_ARRAY -> XDataUtils.parseArray(defaultValueStr);
-                case ColumnType.JSON_OBJECT -> XDataUtils.parseObject(defaultValueStr);
+                case ColumnType.JSON_ARRAY -> XDataUtils.parse(defaultValueStr, JSONArray.class);
+                case ColumnType.JSON_OBJECT -> XDataUtils.parse(defaultValueStr, JSONObject.class);
                 case ColumnType.TEXT -> defaultValueStr;
                 case ColumnType.DATETIME -> XDataUtils.parse(defaultValueStr);
             };

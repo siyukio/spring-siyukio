@@ -189,6 +189,13 @@ public abstract class XDataUtils {
     }
 
     public static <T> T parse(String json, Class<T> toClazz) {
+        if (!StringUtils.hasText(json)) {
+            if (toClazz == JSONArray.class) {
+                json = "[]";
+            } else {
+                json = "{}";
+            }
+        }
         try {
             return OBJECT_MAPPER.reader().readValue(json, toClazz);
         } catch (IOException ex) {
@@ -209,29 +216,6 @@ public abstract class XDataUtils {
         JavaType type = OBJECT_MAPPER.getTypeFactory().constructParametricType(outerClass, firstClass, secondClass);
         try {
             return OBJECT_MAPPER.readerFor(type).readValue(json);
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    public static JSONObject parseObject(String json) {
-
-        if (json == null || json.isEmpty()) {
-            return new JSONObject();
-        }
-        try {
-            return OBJECT_MAPPER.reader().readValue(json, JSONObject.class);
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    public static JSONArray parseArray(String json) {
-        if (json == null || json.isEmpty()) {
-            return new JSONArray();
-        }
-        try {
-            return OBJECT_MAPPER.reader().readValue(json, JSONArray.class);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }

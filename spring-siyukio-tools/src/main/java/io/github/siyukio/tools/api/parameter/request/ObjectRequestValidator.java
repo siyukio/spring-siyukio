@@ -43,7 +43,7 @@ public class ObjectRequestValidator extends AbstractRequestValidator {
                 str = "{}";
             }
             try {
-                value = XDataUtils.parseObject(str);
+                value = XDataUtils.parse(str, JSONObject.class);
             } catch (RuntimeException ex) {
                 log.error("parseObject error:{}", ex.getMessage());
                 throw this.createApiException(ApiConstants.ERROR_PARAMETER_PARSE_OBJECT_FORMAT);

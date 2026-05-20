@@ -35,7 +35,7 @@ public class UnifiedErrorResponseInterceptor implements ClientHttpRequestInterce
         String responseBody = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
 
         // Parse JSON and check for error
-        JSONObject jsonObject = XDataUtils.parseObject(responseBody);
+        JSONObject jsonObject = XDataUtils.parse(responseBody, JSONObject.class);
         JSONObject errorObject = jsonObject.optJSONObject("error");
 
         // If error object exists, throw ApiException

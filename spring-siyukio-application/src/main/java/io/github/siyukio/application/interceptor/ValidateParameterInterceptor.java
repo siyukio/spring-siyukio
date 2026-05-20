@@ -87,7 +87,7 @@ public final class ValidateParameterInterceptor implements HandlerInterceptor {
     private JSONObject validate(String requestBody, RequestValidator requestValidator) {
         JSONObject requestBodyJson;
         try {
-            requestBodyJson = XDataUtils.parseObject(requestBody);
+            requestBodyJson = XDataUtils.parse(requestBody, JSONObject.class);
         } catch (RuntimeException e) {
             throw ApiException.getInvalidApiException("requestBody to json error");
         }

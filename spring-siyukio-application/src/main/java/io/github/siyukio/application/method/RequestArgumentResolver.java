@@ -98,7 +98,7 @@ public final class RequestArgumentResolver implements HandlerMethodArgumentResol
             ServletServerHttpRequest inputMessage = new ServletServerHttpRequest(httpServletRequest);
             requestBody = new String(inputMessage.getBody().readAllBytes());
         }
-        return XDataUtils.parseObject(requestBody);
+        return XDataUtils.parse(requestBody, JSONObject.class);
     }
 
     private Object getRequestBodyObject(MethodParameter parameter, HttpServletRequest httpServletRequest) throws IOException {

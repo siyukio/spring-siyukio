@@ -11,6 +11,7 @@ import io.github.siyukio.tools.entity.sort.ListSortBuilder;
 import io.github.siyukio.tools.entity.sort.SortBuilder;
 import io.github.siyukio.tools.util.EntityUtils;
 import io.github.siyukio.tools.util.XDataUtils;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.postgresql.util.PGobject;
 import org.springframework.util.StringUtils;
@@ -810,9 +811,9 @@ public abstract class PgSqlUtils {
         String text = entityJson.optString(columnDefinition.fieldName());
         if (StringUtils.hasText(text)) {
             if (columnDefinition.type() == ColumnType.JSON_ARRAY) {
-                entityJson.put(columnDefinition.fieldName(), XDataUtils.parseArray(text));
+                entityJson.put(columnDefinition.fieldName(), XDataUtils.parse(text, JSONArray.class));
             } else {
-                entityJson.put(columnDefinition.fieldName(), XDataUtils.parseObject(text));
+                entityJson.put(columnDefinition.fieldName(), XDataUtils.parse(text, JSONObject.class));
             }
         }
     }
