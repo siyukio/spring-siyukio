@@ -9,6 +9,7 @@ import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.agentclientprotocol.sdk.spec.AcpSession;
 import com.agentclientprotocol.sdk.util.Assert;
 import io.github.siyukio.tools.util.AsyncUtils;
+import io.github.siyukio.tools.util.IdUtils;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +18,6 @@ import reactor.core.publisher.MonoSink;
 
 import java.time.Duration;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
@@ -59,7 +59,7 @@ public class SimpleAcpClientSession implements AcpSession {
     /**
      * Session-specific prefix for request IDs
      */
-    private final String sessionPrefix = UUID.randomUUID().toString().substring(0, 8);
+    private final String sessionPrefix = IdUtils.getUniqueId();
 
     /**
      * Atomic counter for generating unique request IDs
