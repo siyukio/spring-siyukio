@@ -42,11 +42,15 @@ public class AcpSessionHandlerImpl implements AcpSessionHandler {
 
     @Override
     public AcpSchema.PromptResponse handlePrompt(Token token, AcpSchema.PromptRequest req, AcpSessionContext acpSessionContext) {
-        acpSessionContext.sendThought("Processing...");
+        acpSessionContext.sendThought("Processing..." + req.sessionId());
         AcpSchemaExt.SessionInfoUpdate sessionInfoUpdate = new AcpSchemaExt.SessionInfoUpdate(
                 "session_info_update", "test", XDataUtils.format(LocalDateTime.now())
         );
         acpSessionContext.sendUpdate(sessionInfoUpdate);
+        try {
+            Thread.sleep(60000);
+        } catch (InterruptedException ignored) {
+        }
         return new AcpSchema.PromptResponse(AcpSchema.StopReason.END_TURN);
     }
 

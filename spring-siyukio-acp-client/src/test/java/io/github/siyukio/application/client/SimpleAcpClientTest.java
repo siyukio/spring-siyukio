@@ -45,7 +45,7 @@ public class SimpleAcpClientTest {
             String serverUri = "ws://localhost:8080";
             SIMPLE_ACP_CLIENT = SimpleAcpClient.builder(serverUri)
 //                    .loadBalance(true)
-                    .requestTimeout(Duration.ofSeconds(60))
+                    .requestTimeout(Duration.ofSeconds(100))
                     .authorization(authorization)
                     .writeTextFileHandler(request -> {
                         log.debug("WriteTextFileRequest: {}", request);
@@ -189,6 +189,12 @@ public class SimpleAcpClientTest {
     @Test
     void testPrompt() {
         AcpSchema.PromptResponse response = SIMPLE_ACP_CLIENT.prompt(SESSION_ID, "hello");
+        log.info("{}", XDataUtils.toPrettyJSONString(response));
+    }
+
+    @Test
+    void testPrompt2() {
+        AcpSchema.PromptResponse response = SIMPLE_ACP_CLIENT.prompt(IdUtils.getUniqueId(), "hello2");
         log.info("{}", XDataUtils.toPrettyJSONString(response));
     }
 

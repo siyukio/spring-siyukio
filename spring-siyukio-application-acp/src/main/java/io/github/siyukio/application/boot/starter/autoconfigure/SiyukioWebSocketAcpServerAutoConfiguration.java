@@ -1,8 +1,8 @@
 package io.github.siyukio.application.boot.starter.autoconfigure;
 
 
-import com.agentclientprotocol.sdk.agent.AcpAgent;
 import com.agentclientprotocol.sdk.agent.AcpAsyncAgent;
+import com.agentclientprotocol.sdk.agent.SimpleAcpAgent;
 import com.agentclientprotocol.sdk.agent.transport.SpringWebSocketAcpTransport;
 import io.github.siyukio.application.acp.AcpSessionHandler;
 import io.github.siyukio.tools.api.AipHandlerManager;
@@ -37,17 +37,17 @@ public class SiyukioWebSocketAcpServerAutoConfiguration implements WebSocketConf
                     AcpSessionHandler bean not found, using default implementation.
                     It is recommended to register an AcpSessionHandler implementation bean to avoid potential functional issues.
                     Example implementation:
-
+                    
                         @Slf4j
                         @Service
                         public class AcpSessionHandlerImpl implements AcpSessionHandler {
-
+                    
                             @Override
                             public AcpSchema.InitializeResponse handleInit(Token token, AcpSchema.InitializeRequest req) {
                                 log.debug("AcpSchema.InitializeRequest: {}, {}", token, req);
                                 return AcpSessionHandler.super.init(token, req);
                             }
-
+                    
                             @Override
                             public AcpSchema.NewSessionResponse handleNewSession(Token token, AcpSchema.NewSessionRequest req) {
                                 log.debug("AcpSchema.NewSessionResponse: {}, {}", token, req);
@@ -67,7 +67,7 @@ public class SiyukioWebSocketAcpServerAutoConfiguration implements WebSocketConf
     public AcpAsyncAgent acpAsyncAgent() {
         SpringWebSocketAcpTransport springWebSocketAcpTransport = this.applicationContext.getBean(SpringWebSocketAcpTransport.class);
         AipHandlerManager aipHandlerManager = this.applicationContext.getBean(AipHandlerManager.class);
-        AcpAgent.AsyncAgentBuilder builder = AcpAgent.async(springWebSocketAcpTransport)
+        SimpleAcpAgent.AsyncAgentBuilder builder = SimpleAcpAgent.async(springWebSocketAcpTransport)
                 .initializeHandler(springWebSocketAcpTransport.new AcpInitializeHandler())
                 .newSessionHandler(springWebSocketAcpTransport.new AcpNewSessionHandler())
                 .loadSessionHandler(springWebSocketAcpTransport.new AcpLoadSessionHandler())
