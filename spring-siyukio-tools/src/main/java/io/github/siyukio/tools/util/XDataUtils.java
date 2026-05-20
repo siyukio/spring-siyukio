@@ -24,6 +24,7 @@ import org.springframework.boot.context.properties.bind.BindResult;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.Environment;
+import org.springframework.util.PropertyPlaceholderHelper;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
@@ -32,6 +33,7 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Provides conversion between Strings and JSON objects or JSON collections.
@@ -62,6 +64,8 @@ public abstract class XDataUtils {
             DateTimeFormatter.ofPattern("yyyy/MM/dd"),
             DateTimeFormatter.ISO_LOCAL_DATE
     );
+
+    private static final PropertyPlaceholderHelper PROPERTY_PLACEHOLDER_HELPER = new PropertyPlaceholderHelper("${", "}");
 
     static {
         // AcpSchema ext
@@ -116,6 +120,16 @@ public abstract class XDataUtils {
         YAML_MAPPER.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         YAML_MAPPER.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         YAML_MAPPER.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
+    }
+
+    public static String replacePlaceholders(String template, Map<String, Object> map) {
+        return PROPERTY_PLACEHOLDER_HELPER.replacePlaceholders(
+                template,
+                placeholderName -> {
+                    Object value = map.get(placeholderName);
+                    return value == null ? "" : String.valueOf(value);
+                }
+        );
     }
 
     /**
