@@ -4,6 +4,7 @@ import com.agentclientprotocol.sdk.json.AcpJsonMapper;
 import com.agentclientprotocol.sdk.json.JacksonAcpJsonMapper;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.core.io.JsonStringEncoder;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
@@ -115,6 +116,17 @@ public abstract class XDataUtils {
         YAML_MAPPER.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         YAML_MAPPER.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         YAML_MAPPER.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
+    }
+
+    /**
+     * Method that will escape text contents using JSON standard escaping,
+     * and return results as a character array.
+     *
+     * @param input Value String to process
+     * @return JSON-escaped String matching {@code input}
+     */
+    public static String escapeJson(String input) {
+        return new String(JsonStringEncoder.getInstance().quoteAsString(input));
     }
 
     public static void checkType(Class<?> clazz, Class<?> type) {
