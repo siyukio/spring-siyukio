@@ -96,9 +96,6 @@ public class SimpleAcpClientTest {
                         }
                         return new AcpSchema.RequestPermissionResponse(new AcpSchema.PermissionCancelled());
                     })
-                    .progressNotificationHandler(notification -> {
-                        log.debug("ProgressNotification: {}", XDataUtils.toPrettyJSONString(notification));
-                    })
                     .sessionNotificationHandler(notification -> {
                         log.debug("SessionNotification: {}", XDataUtils.toPrettyJSONString(notification));
                     }).build();

@@ -8,6 +8,7 @@ import com.agentclientprotocol.sdk.capabilities.NegotiatedCapabilities;
 import com.agentclientprotocol.sdk.error.AcpCapabilityException;
 import com.agentclientprotocol.sdk.json.TypeRef;
 import com.agentclientprotocol.sdk.spec.*;
+import io.github.siyukio.tools.acp.AcpSchemaExt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
@@ -51,6 +52,10 @@ public class SimpleAcpAsyncAgent implements AcpAsyncAgent {
     private final AcpAgent.SetSessionModelHandler setSessionModelHandler;
 
     private final AcpAgent.CancelHandler cancelHandler;
+
+    private final SimpleAcpAgent.ListToolsHandler listToolsHandler;
+
+    private final SimpleAcpAgent.CallToolHandler callToolHandler;
     /**
      * Capabilities negotiated with the client during initialization.
      */
@@ -61,7 +66,8 @@ public class SimpleAcpAsyncAgent implements AcpAsyncAgent {
                                AcpAgent.InitializeHandler initializeHandler, AcpAgent.AuthenticateHandler authenticateHandler,
                                AcpAgent.NewSessionHandler newSessionHandler, AcpAgent.LoadSessionHandler loadSessionHandler,
                                AcpAgent.PromptHandler promptHandler, AcpAgent.SetSessionModeHandler setSessionModeHandler,
-                               AcpAgent.SetSessionModelHandler setSessionModelHandler, AcpAgent.CancelHandler cancelHandler) {
+                               AcpAgent.SetSessionModelHandler setSessionModelHandler, AcpAgent.CancelHandler cancelHandler,
+                               SimpleAcpAgent.ListToolsHandler listToolsHandler, SimpleAcpAgent.CallToolHandler callToolHandler) {
         this.transport = transport;
         this.requestTimeout = requestTimeout;
         this.initializeHandler = initializeHandler;
@@ -72,6 +78,9 @@ public class SimpleAcpAsyncAgent implements AcpAsyncAgent {
         this.setSessionModeHandler = setSessionModeHandler;
         this.setSessionModelHandler = setSessionModelHandler;
         this.cancelHandler = cancelHandler;
+
+        this.listToolsHandler = listToolsHandler;
+        this.callToolHandler = callToolHandler;
     }
 
     @Override
@@ -169,6 +178,28 @@ public class SimpleAcpAsyncAgent implements AcpAsyncAgent {
                             new TypeRef<AcpSchema.CancelNotification>() {
                             });
                     return cancelHandler.handle(notification);
+                });
+            }
+
+            // Set listTools handler
+            if (this.listToolsHandler != null) {
+                requestHandlers.put(AcpSchemaExt.METHOD_LIST_TOOLS, params -> {
+                    AcpSchemaExt.ListToolsRequest request = transport.unmarshalFrom(params,
+                            new TypeRef<AcpSchemaExt.ListToolsRequest>() {
+                            });
+                    return listToolsHandler.handle(request).cast(Object.class);
+                });
+            }
+
+            // Set callTool handler
+            if (this.callToolHandler != null) {
+                requestHandlers.put(AcpSchemaExt.METHOD_CALL_TOOL, params -> {
+                    AcpSchemaExt.CallToolRequest request = transport.unmarshalFrom(params,
+                            new TypeRef<AcpSchemaExt.CallToolRequest>() {
+                            });
+                    PromptContext context = new DefaultPromptContext(this, request.toolCallId());
+                    return callToolHandler.handle(request, context)
+                            .cast(Object.class);
                 });
             }
 

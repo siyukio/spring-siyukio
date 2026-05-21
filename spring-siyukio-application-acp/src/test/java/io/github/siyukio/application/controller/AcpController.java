@@ -36,7 +36,8 @@ public class AcpController {
                     A utility tool that authenticates with the target service and returns a valid JWT token for subsequent API requests.
                     """
     )
-    public CreateAuthorizationResponse createAuthorization(CreateAuthorizationRequest createAuthorizationRequest) {
+    public CreateAuthorizationResponse createAuthorization(Token token, CreateAuthorizationRequest createAuthorizationRequest) {
+        log.info("{}", token);
         log.info("{}", XDataUtils.toPrettyJSONString(createAuthorizationRequest));
         Token refreshToken = Token.builder()
                 .uid(createAuthorizationRequest.uid()).name(createAuthorizationRequest.name()).roles(List.of()).refresh(true)
@@ -60,10 +61,10 @@ public class AcpController {
             for (int i = 0; i < 3; i++) {
                 JSONObject messageJson = new JSONObject();
                 messageJson.put("data", i);
-                AcpSchemaExt.ProgressNotification progressNotification = AcpSchemaExt.ProgressNotification.create(
-                        i + 1, 3, XDataUtils.toJSONString(messageJson)
+                AcpSchemaExt.ProgressNotification progressNotification = new AcpSchemaExt.ProgressNotification(
+                        "progress", i + 1, 3, XDataUtils.toJSONString(messageJson)
                 );
-                acpSessionContext.sendToolCallProgress(progressNotification);
+                acpSessionContext.sendProgress(progressNotification);
             }
         }
         return TokenResponse.builder()

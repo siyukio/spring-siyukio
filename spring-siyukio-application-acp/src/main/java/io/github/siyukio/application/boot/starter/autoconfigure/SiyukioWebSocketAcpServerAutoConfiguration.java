@@ -67,6 +67,8 @@ public class SiyukioWebSocketAcpServerAutoConfiguration implements WebSocketConf
     public AcpAsyncAgent acpAsyncAgent() {
         SpringWebSocketAcpTransport springWebSocketAcpTransport = this.applicationContext.getBean(SpringWebSocketAcpTransport.class);
         AipHandlerManager aipHandlerManager = this.applicationContext.getBean(AipHandlerManager.class);
+        SpringWebSocketAcpTransport.AcpToolHandler acpToolHandler = springWebSocketAcpTransport.new AcpToolHandler(aipHandlerManager.getApiHandlerMap());
+
         SimpleAcpAgent.AsyncAgentBuilder builder = SimpleAcpAgent.async(springWebSocketAcpTransport)
                 .initializeHandler(springWebSocketAcpTransport.new AcpInitializeHandler())
                 .newSessionHandler(springWebSocketAcpTransport.new AcpNewSessionHandler())
@@ -74,7 +76,9 @@ public class SiyukioWebSocketAcpServerAutoConfiguration implements WebSocketConf
                 .cancelHandler(springWebSocketAcpTransport.new AcpCancelHandler())
                 .setSessionModeHandler(springWebSocketAcpTransport.new AcpSetSessionModeHandler())
                 .setSessionModelHandler(springWebSocketAcpTransport.new AcpSetSessionModelHandler())
-                .promptHandler(springWebSocketAcpTransport.new AcpPromptHandler(aipHandlerManager.getApiHandlerMap()));
+                .promptHandler(springWebSocketAcpTransport.new AcpPromptHandler())
+                .listToolsHandler(acpToolHandler)
+                .callToolHandler(acpToolHandler);
         AcpAsyncAgent acpAsyncAgent = builder.build();
         acpAsyncAgent.start().subscribe();
         log.info("Start WebSocket Acp server {}", acpAsyncAgent.getClientCapabilities());

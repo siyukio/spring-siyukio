@@ -2,6 +2,9 @@ package com.agentclientprotocol.sdk.agent;
 
 import com.agentclientprotocol.sdk.spec.AcpAgentTransport;
 import com.agentclientprotocol.sdk.util.Assert;
+import io.github.siyukio.tools.acp.AcpSchemaExt;
+import org.json.JSONObject;
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
@@ -22,6 +25,20 @@ public interface SimpleAcpAgent {
      */
     static AsyncAgentBuilder async(AcpAgentTransport transport) {
         return new AsyncAgentBuilder(transport);
+    }
+
+    @FunctionalInterface
+    interface ListToolsHandler {
+
+        Mono<AcpSchemaExt.ListToolsResult> handle(AcpSchemaExt.ListToolsRequest request);
+
+    }
+
+    @FunctionalInterface
+    interface CallToolHandler {
+
+        Mono<JSONObject> handle(AcpSchemaExt.CallToolRequest request, PromptContext context);
+
     }
 
     /**
@@ -48,6 +65,10 @@ public interface SimpleAcpAgent {
         private AcpAgent.SetSessionModelHandler setSessionModelHandler;
 
         private AcpAgent.CancelHandler cancelHandler;
+
+        private ListToolsHandler listToolsHandler;
+
+        private CallToolHandler callToolHandler;
 
         AsyncAgentBuilder(AcpAgentTransport transport) {
             Assert.notNull(transport, "Transport must not be null");
@@ -143,6 +164,17 @@ public interface SimpleAcpAgent {
             return this;
         }
 
+        public AsyncAgentBuilder listToolsHandler(ListToolsHandler handler) {
+            this.listToolsHandler = handler;
+            return this;
+        }
+
+        public AsyncAgentBuilder callToolHandler(CallToolHandler handler) {
+            this.callToolHandler = handler;
+            return this;
+        }
+
+
         /**
          * Sets the handler for cancel notifications.
          *
@@ -161,8 +193,9 @@ public interface SimpleAcpAgent {
          */
         public AcpAsyncAgent build() {
             return new SimpleAcpAsyncAgent(transport, requestTimeout, initializeHandler, authenticateHandler,
-                    newSessionHandler, loadSessionHandler, promptHandler, setSessionModeHandler, setSessionModelHandler,
-                    cancelHandler);
+                    newSessionHandler, loadSessionHandler, promptHandler, setSessionModeHandler,
+                    setSessionModelHandler, cancelHandler,
+                    listToolsHandler, callToolHandler);
         }
 
     }

@@ -353,7 +353,7 @@ public class SimpleAsyncSpec {
      *
      * @return a new instance of {@link AcpAsyncClient}
      */
-    public AcpAsyncClient build() {
+    public AcpAsyncClientExt build() {
         // Set up session update notification handler
         if (!sessionUpdateConsumers.isEmpty()) {
             notificationHandlers.put(AcpSchema.METHOD_SESSION_UPDATE, params -> {
@@ -372,7 +372,7 @@ public class SimpleAsyncSpec {
         AcpSession session = new SimpleAcpClientSession(requestTimeout, transport, requestHandlers, notificationHandlers,
                 Function.identity());
 
-        return new AcpAsyncClient(session, transport, clientCapabilities);
+        return new AcpAsyncClientExt(session, transport, clientCapabilities);
     }
 
 }

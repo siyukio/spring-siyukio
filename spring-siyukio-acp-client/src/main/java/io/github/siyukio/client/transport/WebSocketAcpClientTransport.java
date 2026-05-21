@@ -5,7 +5,6 @@ import com.agentclientprotocol.sdk.json.TypeRef;
 import com.agentclientprotocol.sdk.spec.AcpClientTransport;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.agentclientprotocol.sdk.util.Assert;
-import io.github.siyukio.tools.acp.Invoke;
 import io.github.siyukio.tools.util.AsyncUtils;
 import io.github.siyukio.tools.util.HttpClientUtils;
 import io.github.siyukio.tools.util.XDataUtils;
@@ -74,12 +73,6 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
 
         this.inboundSink = Sinks.many().unicast().onBackpressureBuffer();
         this.outboundSink = Sinks.many().unicast().onBackpressureBuffer();
-    }
-
-    public static String createAcpToolCall(Invoke invoke) {
-        return "<" + DEFAULT_ACP_INVOKE_TAG + ">"
-                + XDataUtils.toJSONString(invoke)
-                + "</" + DEFAULT_ACP_INVOKE_TAG + ">";
     }
 
     private URI buildUri(URI originalUri) {

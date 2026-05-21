@@ -47,10 +47,10 @@ public class AcpSessionHandlerImpl implements AcpSessionHandler {
                 "session_info_update", "test", XDataUtils.format(LocalDateTime.now())
         );
         acpSessionContext.sendUpdate(sessionInfoUpdate);
-        try {
-            Thread.sleep(60000);
-        } catch (InterruptedException ignored) {
-        }
+//        try {
+//            Thread.sleep(60000);
+//        } catch (InterruptedException ignored) {
+//        }
         return new AcpSchema.PromptResponse(AcpSchema.StopReason.END_TURN);
     }
 

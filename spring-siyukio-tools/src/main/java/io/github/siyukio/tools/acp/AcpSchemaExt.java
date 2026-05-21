@@ -4,7 +4,6 @@ import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.With;
 import org.json.JSONObject;
 
 import java.util.List;
@@ -16,13 +15,11 @@ import java.util.Map;
  */
 public final class AcpSchemaExt {
 
-    public static final String DEFAULT_AUTH_METHOD_NAME = "jwt_id";
-
     public static final String TRANSPORT_ID = "transport_id";
 
-    public static final String LIST_TOOLS = "list_tools";
+    public static final String METHOD_LIST_TOOLS = "list_tools";
 
-    public static final String TOOL_CALL_UPDATE = "tool_call_update";
+    public static final String METHOD_CALL_TOOL = "call_tool";
 
     private AcpSchemaExt() {
     }
@@ -81,23 +78,27 @@ public final class AcpSchemaExt {
     ) {
     }
 
-    @With
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public record ProgressNotification(
-            String toolCallId,
-
+            @JsonProperty("sessionUpdate")
+            String sessionUpdate,
+            @JsonProperty("progress")
             int progress,
-
+            @JsonProperty("total")
             int total,
+            @JsonProperty("message")
+            String message,
+            @JsonProperty("_meta")
+            Map<String, Object> meta
+    ) implements AcpSchema.SessionUpdate {
 
-            String message
-    ) {
-
-        public static ProgressNotification create(int progress, int total, String message) {
-            return new ProgressNotification(null, progress, total, message);
+        public ProgressNotification(String sessionUpdate, int progress, int total, String message) {
+            this(sessionUpdate, progress, total, message, null);
         }
 
-        public static ProgressNotification create(String message) {
-            return new ProgressNotification(null, 1, 1, message);
+        public ProgressNotification(String sessionUpdate, String message) {
+            this(sessionUpdate, 1, 1, message, null);
         }
     }
 
@@ -113,6 +114,36 @@ public final class AcpSchemaExt {
     public record ListToolsResult(
             List<Tool> tools
     ) {
+
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record ListToolsRequest(
+            @JsonProperty("_meta")
+            Map<String, Object> meta
+    ) {
+        public ListToolsRequest() {
+            this(null);
+        }
+
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record CallToolRequest(
+            @JsonProperty("tool")
+            String tool,
+            @JsonProperty("toolCallId")
+            String toolCallId,
+            @JsonProperty("params")
+            JSONObject params,
+            @JsonProperty("_meta")
+            Map<String, Object> meta
+    ) {
+        public CallToolRequest(String tool, String toolCallId, JSONObject params) {
+            this(tool, toolCallId, params, null);
+        }
 
     }
 }

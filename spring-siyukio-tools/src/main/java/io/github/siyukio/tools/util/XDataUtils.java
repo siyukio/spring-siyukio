@@ -81,6 +81,12 @@ public abstract class XDataUtils {
                         "config_option_update"
                 )
         );
+        OBJECT_MAPPER.registerSubtypes(
+                new NamedType(
+                        AcpSchemaExt.ProgressNotification.class,
+                        "progress"
+                )
+        );
         // LocalDateTime
         JavaTimeModule javaTimeModule = new JavaTimeModule();
         javaTimeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSmartSerializer());

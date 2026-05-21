@@ -1,12 +1,10 @@
 package io.github.siyukio.client;
 
 import com.agentclientprotocol.sdk.spec.AcpSchema;
-import com.github.benmanes.caffeine.cache.Cache;
 import io.github.siyukio.client.loadbalancer.DirectAcpClientLoadBalancer;
 import io.github.siyukio.client.loadbalancer.DnsRandomAcpClientLoadBalancer;
 import io.github.siyukio.client.loadbalancer.SimpleAsyncAcpClientLoadBalancer;
 import io.github.siyukio.tools.acp.AcpSchemaExt;
-import io.github.siyukio.tools.util.CacheUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 
@@ -183,9 +181,7 @@ public class SimpleAcpClient {
     public static class Builder {
 
         private final String uri;
-        private final List<SimpleAsyncAcpClient.ProgressNotificationHandler> progressNotificationHandlers = new ArrayList<>();
         private final List<SimpleAsyncAcpClient.SessionNotificationHandler> sessionNotificationHandlers = new ArrayList<>();
-        private final Cache<String, String> toolCallUpdateCache = CacheUtils.createCache(100_000);
         private SimpleAsyncAcpClient.RequestPermissionHandler requestPermissionHandler = null;
         private SimpleAsyncAcpClient.TerminalHandler terminalHandler = null;
         private SimpleAsyncAcpClient.ReadTextFileHandler readTextFileHandler = null;
@@ -272,17 +268,6 @@ public class SimpleAcpClient {
         }
 
         /**
-         * Adds a handler for progress notifications from the ACP server.
-         *
-         * @param progressNotificationHandler the progress notification handler
-         * @return this builder for chaining
-         */
-        public Builder progressNotificationHandler(SimpleAsyncAcpClient.ProgressNotificationHandler progressNotificationHandler) {
-            this.progressNotificationHandlers.add(progressNotificationHandler);
-            return this;
-        }
-
-        /**
          * Adds a handler for session notifications from the ACP server.
          *
          * @param sessionNotificationHandler the session notification handler
@@ -323,7 +308,6 @@ public class SimpleAcpClient {
          */
         public SimpleAcpClient build() {
             SimpleAsyncAcpClient.Builder builder = new SimpleAsyncAcpClient.Builder(
-                    this.toolCallUpdateCache, this.progressNotificationHandlers,
                     this.sessionNotificationHandlers, this.requestPermissionHandler,
                     this.terminalHandler, this.readTextFileHandler, this.writeTextFileHandler,
                     this.requestTimeout, this.connectTimeout, this.authorization
