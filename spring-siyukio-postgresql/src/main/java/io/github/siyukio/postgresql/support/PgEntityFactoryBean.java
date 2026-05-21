@@ -109,24 +109,29 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         EntityUtils.isSafe(columnName);
         String defaultValueStr = pgColumn.defaultValue();
         Object defaultValue;
+        boolean hasInterface = recordComponent.getType().getInterfaces().length > 0;
         if (defaultValueStr.isEmpty()) {
             defaultValue = switch (columnType) {
                 case ColumnType.INT, ColumnType.BIGINT, ColumnType.DOUBLE -> 0;
                 case ColumnType.BOOLEAN -> false;
-                case ColumnType.JSON_ARRAY -> new JSONArray();
-                case ColumnType.JSON_OBJECT -> new JSONObject();
-                case ColumnType.TEXT, ColumnType.DATETIME -> "";
+                case ColumnType.JSON_ARRAY -> hasInterface ? null : new JSONArray();
+                case ColumnType.JSON_OBJECT -> hasInterface ? null : new JSONObject();
+                case ColumnType.TEXT -> recordComponent.getType().isEnum() ? null : "";
+                case ColumnType.DATETIME -> "";
             };
         } else {
+            boolean isNull = defaultValueStr.equalsIgnoreCase("null");
             defaultValue = switch (columnType) {
                 case ColumnType.INT -> Integer.parseInt(defaultValueStr);
                 case ColumnType.BIGINT -> Long.parseLong(defaultValueStr);
                 case ColumnType.DOUBLE -> Double.parseDouble(defaultValueStr);
                 case ColumnType.BOOLEAN -> Boolean.valueOf(defaultValueStr);
-                case ColumnType.JSON_ARRAY -> XDataUtils.parse(defaultValueStr, JSONArray.class);
-                case ColumnType.JSON_OBJECT -> XDataUtils.parse(defaultValueStr, JSONObject.class);
-                case ColumnType.TEXT -> defaultValueStr;
-                case ColumnType.DATETIME -> XDataUtils.parse(defaultValueStr);
+                case ColumnType.JSON_ARRAY ->
+                        hasInterface || isNull ? null : XDataUtils.parse(defaultValueStr, JSONArray.class);
+                case ColumnType.JSON_OBJECT ->
+                        hasInterface || isNull ? null : XDataUtils.parse(defaultValueStr, JSONObject.class);
+                case ColumnType.TEXT -> isNull ? null : defaultValueStr;
+                case ColumnType.DATETIME -> isNull ? null : XDataUtils.parse(defaultValueStr);
             };
         }
         boolean encrypted = pgColumn.encrypted();

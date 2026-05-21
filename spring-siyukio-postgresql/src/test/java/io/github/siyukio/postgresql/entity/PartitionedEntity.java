@@ -1,5 +1,6 @@
 package io.github.siyukio.postgresql.entity;
 
+import com.agentclientprotocol.sdk.spec.AcpSchema;
 import io.github.siyukio.tools.entity.definition.EntityDefinition;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgColumn;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgEntity;
@@ -33,6 +34,12 @@ public record PartitionedEntity(
 
         @PgColumn
         String salt,
+
+        @PgColumn
+        AcpSchema.AgentMessageChunk agentMessageChunk,
+
+        @PgColumn
+        AcpSchema.StopReason stopReason,
 
         @PgColumn
         LocalDateTime createdAt,
