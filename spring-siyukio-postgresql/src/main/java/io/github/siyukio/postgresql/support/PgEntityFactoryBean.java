@@ -585,7 +585,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             AsyncUtils.scheduleWithFixedDelay(() -> {
                 // check next partition
                 EntityUtils.PartitionTable nextPartitionTable = EntityUtils.getNextPartitionTable(entityDefinition);
-                log.info("Check nextPartitionTable: {}, {}", entityDefinition.table(), nextPartitionTable.tableName());
+                log.debug("Check nextPartitionTable: {}, {}", entityDefinition.table(), nextPartitionTable.tableName());
                 if (System.currentTimeMillis() + 18L * 60L * 1000L > nextPartitionTable.from()) {
                     this.checkPartition(entityDefinition, nextPartitionTable, multiJdbcTemplate.getMaster());
                 }
