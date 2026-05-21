@@ -23,7 +23,6 @@ import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.http.converter.xml.MappingJackson2XmlHttpMessageConverter;
-import org.springframework.util.Assert;
 import org.springframework.util.StringValueResolver;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
@@ -32,6 +31,7 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Factory bean for creating API client proxy instances.
@@ -43,7 +43,7 @@ public class ApiClientFactoryBean implements FactoryBean<Object>, InitializingBe
 
     private final Class<?> beanClass;
 
-    private StringValueResolver stringValueResolver;
+    private PropertySourcesPlaceholdersResolver propertySourcesPlaceholdersResolver;
 
     private AipHandlerManager aipHandlerManager;
 
@@ -79,6 +79,9 @@ public class ApiClientFactoryBean implements FactoryBean<Object>, InitializingBe
 
     private Object newInstance() {
         ApiClient apiClient = this.beanClass.getAnnotation(ApiClient.class);
+        if (!apiClient.url().contains("${")) {
+            log.info("Api client: {} -> {}", beanClass.getSimpleName(), apiClient.url());
+        }
 
         HttpClient httpClient = HttpClientUtils.getHttpClient(apiClient.version());
 
@@ -122,20 +125,29 @@ public class ApiClientFactoryBean implements FactoryBean<Object>, InitializingBe
 
         RestClient restClient = restClientBuilder.build();
 
-        Assert.notNull(this.stringValueResolver, " stringValueResolver must not be null!");
+        AtomicReference<Boolean> logUrlReference = new AtomicReference<>(false);
+        StringValueResolver stringValueResolver = strVal -> {
+            String value = propertySourcesPlaceholdersResolver.resolvePlaceholders(strVal).toString();
+            if (apiClient.url().equals(strVal)) {
+                Boolean logUrl = logUrlReference.get();
+                if (!logUrl) {
+                    logUrlReference.set(true);
+                    log.info("Api client use resolver: {} -> {}", beanClass.getSimpleName(), value);
+                }
+            }
+            return value;
+        };
 
         HttpServiceProxyFactory factory = HttpServiceProxyFactory.builder()
                 .exchangeAdapter(RestClientAdapter.create(restClient))
-                .embeddedValueResolver(this.stringValueResolver)
+                .embeddedValueResolver(stringValueResolver)
                 .build();
         return factory.createClient(this.beanClass);
     }
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        PropertySourcesPlaceholdersResolver propertySourcesPlaceholdersResolver = new PropertySourcesPlaceholdersResolver(applicationContext.getEnvironment());
-        this.stringValueResolver = strVal -> propertySourcesPlaceholdersResolver.resolvePlaceholders(strVal).toString();
-
+        this.propertySourcesPlaceholdersResolver = new PropertySourcesPlaceholdersResolver(applicationContext.getEnvironment());
         ObjectProvider<AipHandlerManager> aipHandlerManagerProvider = applicationContext.getBeanProvider(AipHandlerManager.class);
         this.aipHandlerManager = aipHandlerManagerProvider.getIfAvailable();
         ObjectProvider<TokenProvider> tokenProviderProvider = applicationContext.getBeanProvider(TokenProvider.class);
