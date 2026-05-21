@@ -4,7 +4,7 @@ import com.agentclientprotocol.sdk.spec.AcpSchema;
 import io.github.siyukio.client.loadbalancer.DirectAcpClientLoadBalancer;
 import io.github.siyukio.client.loadbalancer.DnsRandomAcpClientLoadBalancer;
 import io.github.siyukio.client.loadbalancer.SimpleAsyncAcpClientLoadBalancer;
-import io.github.siyukio.tools.acp.AcpSchemaExt;
+import io.github.siyukio.tools.acp.sdk.spec.AcpSchemaExt;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 
@@ -43,6 +43,11 @@ public class SimpleAcpClient {
         return new Builder(uri);
     }
 
+    public <T> T callTool(String tool, Object params, Class<T> typeClass, SimpleAsyncAcpClient.ProgressNotificationHandler progressNotificationHandler) {
+        SimpleAsyncAcpClient simpleAsyncAcpClient = this.simpleAsyncAcpClientLoadBalancer.getClient();
+        return simpleAsyncAcpClient.callTool(tool, params, typeClass, progressNotificationHandler);
+    }
+
     /**
      * Calls a tool with the given parameters and returns the result as the specified type.
      *
@@ -53,8 +58,7 @@ public class SimpleAcpClient {
      * @return the tool result deserialized to the specified type
      */
     public <T> T callTool(String tool, Object params, Class<T> typeClass) {
-        SimpleAsyncAcpClient simpleAsyncAcpClient = this.simpleAsyncAcpClientLoadBalancer.getClient();
-        return simpleAsyncAcpClient.callTool(tool, params, typeClass);
+        return this.callTool(tool, params, typeClass, null);
     }
 
     /**
@@ -66,18 +70,7 @@ public class SimpleAcpClient {
      * @return the tool result deserialized to the specified type
      */
     public <T> T callTool(String tool, Class<T> typeClass) {
-        SimpleAsyncAcpClient simpleAsyncAcpClient = this.simpleAsyncAcpClientLoadBalancer.getClient();
-        return simpleAsyncAcpClient.callTool(tool, new JSONObject(), typeClass);
-    }
-
-    /**
-     * Calls a tool without parameters and ignores the result.
-     *
-     * @param tool the name of the tool to call
-     */
-    public void callTool(String tool) {
-        SimpleAsyncAcpClient simpleAsyncAcpClient = this.simpleAsyncAcpClientLoadBalancer.getClient();
-        simpleAsyncAcpClient.callTool(tool, new JSONObject(), Void.class);
+        return this.callTool(tool, new JSONObject(), typeClass);
     }
 
     /**
@@ -87,8 +80,16 @@ public class SimpleAcpClient {
      * @param params the parameters to pass to the tool
      */
     public void callTool(String tool, Object params) {
-        SimpleAsyncAcpClient simpleAsyncAcpClient = this.simpleAsyncAcpClientLoadBalancer.getClient();
-        simpleAsyncAcpClient.callTool(tool, params, Void.class);
+        this.callTool(tool, params, Void.class);
+    }
+
+    /**
+     * Calls a tool without parameters and ignores the result.
+     *
+     * @param tool the name of the tool to call
+     */
+    public void callTool(String tool) {
+        this.callTool(tool, new JSONObject());
     }
 
     /**

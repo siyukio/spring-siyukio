@@ -8,7 +8,9 @@ import com.agentclientprotocol.sdk.capabilities.NegotiatedCapabilities;
 import com.agentclientprotocol.sdk.error.AcpCapabilityException;
 import com.agentclientprotocol.sdk.json.TypeRef;
 import com.agentclientprotocol.sdk.spec.*;
-import io.github.siyukio.tools.acp.AcpSchemaExt;
+import io.github.siyukio.tools.acp.sdk.agent.AcpAsyncAgentExt;
+import io.github.siyukio.tools.acp.sdk.agent.ToolContext;
+import io.github.siyukio.tools.acp.sdk.spec.AcpSchemaExt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
@@ -29,7 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * @author Mark Pollack
  */
-public class SimpleAcpAsyncAgent implements AcpAsyncAgent {
+public class SimpleAcpAsyncAgent implements AcpAsyncAgentExt {
 
     private static final Logger logger = LoggerFactory.getLogger(SimpleAcpAsyncAgent.class);
 
@@ -197,7 +199,7 @@ public class SimpleAcpAsyncAgent implements AcpAsyncAgent {
                     AcpSchemaExt.CallToolRequest request = transport.unmarshalFrom(params,
                             new TypeRef<AcpSchemaExt.CallToolRequest>() {
                             });
-                    PromptContext context = new DefaultPromptContext(this, request.toolCallId());
+                    ToolContext context = new ToolContext(this, request.toolCallId());
                     return callToolHandler.handle(request, context)
                             .cast(Object.class);
                 });
@@ -227,6 +229,14 @@ public class SimpleAcpAsyncAgent implements AcpAsyncAgent {
         }
         AcpSchema.SessionNotification notification = new AcpSchema.SessionNotification(sessionId, update);
         return session.sendNotification(AcpSchema.METHOD_SESSION_UPDATE, notification);
+    }
+
+    @Override
+    public Mono<Void> sendToolProgress(String toolCallId, AcpSchemaExt.ProgressNotification notification) {
+        if (session == null) {
+            return Mono.error(new IllegalStateException("Agent not started"));
+        }
+        return session.sendNotification(toolCallId, notification);
     }
 
     @Override

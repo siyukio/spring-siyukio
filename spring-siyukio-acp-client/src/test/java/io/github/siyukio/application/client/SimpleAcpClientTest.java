@@ -5,11 +5,12 @@ import io.github.siyukio.application.dto.CreateAuthorizationRequest;
 import io.github.siyukio.application.dto.CreateAuthorizationResponse;
 import io.github.siyukio.client.SimpleAcpClient;
 import io.github.siyukio.client.SimpleAsyncAcpClient;
-import io.github.siyukio.tools.acp.AcpSchemaExt;
+import io.github.siyukio.tools.acp.sdk.spec.AcpSchemaExt;
 import io.github.siyukio.tools.api.dto.TokenResponse;
 import io.github.siyukio.tools.util.IdUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -126,7 +127,10 @@ public class SimpleAcpClientTest {
     void testToolCallProgress() {
         TokenResponse tokenResponse = SIMPLE_ACP_CLIENT.callTool(
                 "toolCallProgress",
-                TokenResponse.class);
+                new JSONObject(),
+                TokenResponse.class, (progressNotification) -> {
+                    log.info("{}", XDataUtils.toPrettyJSONString(progressNotification));
+                });
         log.info("{}", XDataUtils.toPrettyJSONString(tokenResponse));
     }
 

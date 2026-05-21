@@ -2,8 +2,8 @@ package io.github.siyukio.application.acp;
 
 import com.agentclientprotocol.sdk.error.AcpProtocolException;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
-import io.github.siyukio.tools.acp.AcpSchemaExt;
-import io.github.siyukio.tools.acp.AcpSessionContext;
+import io.github.siyukio.tools.acp.sdk.agent.AcpSessionContext;
+import io.github.siyukio.tools.acp.sdk.spec.AcpSchemaExt;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;

@@ -15,7 +15,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.github.siyukio.tools.acp.AcpSchemaExt;
+import io.github.siyukio.tools.acp.sdk.spec.AcpSchemaExt;
 import io.github.siyukio.tools.api.constants.ApiConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
@@ -79,12 +79,6 @@ public abstract class XDataUtils {
                 new NamedType(
                         AcpSchemaExt.ConfigOptionUpdate.class,
                         "config_option_update"
-                )
-        );
-        OBJECT_MAPPER.registerSubtypes(
-                new NamedType(
-                        AcpSchemaExt.ProgressNotification.class,
-                        "progress"
                 )
         );
         // LocalDateTime

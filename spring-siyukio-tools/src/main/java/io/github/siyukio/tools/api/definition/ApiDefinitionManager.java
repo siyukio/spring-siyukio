@@ -1,6 +1,6 @@
 package io.github.siyukio.tools.api.definition;
 
-import io.github.siyukio.tools.acp.AcpSessionContext;
+import io.github.siyukio.tools.acp.sdk.agent.AcpSessionContext;
 import io.github.siyukio.tools.api.ApiRequest;
 import io.github.siyukio.tools.api.annotation.ApiController;
 import io.github.siyukio.tools.api.annotation.ApiMapping;

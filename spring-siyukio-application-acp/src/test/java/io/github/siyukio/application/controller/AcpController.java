@@ -4,8 +4,8 @@ import com.agentclientprotocol.sdk.agent.Command;
 import com.agentclientprotocol.sdk.agent.CommandResult;
 import io.github.siyukio.application.dto.CreateAuthorizationRequest;
 import io.github.siyukio.application.dto.CreateAuthorizationResponse;
-import io.github.siyukio.tools.acp.AcpSchemaExt;
-import io.github.siyukio.tools.acp.AcpSessionContext;
+import io.github.siyukio.tools.acp.sdk.agent.AcpSessionContext;
+import io.github.siyukio.tools.acp.sdk.spec.AcpSchemaExt;
 import io.github.siyukio.tools.api.annotation.ApiController;
 import io.github.siyukio.tools.api.annotation.ApiMapping;
 import io.github.siyukio.tools.api.dto.TokenResponse;
@@ -57,14 +57,13 @@ public class AcpController {
     @ApiMapping(path = "/toolCallProgress", acpAvailable = true)
     public TokenResponse toolCallProgress(Token token, AcpSessionContext acpSessionContext) {
         if (acpSessionContext != null) {
-            log.info("toolProgress: {}", acpSessionContext.getSessionId());
             for (int i = 0; i < 3; i++) {
                 JSONObject messageJson = new JSONObject();
                 messageJson.put("data", i);
                 AcpSchemaExt.ProgressNotification progressNotification = new AcpSchemaExt.ProgressNotification(
-                        "progress", i + 1, 3, XDataUtils.toJSONString(messageJson)
+                        i + 1, 3, XDataUtils.toJSONString(messageJson)
                 );
-                acpSessionContext.sendProgress(progressNotification);
+                acpSessionContext.sendToolProgress(progressNotification);
             }
         }
         return TokenResponse.builder()

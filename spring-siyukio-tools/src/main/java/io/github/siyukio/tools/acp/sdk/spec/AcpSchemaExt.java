@@ -1,4 +1,4 @@
-package io.github.siyukio.tools.acp;
+package io.github.siyukio.tools.acp.sdk.spec;
 
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -81,8 +81,7 @@ public final class AcpSchemaExt {
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record ProgressNotification(
-            @JsonProperty("sessionUpdate")
-            String sessionUpdate,
+
             @JsonProperty("progress")
             int progress,
             @JsonProperty("total")
@@ -91,14 +90,14 @@ public final class AcpSchemaExt {
             String message,
             @JsonProperty("_meta")
             Map<String, Object> meta
-    ) implements AcpSchema.SessionUpdate {
+    ) {
 
-        public ProgressNotification(String sessionUpdate, int progress, int total, String message) {
-            this(sessionUpdate, progress, total, message, null);
+        public ProgressNotification(int progress, int total, String message) {
+            this(progress, total, message, null);
         }
 
-        public ProgressNotification(String sessionUpdate, String message) {
-            this(sessionUpdate, 1, 1, message, null);
+        public ProgressNotification(String message) {
+            this(100, 100, message, null);
         }
     }
 

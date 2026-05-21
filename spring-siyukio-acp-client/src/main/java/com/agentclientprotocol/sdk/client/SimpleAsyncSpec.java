@@ -1,10 +1,7 @@
 package com.agentclientprotocol.sdk.client;
 
 import com.agentclientprotocol.sdk.json.TypeRef;
-import com.agentclientprotocol.sdk.spec.AcpClientSession;
-import com.agentclientprotocol.sdk.spec.AcpClientTransport;
-import com.agentclientprotocol.sdk.spec.AcpSchema;
-import com.agentclientprotocol.sdk.spec.AcpSession;
+import com.agentclientprotocol.sdk.spec.*;
 import com.agentclientprotocol.sdk.util.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -369,7 +366,7 @@ public class SimpleAsyncSpec {
         }
 
         // Create session with request and notification handlers
-        AcpSession session = new SimpleAcpClientSession(requestTimeout, transport, requestHandlers, notificationHandlers,
+        AcpSessionExt session = new SimpleAcpClientSession(requestTimeout, transport, requestHandlers, notificationHandlers,
                 Function.identity());
 
         return new AcpAsyncClientExt(session, transport, clientCapabilities);

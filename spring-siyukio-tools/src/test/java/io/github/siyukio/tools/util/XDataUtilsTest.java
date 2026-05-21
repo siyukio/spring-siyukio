@@ -3,7 +3,7 @@ package io.github.siyukio.tools.util;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.fasterxml.jackson.databind.EnumNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.EnumNaming;
-import io.github.siyukio.tools.acp.AcpSchemaExt;
+import io.github.siyukio.tools.acp.sdk.spec.AcpSchemaExt;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;

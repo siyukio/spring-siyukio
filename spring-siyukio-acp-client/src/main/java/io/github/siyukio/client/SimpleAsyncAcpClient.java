@@ -5,7 +5,7 @@ import com.agentclientprotocol.sdk.client.SimpleAsyncSpec;
 import com.agentclientprotocol.sdk.spec.AcpClientSession;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import io.github.siyukio.client.transport.WebSocketAcpClientTransport;
-import io.github.siyukio.tools.acp.AcpSchemaExt;
+import io.github.siyukio.tools.acp.sdk.spec.AcpSchemaExt;
 import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.util.IdUtils;
 import io.github.siyukio.tools.util.XDataUtils;
@@ -46,12 +46,16 @@ public class SimpleAsyncAcpClient {
         return this.webSocketAcpClientTransport.isClosing();
     }
 
-    public <T> T callTool(String tool, Object params, Class<T> typeClass) {
+    public <T> T callTool(String tool, Object params, Class<T> typeClass, ProgressNotificationHandler progressNotificationHandler) {
         String toolCallId = IdUtils.getUniqueId();
         JSONObject paramsJson = XDataUtils.copy(params, JSONObject.class);
         AcpSchemaExt.CallToolRequest request = new AcpSchemaExt.CallToolRequest(tool, toolCallId, paramsJson);
+        AcpClientSession.NotificationHandler toolUpdateNotificationHandler = null;
+        if (progressNotificationHandler != null) {
+            toolUpdateNotificationHandler = new ToolUpdateNotificationHandler(progressNotificationHandler);
+        }
         try {
-            JSONObject response = this.acpAsyncClientExt.callTool(request).block();
+            JSONObject response = this.acpAsyncClientExt.callTool(request, toolUpdateNotificationHandler).block();
             if (typeClass.equals(Void.class)) {
                 return null;
             } else {
@@ -119,6 +123,13 @@ public class SimpleAsyncAcpClient {
     }
 
     @FunctionalInterface
+    public interface ProgressNotificationHandler {
+
+        void handle(AcpSchemaExt.ProgressNotification progressNotification);
+
+    }
+
+    @FunctionalInterface
     public interface RequestPermissionHandler {
 
         AcpSchema.RequestPermissionResponse handle(AcpSchema.RequestPermissionRequest request);
@@ -178,6 +189,26 @@ public class SimpleAsyncAcpClient {
         ReleaseTerminalHandler releaseTerminalHandler();
     }
 
+    public static class ToolUpdateNotificationHandler implements AcpClientSession.NotificationHandler {
+
+        private final ProgressNotificationHandler progressNotificationHandler;
+
+        public ToolUpdateNotificationHandler(ProgressNotificationHandler progressNotificationHandler) {
+            this.progressNotificationHandler = progressNotificationHandler;
+        }
+
+        @Override
+        public Mono<Void> handle(Object notification) {
+            if (log.isDebugEnabled()) {
+                log.debug("{}", XDataUtils.toPrettyJSONString(notification));
+            }
+
+            AcpSchemaExt.ProgressNotification progressNotification = XDataUtils.copy(notification, AcpSchemaExt.ProgressNotification.class);
+            this.progressNotificationHandler.handle(progressNotification);
+            return Mono.empty();
+        }
+    }
+
     public static class SessionUpdateNotificationHandler implements AcpClientSession.NotificationHandler {
 
         private final List<SessionNotificationHandler> sessionNotificationHandlers;
@@ -197,7 +228,9 @@ public class SimpleAsyncAcpClient {
 
         @Override
         public Mono<Void> handle(Object notification) {
-            log.debug("{}: {}", AcpSchema.METHOD_SESSION_UPDATE, XDataUtils.toPrettyJSONString(notification));
+            if (log.isDebugEnabled()) {
+                log.debug("{}: {}", AcpSchema.METHOD_SESSION_UPDATE, XDataUtils.toPrettyJSONString(notification));
+            }
             AcpSchema.SessionNotification sessionNotification = XDataUtils.copy(notification, AcpSchema.SessionNotification.class);
             this.handleSessionNotification(sessionNotification);
             return Mono.empty();

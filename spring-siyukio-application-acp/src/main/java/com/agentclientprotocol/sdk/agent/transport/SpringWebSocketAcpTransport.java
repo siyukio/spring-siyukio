@@ -14,8 +14,9 @@ import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.agentclientprotocol.sdk.spec.AcpSchema.JSONRPCMessage;
 import com.agentclientprotocol.sdk.util.Assert;
 import io.github.siyukio.application.acp.AcpSessionHandler;
-import io.github.siyukio.tools.acp.AcpSchemaExt;
-import io.github.siyukio.tools.acp.AcpSessionContext;
+import io.github.siyukio.tools.acp.sdk.agent.AcpSessionContext;
+import io.github.siyukio.tools.acp.sdk.agent.ToolContext;
+import io.github.siyukio.tools.acp.sdk.spec.AcpSchemaExt;
 import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.api.ApiHandler;
 import io.github.siyukio.tools.api.ApiProfiles;
@@ -514,7 +515,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
         }
 
         @Override
-        public Mono<JSONObject> handle(AcpSchemaExt.CallToolRequest request, PromptContext context) {
+        public Mono<JSONObject> handle(AcpSchemaExt.CallToolRequest request, ToolContext context) {
             ApiHandler apiHandler = toolHandlerMap.get(request.tool());
             if (apiHandler == null) {
                 return Mono.error(new AcpProtocolException(HttpStatus.NOT_FOUND.value(), "Tool not found"));

@@ -1,10 +1,11 @@
-package io.github.siyukio.tools.acp;
+package io.github.siyukio.tools.acp.sdk.agent;
 
 import com.agentclientprotocol.sdk.agent.Command;
 import com.agentclientprotocol.sdk.agent.CommandResult;
 import com.agentclientprotocol.sdk.agent.PromptContext;
 import com.agentclientprotocol.sdk.error.AcpCapabilityException;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
+import io.github.siyukio.tools.acp.sdk.spec.AcpSchemaExt;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.util.IdUtils;
 import lombok.Getter;
@@ -22,6 +23,8 @@ public class AcpSessionContext {
 
     private final PromptContext promptContext;
 
+    private final ToolContext toolContext;
+
     @Getter
     private final Token token;
 
@@ -31,25 +34,38 @@ public class AcpSessionContext {
         this.promptContext = promptContext;
         this.token = token;
         this.transportId = transportId;
+        this.toolContext = null;
     }
 
-    public String getSessionId() {
-        return this.promptContext.getSessionId();
+    public AcpSessionContext(ToolContext toolContext, Token token, String transportId) {
+        this.promptContext = null;
+        this.token = token;
+        this.transportId = transportId;
+        this.toolContext = toolContext;
     }
 
-    public void sendProgress(AcpSchemaExt.ProgressNotification progressNotification) {
-        this.promptContext.sendUpdate(this.getSessionId(), progressNotification)
+    public void sendToolProgress(AcpSchemaExt.ProgressNotification progressNotification) {
+        if (this.toolContext == null) {
+            return;
+        }
+        this.toolContext.sendProgress(progressNotification)
                 .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
                 .block();
     }
 
     public void sendUpdate(AcpSchema.SessionUpdate sessionUpdate) {
-        this.promptContext.sendUpdate(this.getSessionId(), sessionUpdate)
+        if (this.promptContext == null) {
+            return;
+        }
+        this.promptContext.sendUpdate(this.promptContext.getSessionId(), sessionUpdate)
                 .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
                 .block();
     }
 
     public void sendMessage(String text) {
+        if (this.promptContext == null) {
+            return;
+        }
         this.promptContext.sendMessage(text)
                 .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
                 .block();
@@ -57,12 +73,18 @@ public class AcpSessionContext {
 
 
     public void sendThought(String text) {
+        if (this.promptContext == null) {
+            return;
+        }
         this.promptContext.sendThought(text)
                 .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
                 .block();
     }
 
     public Boolean askPermission(String action, Duration duration) {
+        if (this.promptContext == null) {
+            return false;
+        }
         AcpSchema.ToolCallUpdate toolCall = new AcpSchema.ToolCallUpdate(
                 IdUtils.getUniqueId(), action, AcpSchema.ToolKind.EDIT, AcpSchema.ToolCallStatus.PENDING,
                 null, null, null, null);
@@ -70,7 +92,7 @@ public class AcpSessionContext {
         List<AcpSchema.PermissionOption> options = List.of(
                 new AcpSchema.PermissionOption("allow", "Allow", AcpSchema.PermissionOptionKind.ALLOW_ONCE),
                 new AcpSchema.PermissionOption("deny", "Deny", AcpSchema.PermissionOptionKind.REJECT_ONCE));
-        AcpSchema.RequestPermissionRequest request = new AcpSchema.RequestPermissionRequest(this.getSessionId(), toolCall, options);
+        AcpSchema.RequestPermissionRequest request = new AcpSchema.RequestPermissionRequest(this.promptContext.getSessionId(), toolCall, options);
 
         AcpSchema.RequestPermissionResponse response = this.requestPermission(request, duration);
         return response.outcome() instanceof AcpSchema.PermissionSelected s
@@ -80,6 +102,9 @@ public class AcpSessionContext {
     public AcpSchema.RequestPermissionResponse requestPermission(
             AcpSchema.RequestPermissionRequest request,
             Duration duration) {
+        if (this.promptContext == null) {
+            return new AcpSchema.RequestPermissionResponse(new AcpSchema.PermissionCancelled());
+        }
         return this.promptContext.requestPermission(request)
                 .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
                 .timeout(duration)
@@ -88,6 +113,9 @@ public class AcpSessionContext {
     }
 
     public String askChoice(String question, List<String> options, Duration duration) {
+        if (this.promptContext == null) {
+            return "";
+        }
         List<AcpSchema.PermissionOption> permOptions = new ArrayList<>();
         for (int i = 0; i < options.size(); i++) {
             permOptions.add(new AcpSchema.PermissionOption(
@@ -98,7 +126,7 @@ public class AcpSessionContext {
                 IdUtils.getUniqueId(), question, AcpSchema.ToolKind.OTHER,
                 AcpSchema.ToolCallStatus.PENDING, null, null, null, null);
 
-        AcpSchema.RequestPermissionRequest request = new AcpSchema.RequestPermissionRequest(this.getSessionId(), toolCall, permOptions);
+        AcpSchema.RequestPermissionRequest request = new AcpSchema.RequestPermissionRequest(this.promptContext.getSessionId(), toolCall, permOptions);
         AcpSchema.RequestPermissionResponse response = this.requestPermission(request, duration);
 
         if (response.outcome() instanceof AcpSchema.PermissionSelected s) {
@@ -109,6 +137,9 @@ public class AcpSessionContext {
     }
 
     public CommandResult execute(Command command, Duration duration) {
+        if (this.promptContext == null) {
+            return new CommandResult("Client terminal not supported", 1);
+        }
         return this.promptContext.execute(command)
                 .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
                 .timeout(duration)
@@ -118,6 +149,9 @@ public class AcpSessionContext {
     }
 
     public CommandResult readFile(String path, Duration duration) {
+        if (this.promptContext == null) {
+            return new CommandResult("Client read file not supported", 1);
+        }
         return this.promptContext.readFile(path)
                 .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
                 .timeout(duration)
@@ -128,6 +162,9 @@ public class AcpSessionContext {
     }
 
     public CommandResult writeFile(String path, String content, Duration duration) {
+        if (this.promptContext == null) {
+            return new CommandResult("Client write file not supported", 1);
+        }
         return this.promptContext.writeFile(path, content)
                 .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
                 .timeout(duration)

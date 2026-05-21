@@ -1,12 +1,8 @@
-package com.agentclientprotocol.sdk.client;
+package com.agentclientprotocol.sdk.spec;
 
 import com.agentclientprotocol.sdk.error.AcpErrorCodes;
 import com.agentclientprotocol.sdk.error.AcpProtocolException;
 import com.agentclientprotocol.sdk.json.TypeRef;
-import com.agentclientprotocol.sdk.spec.AcpClientSession;
-import com.agentclientprotocol.sdk.spec.AcpClientTransport;
-import com.agentclientprotocol.sdk.spec.AcpSchema;
-import com.agentclientprotocol.sdk.spec.AcpSession;
 import com.agentclientprotocol.sdk.util.Assert;
 import io.github.siyukio.tools.util.AsyncUtils;
 import io.github.siyukio.tools.util.IdUtils;
@@ -27,7 +23,7 @@ import java.util.function.Function;
  *
  * @author Bugee
  */
-public class SimpleAcpClientSession implements AcpSession {
+public class SimpleAcpClientSession implements AcpSessionExt {
 
     private static final Logger logger = LoggerFactory.getLogger(SimpleAcpClientSession.class);
 
@@ -303,6 +299,16 @@ public class SimpleAcpClientSession implements AcpSession {
     @Override
     public void close() {
         dismissPendingResponses();
+    }
+
+    @Override
+    public void putNotificationHandler(String toolCallId, AcpClientSession.NotificationHandler handler) {
+        this.notificationHandlers.put(toolCallId, handler);
+    }
+
+    @Override
+    public void removeNotification(String toolCallId) {
+        this.notificationHandlers.remove(toolCallId);
     }
 
     record MethodNotFoundError(

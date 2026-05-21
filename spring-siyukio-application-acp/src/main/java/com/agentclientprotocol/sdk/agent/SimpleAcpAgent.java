@@ -2,7 +2,8 @@ package com.agentclientprotocol.sdk.agent;
 
 import com.agentclientprotocol.sdk.spec.AcpAgentTransport;
 import com.agentclientprotocol.sdk.util.Assert;
-import io.github.siyukio.tools.acp.AcpSchemaExt;
+import io.github.siyukio.tools.acp.sdk.agent.ToolContext;
+import io.github.siyukio.tools.acp.sdk.spec.AcpSchemaExt;
 import org.json.JSONObject;
 import reactor.core.publisher.Mono;
 
@@ -37,7 +38,7 @@ public interface SimpleAcpAgent {
     @FunctionalInterface
     interface CallToolHandler {
 
-        Mono<JSONObject> handle(AcpSchemaExt.CallToolRequest request, PromptContext context);
+        Mono<JSONObject> handle(AcpSchemaExt.CallToolRequest request, ToolContext context);
 
     }
 
