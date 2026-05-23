@@ -97,7 +97,7 @@ public class SimpleAcpClient {
      *
      * @return the list of available tools
      */
-    public AcpSchemaExt.ListToolsResult listTools() {
+    public AcpSchemaExt.ListToolsResult listTool() {
         SimpleAsyncAcpClient simpleAsyncAcpClient = this.simpleAsyncAcpClientLoadBalancer.getClient();
         return simpleAsyncAcpClient.listTools();
     }

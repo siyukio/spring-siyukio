@@ -474,10 +474,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
         public AcpToolHandler(Map<String, ApiHandler> apiHandlerMap) {
             apiHandlerMap.forEach((k, v) -> {
                 if (v.apiDefinition().acpAvailable()) {
-                    if (k.startsWith("/")) {
-                        k = k.substring(1);
-                    }
-                    k = k.replace("/", ".");
+                    k = AcpSchemaExt.apiToTool(k);
                     toolHandlerMap.put(k, v);
                 }
             });
@@ -516,7 +513,8 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
 
         @Override
         public Mono<JSONObject> handle(AcpSchemaExt.CallToolRequest request, ToolContext context) {
-            ApiHandler apiHandler = toolHandlerMap.get(request.tool());
+            String tool = AcpSchemaExt.apiToTool(request.tool());
+            ApiHandler apiHandler = toolHandlerMap.get(tool);
             if (apiHandler == null) {
                 return Mono.error(new AcpProtocolException(HttpStatus.NOT_FOUND.value(), "Tool not found"));
             }

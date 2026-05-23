@@ -107,24 +107,24 @@ public class SimpleAcpClientTest {
     }
 
     @Test
-    void testListTools() {
-        AcpSchemaExt.ListToolsResult listToolsResult = SIMPLE_ACP_CLIENT.listTools();
+    void testListTool() {
+        AcpSchemaExt.ListToolsResult listToolsResult = SIMPLE_ACP_CLIENT.listTool();
         log.info("{}", XDataUtils.toPrettyJSONString(listToolsResult));
     }
 
     @Test
-    void testToolCall() {
+    void testCallTool() {
         CreateAuthorizationRequest createAuthorizationRequest = CreateAuthorizationRequest.builder()
                 .uid("test").name("test").roles(List.of()).build();
         CreateAuthorizationResponse createAuthorizationResponse = SIMPLE_ACP_CLIENT.callTool(
-                "authorization.create",
+                "/authorization/create",
                 createAuthorizationRequest,
                 CreateAuthorizationResponse.class);
         log.info("{}", XDataUtils.toPrettyJSONString(createAuthorizationResponse));
     }
 
     @Test
-    void testToolCallProgress() {
+    void testCallToolProgress() {
         TokenResponse tokenResponse = SIMPLE_ACP_CLIENT.callTool(
                 "toolCallProgress",
                 new JSONObject(),

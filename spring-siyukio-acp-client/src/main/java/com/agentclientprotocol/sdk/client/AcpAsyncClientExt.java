@@ -33,17 +33,17 @@ public class AcpAsyncClientExt extends AcpAsyncClient {
 
     public Mono<AcpSchemaExt.ListToolsResult> listTools(AcpSchemaExt.ListToolsRequest listToolsRequest) {
         Assert.notNull(listToolsRequest, "ListTools request must not be null");
-        return session.sendRequest(AcpSchemaExt.METHOD_LIST_TOOLS, listToolsRequest, LIST_TOOLS_RESPONSE_TYPE_REF);
+        return session.sendRequest(AcpSchemaExt.METHOD_TOOL_LIST, listToolsRequest, LIST_TOOLS_RESPONSE_TYPE_REF);
     }
 
     public Mono<JSONObject> callTool(AcpSchemaExt.CallToolRequest callToolRequest, AcpClientSession.NotificationHandler notificationHandler) {
         Assert.notNull(callToolRequest, "CallTool request must not be null");
         if (notificationHandler == null) {
-            return session.sendRequest(AcpSchemaExt.METHOD_CALL_TOOL, callToolRequest, CALL_TOOL_RESPONSE_TYPE_REF);
+            return session.sendRequest(AcpSchemaExt.METHOD_TOOL_CALL, callToolRequest, CALL_TOOL_RESPONSE_TYPE_REF);
         }
 
         this.session.putNotificationHandler(callToolRequest.toolCallId(), notificationHandler);
-        return session.sendRequest(AcpSchemaExt.METHOD_CALL_TOOL, callToolRequest, CALL_TOOL_RESPONSE_TYPE_REF)
+        return session.sendRequest(AcpSchemaExt.METHOD_TOOL_CALL, callToolRequest, CALL_TOOL_RESPONSE_TYPE_REF)
                 .doFinally(signalType -> {
                     this.session.removeNotification(callToolRequest.toolCallId());
                 });

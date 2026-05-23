@@ -185,7 +185,7 @@ public class SimpleAcpAsyncAgent implements AcpAsyncAgentExt {
 
             // Set listTools handler
             if (this.listToolsHandler != null) {
-                requestHandlers.put(AcpSchemaExt.METHOD_LIST_TOOLS, params -> {
+                requestHandlers.put(AcpSchemaExt.METHOD_TOOL_LIST, params -> {
                     AcpSchemaExt.ListToolsRequest request = transport.unmarshalFrom(params,
                             new TypeRef<AcpSchemaExt.ListToolsRequest>() {
                             });
@@ -195,7 +195,7 @@ public class SimpleAcpAsyncAgent implements AcpAsyncAgentExt {
 
             // Set callTool handler
             if (this.callToolHandler != null) {
-                requestHandlers.put(AcpSchemaExt.METHOD_CALL_TOOL, params -> {
+                requestHandlers.put(AcpSchemaExt.METHOD_TOOL_CALL, params -> {
                     AcpSchemaExt.CallToolRequest request = transport.unmarshalFrom(params,
                             new TypeRef<AcpSchemaExt.CallToolRequest>() {
                             });

@@ -17,11 +17,19 @@ public final class AcpSchemaExt {
 
     public static final String TRANSPORT_ID = "transport_id";
 
-    public static final String METHOD_LIST_TOOLS = "list_tools";
+    public static final String METHOD_TOOL_LIST = "tool/list";
 
-    public static final String METHOD_CALL_TOOL = "call_tool";
+    public static final String METHOD_TOOL_CALL = "tool/call";
 
     private AcpSchemaExt() {
+    }
+
+    public static String apiToTool(String path) {
+        if (path.startsWith("/")) {
+            path = path.substring(1);
+        }
+        path = path.replace("/", ".");
+        return path;
     }
 
     public enum SessionConfigOptionCategory {
