@@ -33,28 +33,48 @@ public abstract class AbstractPgEntityDao<T> implements PgEntityDao<T> {
         this.entityExecutor = entityExecutor;
     }
 
-    protected final void preInsert(KeyDefinition keyDefinition, List<ColumnDefinition> columnDefinitions, JSONObject entityJson) {
+    private void setDefaultField(JSONObject entityJson) {
+        EntityDefinition entityDefinition = this.entityExecutor.getEntityDefinition();
+        // fill in the default value when column value is null
+        Object columnValue;
+        for (ColumnDefinition columnDefinition : entityDefinition.columnDefinitions()) {
+            columnValue = entityJson.opt(columnDefinition.fieldName());
+            if (JSONObject.NULL.equals(columnValue)) {
+                entityJson.put(columnDefinition.fieldName(), columnDefinition.defaultValue());
+            }
+        }
+
+        long createdAtTs = entityJson.optLong(EntityConstants.CREATED_AT_TS_FIELD, 0);
+        if (createdAtTs <= 0) {
+            createdAtTs = System.currentTimeMillis();
+        }
+        String createdAtFormat = XDataUtils.formatMs(createdAtTs);
+        entityJson.put(EntityConstants.CREATED_AT_TS_FIELD, createdAtTs);
+        entityJson.put(EntityConstants.CREATED_AT_FIELD, createdAtFormat);
+
+        long updatedAtTs = entityJson.optLong(EntityConstants.UPDATED_AT_TS_FIELD, 0);
+        String updatedAtFormat;
+        if (updatedAtTs <= 0) {
+            updatedAtTs = createdAtTs;
+            updatedAtFormat = createdAtFormat;
+        } else {
+            updatedAtFormat = XDataUtils.formatMs(updatedAtTs);
+        }
+        entityJson.put(EntityConstants.UPDATED_AT_TS_FIELD, updatedAtTs);
+        entityJson.put(EntityConstants.UPDATED_AT_FIELD, updatedAtFormat);
+    }
+
+    protected final void preInsert(JSONObject entityJson) {
+        EntityDefinition entityDefinition = this.entityExecutor.getEntityDefinition();
+        KeyDefinition keyDefinition = entityDefinition.keyDefinition();
         // generate the primary key value
         if (keyDefinition.generated() && keyDefinition.type().equals(ColumnType.TEXT)) {
             if (!entityJson.has(keyDefinition.fieldName())) {
                 entityJson.put(keyDefinition.fieldName(), IdUtils.getUniqueId());
             }
         }
-        // fill in the default value when column value is null
-        Object columnValue;
-        for (ColumnDefinition columnDefinition : columnDefinitions) {
-            columnValue = entityJson.opt(columnDefinition.fieldName());
-            if (JSONObject.NULL.equals(columnValue)) {
-                entityJson.put(columnDefinition.fieldName(), columnDefinition.defaultValue());
-            }
-        }
-        //
-        long createdAtTs = System.currentTimeMillis();
-        String createdAtFormat = XDataUtils.formatMs(createdAtTs);
-        entityJson.put(EntityConstants.CREATED_AT_TS_FIELD, createdAtTs);
-        entityJson.put(EntityConstants.CREATED_AT_FIELD, createdAtFormat);
-        entityJson.put(EntityConstants.UPDATED_AT_TS_FIELD, createdAtTs);
-        entityJson.put(EntityConstants.UPDATED_AT_FIELD, createdAtFormat);
+
+        this.setDefaultField(entityJson);
     }
 
     protected final void preUpdate(JSONObject entityJson) {
@@ -65,12 +85,7 @@ public abstract class AbstractPgEntityDao<T> implements PgEntityDao<T> {
     }
 
     protected final void preUpsert(JSONObject entityJson) {
-        long createdAtTs = System.currentTimeMillis();
-        String createdAtFormat = XDataUtils.formatMs(createdAtTs);
-        entityJson.put(EntityConstants.CREATED_AT_TS_FIELD, createdAtTs);
-        entityJson.put(EntityConstants.CREATED_AT_FIELD, createdAtFormat);
-        entityJson.put(EntityConstants.UPDATED_AT_TS_FIELD, createdAtTs);
-        entityJson.put(EntityConstants.UPDATED_AT_FIELD, createdAtFormat);
+        this.setDefaultField(entityJson);
     }
 
     @Override
@@ -82,8 +97,7 @@ public abstract class AbstractPgEntityDao<T> implements PgEntityDao<T> {
     @Override
     public final T insert(T t) {
         JSONObject entityJson = XDataUtils.copy(t, JSONObject.class);
-        EntityDefinition entityDefinition = this.entityExecutor.getEntityDefinition();
-        this.preInsert(entityDefinition.keyDefinition(), entityDefinition.columnDefinitions(), entityJson);
+        this.preInsert(entityJson);
         entityJson = this.entityExecutor.insert(entityJson);
         return XDataUtils.copy(entityJson, this.entityClass);
     }
@@ -93,10 +107,10 @@ public abstract class AbstractPgEntityDao<T> implements PgEntityDao<T> {
         if (CollectionUtils.isEmpty(tList)) {
             return 0;
         }
-        EntityDefinition entityDefinition = this.entityExecutor.getEntityDefinition();
+        
         List<JSONObject> entityJsonList = XDataUtils.copy(tList, List.class, JSONObject.class);
         for (JSONObject entityJson : entityJsonList) {
-            this.preInsert(entityDefinition.keyDefinition(), entityDefinition.columnDefinitions(), entityJson);
+            this.preInsert(entityJson);
         }
         return this.entityExecutor.insertBatch(entityJsonList);
     }
