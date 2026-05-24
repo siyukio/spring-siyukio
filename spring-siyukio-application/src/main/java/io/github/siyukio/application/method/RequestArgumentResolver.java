@@ -8,6 +8,7 @@ import io.github.siyukio.tools.api.definition.ApiDefinitionManager;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.util.XDataUtils;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.server.ServletServerHttpRequest;
@@ -28,6 +29,7 @@ import java.util.Map;
 /**
  * @author Buddy
  */
+@Slf4j
 public final class RequestArgumentResolver implements HandlerMethodArgumentResolver {
 
     @Override
@@ -93,12 +95,21 @@ public final class RequestArgumentResolver implements HandlerMethodArgumentResol
     }
 
     private JSONObject getJSONObject(HttpServletRequest httpServletRequest) throws IOException {
-        String requestBody = this.getRequestBody(httpServletRequest);
-        if (!StringUtils.hasText(requestBody)) {
-            ServletServerHttpRequest inputMessage = new ServletServerHttpRequest(httpServletRequest);
-            requestBody = new String(inputMessage.getBody().readAllBytes());
+        Object obj = httpServletRequest.getAttribute(ApiConstants.ATTRIBUTE_REQUEST_BODY_JSON);
+        if (obj != null) {
+            if (obj instanceof JSONObject jsonObject) {
+                return jsonObject;
+            } else {
+                log.warn("Error request body json object:{}", obj.getClass().getSimpleName());
+                return new JSONObject();
+            }
+        } else {
+            String requestBody = this.getRequestBody(httpServletRequest);
+            if (!StringUtils.hasText(requestBody)) {
+                requestBody = "{}";
+            }
+            return XDataUtils.parse(requestBody, JSONObject.class);
         }
-        return XDataUtils.parse(requestBody, JSONObject.class);
     }
 
     private Object getRequestBodyObject(MethodParameter parameter, HttpServletRequest httpServletRequest) throws IOException {

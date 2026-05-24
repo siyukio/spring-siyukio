@@ -7,6 +7,7 @@ import io.github.siyukio.tools.api.dto.PageRequest;
 import io.github.siyukio.tools.api.dto.PageResponse;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONObject;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,6 +18,11 @@ import java.util.List;
 @Slf4j
 @ApiController(tags = "parameter")
 public class ParameterController {
+
+    @ApiMapping(path = "/json/test", authorization = false)
+    public void testJson(JSONObject request) {
+        log.info("{}", XDataUtils.toPrettyJSONString(request));
+    }
 
     @ApiMapping(path = "/string/test", authorization = false)
     public void testString(StringRequest stringRequest) {

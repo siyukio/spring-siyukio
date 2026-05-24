@@ -119,6 +119,7 @@ public final class ApiDefinitionManager {
                 .type(ApiSchema.Type.OBJECT);
         if (requestBodyChildMap.isEmpty()) {
             requestBodySchemaBuilder.properties(Map.of());
+            requestBodySchemaBuilder.additionalProperties(true);
         } else {
             Map<String, ApiSchema> properties = new LinkedHashMap<>();
             List<String> requiredList = new ArrayList<>();
