@@ -37,7 +37,7 @@ public class AuthorizationController {
         return XDataUtils.copy(token, JSONObject.class);
     }
 
-    @ApiMapping(path = "/user/token/get", authorization = @Authorization(type = Token.PRINCIPAL_TYPE_USER))
+    @ApiMapping(path = "/user/token/get")
     public JSONObject getUserToken(Token token) {
         log.info("{}", XDataUtils.toPrettyJSONString(token));
         return XDataUtils.copy(token, JSONObject.class);

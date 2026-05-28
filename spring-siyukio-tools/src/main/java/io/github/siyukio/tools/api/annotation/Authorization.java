@@ -1,5 +1,7 @@
 package io.github.siyukio.tools.api.annotation;
 
+import io.github.siyukio.tools.api.token.Token;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -14,14 +16,14 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Authorization {
 
-    State state() default State.INHERIT;
+    State state() default State.REQUIRED;
 
     /**
      * Principal type.
      *
      * @return
      */
-    String type() default "";
+    String type() default Token.PRINCIPAL_TYPE_USER;
 
     /**
      * Principal scopes.
