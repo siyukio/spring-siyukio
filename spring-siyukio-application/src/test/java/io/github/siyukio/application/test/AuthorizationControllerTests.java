@@ -99,27 +99,49 @@ class AuthorizationControllerTests {
     }
 
     @Test
-    void testGetTokenByAuthorization() {
+    void testGetUserTokenByAuthorization() {
+        String authorization;
+        // User
+        authorization = "eyJhbGciOiJFUzI1NiJ9.eyJ0eXAiOiJhY2MiLCJleHAiOjQ4OTAzNzI2NTIsInBybiI6eyJ1aWQiOiJ1c2VyLTAwMSIsInVubSI6InVzZXIiLCJ0eXAiOiJ1c3IifSwianRpIjoiYVdlWnB6WWZTZjVFSEpDV1B2Q2VZIn0.iBAhFSLsS0OQrh-Jauu0-NuGQhZLUuMfp1ATUHen9UPJQdvLK7xho1hr693NkZfPHnzpG5dbrex7F2bZzgCk8w";
+        this.apiMock.setAuthorization(authorization);
+        this.apiMock.perform("/user/token/get", new JSONObject());
+
+        // Admin user
+        authorization = "eyJhbGciOiJFUzI1NiJ9.eyJ0eXAiOiJhY2MiLCJleHAiOjQ4OTAzNzI2NTIsInBybiI6eyJ1aWQiOiJ1c2VyLTAwMSIsInNjcCI6WyJhZG1pbiJdLCJ1bm0iOiJ1c2VyIiwidHlwIjoidXNyIn0sImp0aSI6ImFXZVpwemFFRHJkVkFjeGIwZ1NlQSJ9.kPYIGxU3j6j2AaQq18BwYEQW_bgHv0nE1ZVVoQaDdve84mRAddlNwMo4_CL5GdgUlyX3UHNriaISmWFmET-FUQ";
+        this.apiMock.setAuthorization(authorization);
+        this.apiMock.perform("/user/token/get", new JSONObject());
+
+    }
+
+    @Test
+    void testGetAppTokenByAuthorization() {
+        String authorization;
+        // App
+        authorization = "eyJhbGciOiJFUzI1NiJ9.eyJ0eXAiOiJhY2MiLCJleHAiOjQ4OTAzNzI2NTIsInBybiI6eyJhbm0iOiJhcHAiLCJ0eXAiOiJhcHAiLCJhaWQiOiJhcHAtMDAxIn0sImp0aSI6ImFXZVpwemJHWUtQRXlaeGpLdzhYQiJ9.UolaS4w5Kp4ak9rd2Fuw-ZkNAnivC2bGs1RvEFAMfPQXYPjuj3Ym7wt5T2YO-SjToxXO3oWsXfjEJeh2T4ncEw";
+        this.apiMock.setAuthorization(authorization);
+        this.apiMock.perform("/app/token/get", new JSONObject());
+
+        // App with member
+        authorization = "eyJhbGciOiJFUzI1NiJ9.eyJ0eXAiOiJhY2MiLCJhY3QiOnsibWlkIjoibWVtYmVyLTAwMSIsInR5cCI6Im1iciIsIm1ubSI6Im1lbWJlciJ9LCJleHAiOjQ4OTAzNzI2NTIsInBybiI6eyJhbm0iOiJhcHAiLCJ0eXAiOiJhcHAiLCJhaWQiOiJhcHAtMDAxIn0sImp0aSI6ImFXZVpwemJxV1hQMW03VjF3cXpNayJ9.M1shd35YtVrKtCu7XyRWXX4a5i7bXV64idFi2bfuAqWjHbh9tAtOBveJx6ZGRPwt4QbtPDIW2ggEnaTYY7__Cw";
+        this.apiMock.setAuthorization(authorization);
+        this.apiMock.perform("/app/token/get", new JSONObject());
+    }
+
+    @Test
+    void testGetMemberTokenByAuthorization() {
+        String authorization;
+        // Member
+        authorization = "eyJhbGciOiJFUzI1NiJ9.eyJ0eXAiOiJhY2MiLCJleHAiOjQ4OTAzNzI2NTIsInBybiI6eyJtaWQiOiJtZW1iZXItMDAxIiwidHlwIjoibWJyIiwibW5tIjoibWVtYmVyIn0sImp0aSI6ImFXZVpwelhkbjJTYjFqdFFoWWZMQSJ9.lHQp77oZ6KEGfE-oDlaFCJxmRVuAR6yfxYwXq0wx9FsAam4h1BA4J7i1qx22BUz3LUTA2q0c1r7EQxHopXqfXg";
+        this.apiMock.setAuthorization(authorization);
+        this.apiMock.perform("/member/token/get", new JSONObject());
+    }
+
+    @Test
+    void testGetInternalTokenByAuthorization() {
         String authorization;
         // Internal
         authorization = "eyJhbGciOiJFUzI1NiJ9.eyJ0eXAiOiJhY2MiLCJleHAiOjQ4OTAzNzQ3NDQsInBybiI6eyJ0eXAiOiJpbnQifSwianRpIjoiYVdlZ01xZTJzSzRnVnpjelp4UXdSIn0.VVtYKuPwwRdZBg7Z8NBKeMs85a7ZHJmDgCgI-x_O061uhA_SBfBU8CZfHWCVpCSM70HA8vOYFOsy8evzhPUlWA";
-
-        // Member
-//        authorization = "eyJhbGciOiJFUzI1NiJ9.eyJ0eXAiOiJhY2MiLCJleHAiOjQ4OTAzNzI2NTIsInBybiI6eyJtaWQiOiJtZW1iZXItMDAxIiwidHlwIjoibWJyIiwibW5tIjoibWVtYmVyIn0sImp0aSI6ImFXZVpwelhkbjJTYjFqdFFoWWZMQSJ9.lHQp77oZ6KEGfE-oDlaFCJxmRVuAR6yfxYwXq0wx9FsAam4h1BA4J7i1qx22BUz3LUTA2q0c1r7EQxHopXqfXg";
-
-        // User
-//        authorization = "eyJhbGciOiJFUzI1NiJ9.eyJ0eXAiOiJhY2MiLCJleHAiOjQ4OTAzNzI2NTIsInBybiI6eyJ1aWQiOiJ1c2VyLTAwMSIsInVubSI6InVzZXIiLCJ0eXAiOiJ1c3IifSwianRpIjoiYVdlWnB6WWZTZjVFSEpDV1B2Q2VZIn0.iBAhFSLsS0OQrh-Jauu0-NuGQhZLUuMfp1ATUHen9UPJQdvLK7xho1hr693NkZfPHnzpG5dbrex7F2bZzgCk8w";
-
-        // Admin user
-//        authorization = "eyJhbGciOiJFUzI1NiJ9.eyJ0eXAiOiJhY2MiLCJleHAiOjQ4OTAzNzI2NTIsInBybiI6eyJ1aWQiOiJ1c2VyLTAwMSIsInNjcCI6WyJhZG1pbiJdLCJ1bm0iOiJ1c2VyIiwidHlwIjoidXNyIn0sImp0aSI6ImFXZVpwemFFRHJkVkFjeGIwZ1NlQSJ9.kPYIGxU3j6j2AaQq18BwYEQW_bgHv0nE1ZVVoQaDdve84mRAddlNwMo4_CL5GdgUlyX3UHNriaISmWFmET-FUQ";
-
-        // App
-//        authorization = "eyJhbGciOiJFUzI1NiJ9.eyJ0eXAiOiJhY2MiLCJleHAiOjQ4OTAzNzI2NTIsInBybiI6eyJhbm0iOiJhcHAiLCJ0eXAiOiJhcHAiLCJhaWQiOiJhcHAtMDAxIn0sImp0aSI6ImFXZVpwemJHWUtQRXlaeGpLdzhYQiJ9.UolaS4w5Kp4ak9rd2Fuw-ZkNAnivC2bGs1RvEFAMfPQXYPjuj3Ym7wt5T2YO-SjToxXO3oWsXfjEJeh2T4ncEw";
-
-        // App with member
-//        authorization = "eyJhbGciOiJFUzI1NiJ9.eyJ0eXAiOiJhY2MiLCJhY3QiOnsibWlkIjoibWVtYmVyLTAwMSIsInR5cCI6Im1iciIsIm1ubSI6Im1lbWJlciJ9LCJleHAiOjQ4OTAzNzI2NTIsInBybiI6eyJhbm0iOiJhcHAiLCJ0eXAiOiJhcHAiLCJhaWQiOiJhcHAtMDAxIn0sImp0aSI6ImFXZVpwemJxV1hQMW03VjF3cXpNayJ9.M1shd35YtVrKtCu7XyRWXX4a5i7bXV64idFi2bfuAqWjHbh9tAtOBveJx6ZGRPwt4QbtPDIW2ggEnaTYY7__Cw";
         this.apiMock.setAuthorization(authorization);
-
-        this.apiMock.perform("/token/get", new JSONObject());
+        this.apiMock.perform("/internal/token/get", new JSONObject());
     }
 }

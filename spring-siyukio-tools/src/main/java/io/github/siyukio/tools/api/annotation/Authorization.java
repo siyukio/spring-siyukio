@@ -14,10 +14,20 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Authorization {
 
-    State state();
+    State state() default State.INHERIT;
 
+    /**
+     * Principal type.
+     *
+     * @return
+     */
     String type() default "";
 
+    /**
+     * Principal scopes.
+     *
+     * @return
+     */
     String[] scopes() default {};
 
     /**

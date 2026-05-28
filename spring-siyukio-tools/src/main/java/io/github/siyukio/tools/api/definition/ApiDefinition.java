@@ -1,6 +1,7 @@
 package io.github.siyukio.tools.api.definition;
 
 import lombok.Builder;
+import lombok.With;
 
 import java.util.List;
 
@@ -25,6 +26,8 @@ public record ApiDefinition(
         Class<?> realReturnType
 ) {
 
+    @Builder
+    @With
     public record Authorization(
             String type,
             List<String> scopes

@@ -40,6 +40,11 @@ public record Token(
         LocalDateTime expirationTime
 ) {
 
+    public final static String PRINCIPAL_TYPE_USER = "usr";
+    public final static String PRINCIPAL_TYPE_APP = "app";
+    public final static String PRINCIPAL_TYPE_MEMBER = "mbr";
+    public final static String PRINCIPAL_TYPE_INTERNAL = "int";
+
     public Token(Principal principal) {
         this(null, null, null, Type.ACCESS, principal, null, null);
     }
@@ -77,10 +82,10 @@ public record Token(
             visible = true
     )
     @JsonSubTypes({
-            @JsonSubTypes.Type(value = UserPrincipal.class, name = "usr"),
-            @JsonSubTypes.Type(value = MemberPrincipal.class, name = "mbr"),
-            @JsonSubTypes.Type(value = AppPrincipal.class, name = "app"),
-            @JsonSubTypes.Type(value = InternalPrincipal.class, name = "int")
+            @JsonSubTypes.Type(value = UserPrincipal.class, name = PRINCIPAL_TYPE_USER),
+            @JsonSubTypes.Type(value = MemberPrincipal.class, name = PRINCIPAL_TYPE_MEMBER),
+            @JsonSubTypes.Type(value = AppPrincipal.class, name = PRINCIPAL_TYPE_APP),
+            @JsonSubTypes.Type(value = InternalPrincipal.class, name = PRINCIPAL_TYPE_INTERNAL)
     })
     public interface Principal {
 
@@ -100,15 +105,15 @@ public record Token(
             List<String> scopes
     ) implements Principal {
         public UserPrincipal(String userId, String userName, String scope) {
-            this("usr", userId, userName, List.of(scope));
+            this(PRINCIPAL_TYPE_USER, userId, userName, List.of(scope));
         }
 
         public UserPrincipal(String userId, String userName, List<String> scopes) {
-            this("usr", userId, userName, scopes);
+            this(PRINCIPAL_TYPE_USER, userId, userName, scopes);
         }
 
         public UserPrincipal(String userId, String userName) {
-            this("usr", userId, userName, null);
+            this(PRINCIPAL_TYPE_USER, userId, userName, null);
         }
     }
 
@@ -123,11 +128,11 @@ public record Token(
             List<String> scopes
     ) implements Principal {
         public AppPrincipal(String appId, String appName, List<String> scopes) {
-            this("app", appId, appName, scopes);
+            this(PRINCIPAL_TYPE_APP, appId, appName, scopes);
         }
 
         public AppPrincipal(String appId, String appName) {
-            this("app", appId, appName, null);
+            this(PRINCIPAL_TYPE_APP, appId, appName, null);
         }
     }
 
@@ -146,19 +151,19 @@ public record Token(
             List<String> scopes
     ) implements Principal {
         public MemberPrincipal(String groupId, String groupName, String memberId, String memberName, List<String> scopes) {
-            this("mbr", groupId, groupName, memberId, memberName, scopes);
+            this(PRINCIPAL_TYPE_MEMBER, groupId, groupName, memberId, memberName, scopes);
         }
 
         public MemberPrincipal(String groupId, String groupName, String memberId, String memberName) {
-            this("mbr", groupId, groupName, memberId, memberName, null);
+            this(PRINCIPAL_TYPE_MEMBER, groupId, groupName, memberId, memberName, null);
         }
 
         public MemberPrincipal(String memberId, String memberName, List<String> scopes) {
-            this("mbr", null, null, memberId, memberName, scopes);
+            this(PRINCIPAL_TYPE_MEMBER, null, null, memberId, memberName, scopes);
         }
 
         public MemberPrincipal(String memberId, String memberName) {
-            this("mbr", null, null, memberId, memberName, null);
+            this(PRINCIPAL_TYPE_MEMBER, null, null, memberId, memberName, null);
         }
     }
 
@@ -169,11 +174,11 @@ public record Token(
             List<String> scopes
     ) implements Principal {
         public InternalPrincipal(List<String> scopes) {
-            this("int", scopes);
+            this(PRINCIPAL_TYPE_INTERNAL, scopes);
         }
 
         public InternalPrincipal() {
-            this("int", null);
+            this(PRINCIPAL_TYPE_INTERNAL, null);
         }
     }
 
