@@ -20,7 +20,7 @@ public record CreateAuthorizationRequest(
         String name,
 
         @ApiParameter(required = false)
-        List<String> roles
+        List<String> scopes
 ) {
 
 }

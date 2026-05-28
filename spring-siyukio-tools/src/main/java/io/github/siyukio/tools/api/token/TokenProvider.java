@@ -5,7 +5,9 @@ import com.nimbusds.jose.crypto.*;
 import com.nimbusds.jwt.JWTClaimsSet;
 import io.github.siyukio.tools.util.CryptoUtils;
 import io.github.siyukio.tools.util.IdUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONObject;
 import org.springframework.util.StringUtils;
 
 import java.security.PrivateKey;
@@ -17,7 +19,6 @@ import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
-import java.util.List;
 
 /**
  * @author Buddy
@@ -99,18 +100,20 @@ public final class TokenProvider {
 
     public String createAuthorization(Token token, Duration duration) {
         if (duration == null) {
-            duration = token.refresh() != null && token.refresh() ? this.refreshTokenDuration : this.accessTokenDuration;
+            duration = token.type() != null && token.type().equals(Token.Type.REFRESH) ? this.refreshTokenDuration : this.accessTokenDuration;
         }
 
         Instant issuedAt = Instant.now();
         Instant expiresAt = issuedAt.plusMillis(duration.toMillis());
 
-        JWTClaimsSet claims = new JWTClaimsSet.Builder()
-                .jwtID(IdUtils.getUniqueId())
-                .subject(token.uid())
-                .claim("e", token.name())
-                .claim("s", token.roles())
-                .claim("h", token.refresh())
+        JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder();
+        JSONObject tokenJson = XDataUtils.copy(token, JSONObject.class);
+        tokenJson.toMap().forEach((k, v) -> {
+            if (v != null) {
+                builder.claim(k, v);
+            }
+        });
+        JWTClaimsSet claims = builder.jwtID(IdUtils.getUniqueId())
                 .expirationTime(new Date(expiresAt.toEpochMilli()))
                 .build();
         JWSHeader header = new JWSHeader.Builder(this.algorithm)
@@ -158,24 +161,7 @@ public final class TokenProvider {
             if (expired) {
                 return null;
             }
-
-            String id = claims.getJWTID();
-            String uid = claims.getSubject();
-            String name = claims.getStringClaim("e");
-            if (name == null) {
-                name = "";
-            }
-            List<String> roles = claims.getStringListClaim("s");
-            if (roles == null) {
-                roles = List.of();
-            }
-            Boolean refresh = claims.getBooleanClaim("h");
-            if (refresh == null) {
-                refresh = false;
-            }
-            return Token.builder()
-                    .id(id).uid(uid).name(name).roles(roles).refresh(refresh)
-                    .build();
+            return XDataUtils.copy(claims.getClaims(), Token.class);
         } catch (Exception e) {
             return null;
         }

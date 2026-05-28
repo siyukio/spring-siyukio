@@ -3,6 +3,7 @@ package io.github.siyukio.application.controller;
 import io.github.siyukio.application.dto.signature.SignatureRequest;
 import io.github.siyukio.tools.api.annotation.ApiController;
 import io.github.siyukio.tools.api.annotation.ApiMapping;
+import io.github.siyukio.tools.api.annotation.Authorization;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 @ApiController(tags = "signature")
 public class SignatureController {
 
-    @ApiMapping(path = "/signature/test", signature = true, authorization = false)
+    @ApiMapping(path = "/signature/test", signature = true, authorization = @Authorization(state = Authorization.State.DISABLED))
     public void testSignature(SignatureRequest signatureRequest) {
         log.info("{}", XDataUtils.toPrettyJSONString(signatureRequest));
     }

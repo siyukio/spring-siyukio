@@ -107,7 +107,7 @@ public class AcpController {
         Token refreshToken = Token.builder()
                 .uid(createAuthorizationRequest.uid())
                 .name(createAuthorizationRequest.name())
-                .roles(List.of())
+                .scopes(List.of())
                 .refresh(true)
                 .build();
         String refreshTokenAuth = this.tokenProvider.createAuthorization(refreshToken);

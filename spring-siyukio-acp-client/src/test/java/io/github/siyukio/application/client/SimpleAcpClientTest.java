@@ -6,7 +6,6 @@ import io.github.siyukio.application.dto.CreateAuthorizationResponse;
 import io.github.siyukio.client.SimpleAcpClient;
 import io.github.siyukio.client.SimpleAsyncAcpClient;
 import io.github.siyukio.tools.acp.sdk.spec.AcpSchemaExt;
-import io.github.siyukio.tools.api.dto.TokenResponse;
 import io.github.siyukio.tools.util.IdUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +41,7 @@ public class SimpleAcpClientTest {
     @BeforeEach
     void setUp() {
         if (SIMPLE_ACP_CLIENT == null) {
-            String authorization = "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.Yk5VQTl5VFNEbTFmL09lMnNYUE5rRjNBV1lEcTRlazZ4MzRmSjJUek8vZ2ZtN2t3V1d6WFYrRjJ4Y0tnOThZRG14WGtvSytkSzFjdUVwUjdGZys5QTZEUkVPa3R5dk5KdkU3K1FYcHVqUHBrME1VSmtDdjB2eU9kVU9CdFFMTnY2RTJYbWMzZm53PT0.sgTkEf_CIG7lmriOhpm0VXB2BsQRfY6lqX6pyle6-ctwv81DRxEIaaGyJ8uEvsckdd5QeOQCEda98SEm9ctRUw";
+            String authorization = "eyJhbGciOiJFUzI1NiJ9.eyJ0eXAiOiJhY2MiLCJleHAiOjQ4OTAzNzI2NTIsInBybiI6eyJ1aWQiOiJ1c2VyLTAwMSIsInVubSI6InVzZXIiLCJ0eXAiOiJ1c3IifSwianRpIjoiYVdlWnB6WWZTZjVFSEpDV1B2Q2VZIn0.iBAhFSLsS0OQrh-Jauu0-NuGQhZLUuMfp1ATUHen9UPJQdvLK7xho1hr693NkZfPHnzpG5dbrex7F2bZzgCk8w";
             String serverUri = "ws://localhost:8080";
             SIMPLE_ACP_CLIENT = SimpleAcpClient.builder(serverUri)
 //                    .loadBalance(true)
@@ -115,7 +114,7 @@ public class SimpleAcpClientTest {
     @Test
     void testCallTool() {
         CreateAuthorizationRequest createAuthorizationRequest = CreateAuthorizationRequest.builder()
-                .uid("test").name("test").roles(List.of()).build();
+                .uid("test").name("test").scopes(List.of()).build();
         CreateAuthorizationResponse createAuthorizationResponse = SIMPLE_ACP_CLIENT.callTool(
                 "/authorization/create",
                 createAuthorizationRequest,
@@ -125,53 +124,53 @@ public class SimpleAcpClientTest {
 
     @Test
     void testCallToolProgress() {
-        TokenResponse tokenResponse = SIMPLE_ACP_CLIENT.callTool(
+        JSONObject result = SIMPLE_ACP_CLIENT.callTool(
                 "toolCallProgress",
                 new JSONObject(),
-                TokenResponse.class, (progressNotification) -> {
+                JSONObject.class, (progressNotification) -> {
                     log.info("{}", XDataUtils.toPrettyJSONString(progressNotification));
                 });
-        log.info("{}", XDataUtils.toPrettyJSONString(tokenResponse));
+        log.info("{}", XDataUtils.toPrettyJSONString(result));
     }
 
     @Test
     void testAskPermission() {
-        TokenResponse response = SIMPLE_ACP_CLIENT.callTool(
+        JSONObject result = SIMPLE_ACP_CLIENT.callTool(
                 "askPermission",
-                TokenResponse.class);
-        log.info("{}", XDataUtils.toPrettyJSONString(response));
+                JSONObject.class);
+        log.info("{}", XDataUtils.toPrettyJSONString(result));
     }
 
     @Test
     void testAskChoice() {
-        TokenResponse response = SIMPLE_ACP_CLIENT.callTool(
+        JSONObject result = SIMPLE_ACP_CLIENT.callTool(
                 "askChoice",
-                TokenResponse.class);
-        log.info("{}", XDataUtils.toPrettyJSONString(response));
+                JSONObject.class);
+        log.info("{}", XDataUtils.toPrettyJSONString(result));
     }
 
     @Test
     void testExecute() {
-        TokenResponse response = SIMPLE_ACP_CLIENT.callTool(
+        JSONObject result = SIMPLE_ACP_CLIENT.callTool(
                 "execute",
-                TokenResponse.class);
-        log.info("{}", XDataUtils.toPrettyJSONString(response));
+                JSONObject.class);
+        log.info("{}", XDataUtils.toPrettyJSONString(result));
     }
 
     @Test
     void testReadFile() {
-        TokenResponse response = SIMPLE_ACP_CLIENT.callTool(
+        JSONObject result = SIMPLE_ACP_CLIENT.callTool(
                 "readFile",
-                TokenResponse.class);
-        log.info("{}", XDataUtils.toPrettyJSONString(response));
+                JSONObject.class);
+        log.info("{}", XDataUtils.toPrettyJSONString(result));
     }
 
     @Test
     void testWriteFile() {
-        TokenResponse response = SIMPLE_ACP_CLIENT.callTool(
+        JSONObject result = SIMPLE_ACP_CLIENT.callTool(
                 "writeFile",
-                TokenResponse.class);
-        log.info("{}", XDataUtils.toPrettyJSONString(response));
+                JSONObject.class);
+        log.info("{}", XDataUtils.toPrettyJSONString(result));
     }
 
     @Test

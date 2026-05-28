@@ -16,8 +16,7 @@ public record ApiDefinition(
         String description,
         boolean deprecated,
         List<String> tags,
-        List<String> roles,
-        boolean authorization,
+        Authorization authorization,
         boolean signature,
         boolean acpAvailable,
         ApiRequestParameter requestBodyParameter,
@@ -25,4 +24,11 @@ public record ApiDefinition(
         Class<?> returnType,
         Class<?> realReturnType
 ) {
+
+    public record Authorization(
+            String type,
+            List<String> scopes
+    ) {
+
+    }
 }

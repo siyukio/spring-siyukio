@@ -1,0 +1,42 @@
+package io.github.siyukio.tools.api.annotation;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+/**
+ * Authorization
+ *
+ * @author Bugee
+ */
+@Target({ElementType.ANNOTATION_TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Authorization {
+
+    State state();
+
+    String type() default "";
+
+    String[] scopes() default {};
+
+    /**
+     * Authorization state enum.
+     */
+    enum State {
+        /**
+         * Inherit authorization setting from parent (class-level).
+         */
+        INHERIT,
+
+        /**
+         * Explicitly require authorization.
+         */
+        REQUIRED,
+
+        /**
+         * Explicitly disable authorization (public endpoint).
+         */
+        DISABLED
+    }
+}

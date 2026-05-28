@@ -2,10 +2,7 @@ package io.github.siyukio.tools.api.definition;
 
 import io.github.siyukio.tools.acp.sdk.agent.AcpSessionContext;
 import io.github.siyukio.tools.api.ApiRequest;
-import io.github.siyukio.tools.api.annotation.ApiController;
-import io.github.siyukio.tools.api.annotation.ApiMapping;
-import io.github.siyukio.tools.api.annotation.ApiParameter;
-import io.github.siyukio.tools.api.annotation.Example;
+import io.github.siyukio.tools.api.annotation.*;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -184,10 +181,21 @@ public final class ApiDefinitionManager {
             summary = method.getName();
         }
 
-        // Determine the roles
-        String[] roles = apiMapping.roles();
-        if (roles.length == 0) {
-            roles = apiController.roles();
+        // Determine the authorization;
+        ApiDefinition.Authorization authorization = null;
+        if (apiController.authorization().state().equals(Authorization.State.REQUIRED)) {
+            authorization = new ApiDefinition.Authorization(
+                    apiController.authorization().type(),
+                    List.of(apiController.authorization().scopes()));
+        }
+        if (!apiMapping.authorization().state().equals(Authorization.State.INHERIT)) {
+            if (apiMapping.authorization().state().equals(Authorization.State.REQUIRED)) {
+                authorization = new ApiDefinition.Authorization(
+                        apiMapping.authorization().type(),
+                        List.of(apiMapping.authorization().scopes()));
+            } else {
+                authorization = null;
+            }
         }
 
         boolean signature = apiMapping.signature();
@@ -206,11 +214,10 @@ public final class ApiDefinitionManager {
                 .summary(summary)
                 .deprecated(apiMapping.deprecated())
                 .description(apiMapping.description())
-                .authorization(apiMapping.authorization())
+                .authorization(authorization)
                 .signature(signature)
                 .tags(List.of(apiController.tags()))
                 .acpAvailable(acpAvailable)
-                .roles(List.of(roles))
                 .returnType(method.getReturnType())
                 .realReturnType(returnValueType)
                 .requestBodyParameter(requestBodyParameter)

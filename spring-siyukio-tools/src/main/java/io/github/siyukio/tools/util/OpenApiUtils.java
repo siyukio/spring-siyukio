@@ -95,7 +95,7 @@ public abstract class OpenApiUtils {
 
     public static JSONArray createGlobalParameters(ApiDefinition apiDefinition) {
         JSONArray parameters = new JSONArray();
-        if (apiDefinition.authorization()) {
+        if (apiDefinition.authorization() != null) {
             JSONObject authHeader = new JSONObject();
             authHeader.put("name", "Authorization");
             authHeader.put("in", "header");

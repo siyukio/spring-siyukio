@@ -26,13 +26,13 @@ public class AcpSessionHandlerImpl implements AcpSessionHandler {
         log.debug("AcpSchema.NewSessionRequest: {}, {}", token, req);
         AcpSchema.SessionModelState sessionModelState = new AcpSchema.SessionModelState("default", List.of());
         AcpSchema.SessionModeState sessionModeState = new AcpSchema.SessionModeState("default", List.of());
-        return new AcpSchema.NewSessionResponse(token.id(), sessionModeState, sessionModelState);
+        return new AcpSchema.NewSessionResponse(token.jwtId(), sessionModeState, sessionModelState);
     }
 
     @Override
     public AcpSchema.LoadSessionResponse handleLoadSession(Token token, AcpSchema.LoadSessionRequest req) {
         log.debug("AcpSchema.LoadSessionResponse: {}, {}", token, req);
-        if (req.sessionId().equals(token.id())) {
+        if (req.sessionId().equals(token.jwtId())) {
             AcpSchema.SessionModelState sessionModelState = new AcpSchema.SessionModelState("default", List.of());
             AcpSchema.SessionModeState sessionModeState = new AcpSchema.SessionModeState("default", List.of());
             return new AcpSchema.LoadSessionResponse(sessionModeState, sessionModelState);

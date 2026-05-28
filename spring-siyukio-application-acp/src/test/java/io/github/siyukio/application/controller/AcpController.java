@@ -8,7 +8,7 @@ import io.github.siyukio.tools.acp.sdk.agent.AcpSessionContext;
 import io.github.siyukio.tools.acp.sdk.spec.AcpSchemaExt;
 import io.github.siyukio.tools.api.annotation.ApiController;
 import io.github.siyukio.tools.api.annotation.ApiMapping;
-import io.github.siyukio.tools.api.dto.TokenResponse;
+import io.github.siyukio.tools.api.annotation.Authorization;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
 import io.github.siyukio.tools.util.XDataUtils;
@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Bugee
@@ -30,7 +31,7 @@ public class AcpController {
     @Autowired
     private TokenProvider tokenProvider;
 
-    @ApiMapping(path = "/authorization/create", authorization = false, acpAvailable = true,
+    @ApiMapping(path = "/authorization/create", authorization = @Authorization(state = Authorization.State.DISABLED), acpAvailable = true,
             summary = "Retrieve JWT Token",
             description = """
                     A utility tool that authenticates with the target service and returns a valid JWT token for subsequent API requests.
@@ -39,9 +40,9 @@ public class AcpController {
     public CreateAuthorizationResponse createAuthorization(Token token, CreateAuthorizationRequest createAuthorizationRequest) {
         log.info("{}", token);
         log.info("{}", XDataUtils.toPrettyJSONString(createAuthorizationRequest));
-        Token refreshToken = Token.builder()
-                .uid(createAuthorizationRequest.uid()).name(createAuthorizationRequest.name()).roles(List.of()).refresh(true)
-                .build();
+        Token refreshToken = new Token(
+                new Token.UserPrincipal(createAuthorizationRequest.uid(), createAuthorizationRequest.name()),
+                Token.Type.REFRESH);
         String refreshTokenAuth = this.tokenProvider.createAuthorization(refreshToken);
 
         Token accessToken = refreshToken.createAccessToken();
@@ -55,7 +56,7 @@ public class AcpController {
     }
 
     @ApiMapping(path = "/toolCallProgress", acpAvailable = true)
-    public TokenResponse toolCallProgress(Token token, AcpSessionContext acpSessionContext) {
+    public JSONObject toolCallProgress(Token token, AcpSessionContext acpSessionContext) {
         if (acpSessionContext != null) {
             for (int i = 0; i < 3; i++) {
                 JSONObject messageJson = new JSONObject();
@@ -66,44 +67,38 @@ public class AcpController {
                 acpSessionContext.sendToolProgress(progressNotification);
             }
         }
-        return TokenResponse.builder()
-                .name("ok").build();
+        return XDataUtils.copy(token, JSONObject.class);
     }
 
     @ApiMapping(path = "/askPermission", acpAvailable = true)
-    public TokenResponse askPermission(Token token, AcpSessionContext acpSessionContext) {
+    public JSONObject askPermission(Token token, AcpSessionContext acpSessionContext) {
         Boolean result = acpSessionContext.askPermission("Can you do this?", Duration.ofSeconds(30));
-        return TokenResponse.builder()
-                .name(result.toString()).build();
+        return new JSONObject(Map.of("result", result));
     }
 
     @ApiMapping(path = "/askChoice", acpAvailable = true)
-    public TokenResponse askChoice(Token token, AcpSessionContext acpSessionContext) {
+    public JSONObject askChoice(Token token, AcpSessionContext acpSessionContext) {
         List<String> colors = List.of("red", "green", "blue");
         String result = acpSessionContext.askChoice("What's your favorite color?", colors, Duration.ofSeconds(30));
-        return TokenResponse.builder()
-                .name(result).build();
+        return new JSONObject(Map.of("result", result));
     }
 
     @ApiMapping(path = "/execute", acpAvailable = true)
-    public TokenResponse execute(Token token, AcpSessionContext acpSessionContext) {
+    public JSONObject execute(Token token, AcpSessionContext acpSessionContext) {
         Command command = Command.of("uname", "-a");
         CommandResult result = acpSessionContext.execute(command, Duration.ofSeconds(10));
-        return TokenResponse.builder()
-                .name(result.output()).build();
+        return XDataUtils.copy(result, JSONObject.class);
     }
 
     @ApiMapping(path = "/readFile", acpAvailable = true)
-    public TokenResponse readFile(Token token, AcpSessionContext acpSessionContext) {
+    public JSONObject readFile(Token token, AcpSessionContext acpSessionContext) {
         CommandResult result = acpSessionContext.readFile("/README.md", Duration.ofSeconds(10));
-        return TokenResponse.builder()
-                .name(result.output()).build();
+        return XDataUtils.copy(result, JSONObject.class);
     }
 
     @ApiMapping(path = "/writeFile", acpAvailable = true)
-    public TokenResponse writeFile(Token token, AcpSessionContext acpSessionContext) {
+    public JSONObject writeFile(Token token, AcpSessionContext acpSessionContext) {
         CommandResult result = acpSessionContext.writeFile("/README.md", "Hello, world!", Duration.ofSeconds(10));
-        return TokenResponse.builder()
-                .name(result.output()).build();
+        return XDataUtils.copy(result, JSONObject.class);
     }
 }

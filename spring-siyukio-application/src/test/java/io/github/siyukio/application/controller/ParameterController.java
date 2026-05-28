@@ -3,6 +3,7 @@ package io.github.siyukio.application.controller;
 import io.github.siyukio.application.dto.parameter.*;
 import io.github.siyukio.tools.api.annotation.ApiController;
 import io.github.siyukio.tools.api.annotation.ApiMapping;
+import io.github.siyukio.tools.api.annotation.Authorization;
 import io.github.siyukio.tools.api.dto.PageRequest;
 import io.github.siyukio.tools.api.dto.PageResponse;
 import io.github.siyukio.tools.util.XDataUtils;
@@ -16,45 +17,45 @@ import java.util.List;
  * @author Buddy
  */
 @Slf4j
-@ApiController(tags = "parameter")
+@ApiController(tags = "parameter", authorization = @Authorization(state = Authorization.State.DISABLED))
 public class ParameterController {
 
-    @ApiMapping(path = "/json/test", authorization = false)
+    @ApiMapping(path = "/json/test")
     public void testJson(JSONObject request) {
         log.info("{}", XDataUtils.toPrettyJSONString(request));
     }
 
-    @ApiMapping(path = "/string/test", authorization = false)
+    @ApiMapping(path = "/string/test")
     public void testString(StringRequest stringRequest) {
         log.info("{}", XDataUtils.toPrettyJSONString(stringRequest));
     }
 
-    @ApiMapping(path = "/enum/test", authorization = false)
+    @ApiMapping(path = "/enum/test")
     public void testEnum(EnumRequest enumRequest) {
         log.info("{}", XDataUtils.toPrettyJSONString(enumRequest));
     }
 
-    @ApiMapping(path = "/num/test", authorization = false)
+    @ApiMapping(path = "/num/test")
     public void testNum(NumRequest numRequest) {
         log.info("{}", XDataUtils.toPrettyJSONString(numRequest));
     }
 
-    @ApiMapping(path = "/bool/test", authorization = false)
+    @ApiMapping(path = "/bool/test")
     public void testBool(BoolRequest boolRequest) {
         log.info("{}", XDataUtils.toPrettyJSONString(boolRequest));
     }
 
-    @ApiMapping(path = "/date/test", authorization = false)
+    @ApiMapping(path = "/date/test")
     public void testDate(DateRequest dateRequest) {
         log.info("{}", XDataUtils.toPrettyJSONString(dateRequest));
     }
 
-    @ApiMapping(path = "/list/test", authorization = false)
+    @ApiMapping(path = "/list/test")
     public void testList(ListRequest listRequest) {
         log.info("{}", XDataUtils.toPrettyJSONString(listRequest));
     }
 
-    @ApiMapping(path = "/page/test", authorization = false)
+    @ApiMapping(path = "/page/test")
     public PageResponse<PageItem> testPage(PageRequest<FilterParam> pageRequest) {
         log.info("{}", XDataUtils.toPrettyJSONString(pageRequest));
 

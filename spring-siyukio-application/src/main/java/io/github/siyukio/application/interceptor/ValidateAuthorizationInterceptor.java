@@ -5,6 +5,7 @@ import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.api.ApiHandler;
 import io.github.siyukio.tools.api.ApiProfiles;
 import io.github.siyukio.tools.api.constants.ApiConstants;
+import io.github.siyukio.tools.api.definition.ApiDefinition;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
 import jakarta.servlet.DispatcherType;
@@ -38,7 +39,7 @@ public final class ValidateAuthorizationInterceptor implements HandlerIntercepto
         this.tokenProvider = tokenProvider;
     }
 
-    private String getAuthorization(HttpServletRequest request) {
+    private String getAccessToken(HttpServletRequest request) {
         String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (authorization == null) {
             Object attr = request.getAttribute(HttpHeaders.AUTHORIZATION);
@@ -74,28 +75,44 @@ public final class ValidateAuthorizationInterceptor implements HandlerIntercepto
         //
         String path = ApiProfiles.getApiPath(request.getRequestURI());
         ApiHandler apiHandler = this.aipHandlerManager.getApiHandler(path);
-        if (apiHandler == null || !apiHandler.apiDefinition().authorization()) {
+        if (apiHandler == null) {
+            return true;
+        }
+
+        ApiDefinition.Authorization authorization = apiHandler.apiDefinition().authorization();
+        if (authorization == null) {
             return true;
         }
 
         Token token = null;
-        String authorization = this.getAuthorization(request);
-        if (StringUtils.hasText(authorization)) {
-            token = this.tokenProvider.verifyToken(authorization);
+        String accessToken = this.getAccessToken(request);
+        if (StringUtils.hasText(accessToken)) {
+            token = this.tokenProvider.verifyToken(accessToken);
         }
 
-        if (token == null || token.refresh()) {
+        if (token == null || token.principal() == null) {
             throw new ApiException(HttpStatus.UNAUTHORIZED);
         }
 
-        if (!apiHandler.apiDefinition().roles().isEmpty()) {
-            Set<String> roleSet = new HashSet<>(apiHandler.apiDefinition().roles());
+        if (token.type() == null || token.type().equals(Token.Type.REFRESH)) {
+            throw new ApiException(HttpStatus.FORBIDDEN);
+        }
 
-            if (!CollectionUtils.isEmpty(token.roles())) {
-                roleSet.retainAll(token.roles());
+        Token.Principal principal = token.principal();
+        if (StringUtils.hasText(authorization.type())) {
+            if (!StringUtils.hasText(principal.type()) || !authorization.type().equals(principal.type())) {
+                throw new ApiException(HttpStatus.FORBIDDEN);
+            }
+        }
+
+        if (!CollectionUtils.isEmpty(authorization.scopes())) {
+            Set<String> scopeSet = new HashSet<>(authorization.scopes());
+
+            if (!CollectionUtils.isEmpty(principal.scopes())) {
+                scopeSet.retainAll(principal.scopes());
             }
 
-            if (roleSet.size() != apiHandler.apiDefinition().roles().size()) {
+            if (scopeSet.isEmpty()) {
                 throw new ApiException(HttpStatus.FORBIDDEN);
             }
         }

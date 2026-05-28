@@ -41,7 +41,7 @@ class CommonApiClientTest {
         JSONObject request = new JSONObject();
         request.put("uid", "1234567890");
         request.put("name", "test");
-//        request.put("roles", List.of("admin"));
+//        request.put("scopes", List.of("admin"));
         JSONObject result = commonApiClient.createAuthorization(request);
 
         log.info("Api createAuthorization: {}", XDataUtils.toPrettyJSONString(result));

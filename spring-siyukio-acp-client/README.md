@@ -40,7 +40,7 @@ import io.github.siyukio.tools.api.token.TokenProvider;
 Token token = Token.builder()
         .uid("user123")
         .name("Test User")
-        .roles(List.of("user"))
+        .scopes(List.of("user"))
         .build();
 
         String authorization = tokenProvider.createAuthorization(token);
@@ -62,7 +62,7 @@ Token token = Token.builder()
 ```java
 // Call remote tool with parameters
 CreateAuthorizationRequest request = CreateAuthorizationRequest.builder()
-                .uid("test").name("test").roles(List.of()).build();
+                .uid("test").name("test").scopes(List.of()).build();
 
 CreateAuthorizationResponse response = acpClient.callTool(
         "authorization.create",

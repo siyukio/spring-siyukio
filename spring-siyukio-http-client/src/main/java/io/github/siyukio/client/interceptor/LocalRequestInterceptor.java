@@ -59,15 +59,19 @@ public class LocalRequestInterceptor implements ClientHttpRequestInterceptor {
                 log.debug("LocalHttpClient request: {} {}", request.getMethod(), uri);
                 Token token = null;
                 ApiDefinition apiDefinition = apiHandler.apiDefinition();
-                if (apiDefinition.authorization()) {
-                    String authorization = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-                    if (!StringUtils.hasText(authorization)) {
-                        ApiException apiException = new ApiException(HttpStatus.UNAUTHORIZED);
+                if (apiDefinition.authorization() != null) {
+                    String accessToken = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+                    if (!StringUtils.hasText(accessToken)) {
+                        ApiException apiException = new ApiException(
+                                HttpStatus.UNAUTHORIZED.value(),
+                                "Api client error:" + HttpStatus.UNAUTHORIZED.getReasonPhrase());
                         return new LocalJsonResponse(XDataUtils.toJSONString(apiException.toJson()));
                     }
-                    token = this.tokenProvider.verifyToken(authorization);
+                    token = this.tokenProvider.verifyToken(accessToken);
                     if (token == null) {
-                        ApiException apiException = new ApiException(HttpStatus.UNAUTHORIZED);
+                        ApiException apiException = new ApiException(
+                                HttpStatus.UNAUTHORIZED.value(),
+                                "Api client error:" + HttpStatus.UNAUTHORIZED.getReasonPhrase());
                         return new LocalJsonResponse(XDataUtils.toJSONString(apiException.toJson()));
                     }
                 }

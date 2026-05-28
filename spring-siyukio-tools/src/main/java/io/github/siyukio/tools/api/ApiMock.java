@@ -1,6 +1,7 @@
 package io.github.siyukio.tools.api;
 
 import com.fasterxml.jackson.databind.JavaType;
+import io.github.siyukio.tools.api.definition.ApiDefinition;
 import io.github.siyukio.tools.api.signature.SignatureProvider;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.api.token.TokenProvider;
@@ -11,6 +12,7 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -53,19 +55,30 @@ public class ApiMock {
             this.signatureProvider.validate(timestamp, nonce, signature);
         }
 
-        if (apiHandler.apiDefinition().authorization()) {
-            if (token == null) {
+        ApiDefinition.Authorization authorization = apiHandler.apiDefinition().authorization();
+        if (authorization != null) {
+            if (token == null || token.principal() == null) {
                 throw new ApiException(HttpStatus.UNAUTHORIZED);
             }
 
-            if (!apiHandler.apiDefinition().roles().isEmpty()) {
-                Set<String> roleSet = new HashSet<>(apiHandler.apiDefinition().roles());
+            if (token.type() == null || token.type().equals(Token.Type.REFRESH)) {
+                throw new ApiException(HttpStatus.FORBIDDEN);
+            }
 
-                if (!CollectionUtils.isEmpty(token.roles())) {
-                    roleSet.retainAll(token.roles());
+            Token.Principal principal = token.principal();
+            if (StringUtils.hasText(authorization.type())) {
+                if (!StringUtils.hasText(principal.type()) || !authorization.type().equals(principal.type())) {
+                    throw new ApiException(HttpStatus.FORBIDDEN);
+                }
+            }
+
+            if (!CollectionUtils.isEmpty(authorization.scopes())) {
+                Set<String> scopeSet = new HashSet<>(authorization.scopes());
+                if (!CollectionUtils.isEmpty(principal.scopes())) {
+                    scopeSet.retainAll(principal.scopes());
                 }
 
-                if (roleSet.isEmpty()) {
+                if (scopeSet.isEmpty()) {
                     throw new ApiException(HttpStatus.FORBIDDEN);
                 }
             }

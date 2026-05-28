@@ -13,10 +13,13 @@ This module provides a quick way to create HTTP services. It optimizes and integ
 
 ## Key Features
 
-- **Efficient API Definition**: Define REST APIs with `@ApiController` and `@ApiMapping` annotations, eliminating boilerplate code
-- **Flexible Security Controls**: Granular security with JWT authorization, request signature validation, and role-based access control - can be used independently or combined
+- **Efficient API Definition**: Define REST APIs with `@ApiController` and `@ApiMapping` annotations, eliminating
+  boilerplate code
+- **Flexible Security Controls**: Granular security with JWT authorization, request signature validation, and role-based
+  access control - can be used independently or combined
 - **Unified Exception Handling**: Consistent error response format aligned with MCP protocol using `@ApiException`
-- **Automatic OpenAPI Documentation**: Generate API documentation automatically based on annotations, toggle by environment
+- **Automatic OpenAPI Documentation**: Generate API documentation automatically based on annotations, toggle by
+  environment
 - **Built-in CORS Support**: Cross-origin resource sharing configured automatically for API controllers
 - **Application Monitoring**: Integrated spring-boot-actuator for health checks, metrics, and runtime management
 
@@ -45,7 +48,7 @@ features.
     - `signature`: `true` enables request parameter signature validation to prevent replay attacks. Some public APIs
       without user role authorization can use parameter signature validation alone. Both can be enabled simultaneously
       to increase difficulty for third-party fake clients
-    - `roles`: Custom attribute in JWT token. With this, only one set of keys is needed to issue tokens for different
+    - `scopes`: Custom attribute in JWT token. With this, only one set of keys is needed to issue tokens for different
       systems and different types of users
     - `summary`, `description`, `deprecated`: OpenAPI documentation properties
 
@@ -110,7 +113,7 @@ public class DemoController {
     }
 
     // Authorization with role validation
-    @ApiMapping(path = "/admin/api", authorization = true, roles = {"admin"})
+    @ApiMapping(path = "/admin/api", authorization = true, scopes = {"admin"})
     public Response adminApi(Request request) {
         // implementation
     }
@@ -201,6 +204,7 @@ management:
 ```
 
 Configure which endpoints to expose through HTTP. Common endpoints include:
+
 - `health`: Application health status
 - `loggers`: Logger configuration and levels
 - `metrics`: Application metrics
@@ -216,6 +220,7 @@ GET /actuator/health
 ```
 
 Response:
+
 ```json
 {
   "status": "UP"
@@ -229,6 +234,7 @@ GET /actuator/loggers/io.github.siyukio
 ```
 
 Response:
+
 ```json
 {
   "configuredLevel": "DEBUG",

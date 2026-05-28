@@ -42,9 +42,10 @@ public @interface ApiController {
     String summary() default "";
 
     /**
-     * Validates whether the authorization contains the specified role.
+     *
+     * Whether the API requires authorization validation.
      */
-    String[] roles() default {};
+    Authorization authorization() default @Authorization(state = Authorization.State.REQUIRED);
 
     /**
      * Whether the API requires parameter signature validation.

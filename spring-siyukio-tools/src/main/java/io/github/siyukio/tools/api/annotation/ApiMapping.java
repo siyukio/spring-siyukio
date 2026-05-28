@@ -29,19 +29,15 @@ public @interface ApiMapping {
     String[] path();
 
     /**
+     *
      * Whether the API requires authorization validation.
      */
-    boolean authorization() default true;
+    Authorization authorization() default @Authorization(state = Authorization.State.INHERIT);
 
     /**
      * Whether the API requires parameter signature validation.
      */
     boolean signature() default false;
-
-    /**
-     * Validates whether the authorization contains the specified role.
-     */
-    String[] roles() default {};
 
     /**
      * Summary.

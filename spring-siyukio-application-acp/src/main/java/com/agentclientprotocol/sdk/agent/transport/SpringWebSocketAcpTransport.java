@@ -1,7 +1,3 @@
-/*
- * Copyright 2025-2025 the original author or authors.
- */
-
 package com.agentclientprotocol.sdk.agent.transport;
 
 import com.agentclientprotocol.sdk.agent.AcpAgent;
@@ -270,29 +266,34 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
                 response.getHeaders().add(WebSocketHttpHeaders.SEC_WEBSOCKET_PROTOCOL, protocol);
             }
 
-            String authorization = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+            String accessToken = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
-            if (!StringUtils.hasText(authorization)) {
+            if (!StringUtils.hasText(accessToken)) {
                 String query = request.getURI().getQuery();
                 if (StringUtils.hasText(query)) {
                     MultiValueMap<String, String> params = UriComponentsBuilder.fromUri(request.getURI())
                             .build().getQueryParams();
-                    authorization = params.getFirst("accessToken");
-                    if (!StringUtils.hasText(authorization)) {
-                        authorization = params.getFirst("token");
+                    accessToken = params.getFirst("accessToken");
+                    if (!StringUtils.hasText(accessToken)) {
+                        accessToken = params.getFirst("token");
                     }
                 }
             }
 
-            if (!StringUtils.hasText(authorization)) {
+            if (!StringUtils.hasText(accessToken)) {
                 return false;
             }
 
-            Token token = tokenProvider.verifyToken(authorization);
-            if (token == null || token.refresh()) {
-                log.error("WebSocket Acp authorization failed: {}", authorization);
+            Token token = tokenProvider.verifyToken(accessToken);
+            if (token == null || token.principal() == null) {
+                log.error("WebSocket Acp Unauthorized: {}", accessToken);
                 return false;
             }
+            if (token.type() == null || token.type().equals(Token.Type.REFRESH)) {
+                log.error("WebSocket Acp Forbidden: {}", accessToken);
+                return false;
+            }
+
             attributes.put(HttpHeaders.AUTHORIZATION, token);
             return this.handshakeHandler.doHandshake(request, response, wsHandler, attributes);
         }
@@ -522,16 +523,23 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
             return AcpSessionHandler.withContext(authSessionMap, authSession -> {
                 Token token = authSession.getToken();
                 AcpSessionContext acpSessionContext = new AcpSessionContext(context, token, authSession.getId());
-                ApiDefinition apiDefinition = apiHandler.apiDefinition();
-                if (apiDefinition.authorization()) {
+                ApiDefinition.Authorization authorization = apiHandler.apiDefinition().authorization();
+                if (authorization != null) {
                     //validate authorization
-                    if (!apiDefinition.roles().isEmpty()) {
-                        // validate role
-                        Set<String> roleSet = new HashSet<>(apiDefinition.roles());
-                        if (!CollectionUtils.isEmpty(token.roles())) {
-                            roleSet.retainAll(token.roles());
+                    Token.Principal principal = token.principal();
+                    if (StringUtils.hasText(authorization.type())) {
+                        if (!StringUtils.hasText(principal.type()) || !authorization.type().equals(principal.type())) {
+                            return Mono.error(new AcpProtocolException(HttpStatus.FORBIDDEN.value(), HttpStatus.FORBIDDEN.getReasonPhrase()));
                         }
-                        if (roleSet.isEmpty()) {
+                    }
+                    if (!CollectionUtils.isEmpty(authorization.scopes())) {
+                        Set<String> scopeSet = new HashSet<>(authorization.scopes());
+
+                        if (!CollectionUtils.isEmpty(principal.scopes())) {
+                            scopeSet.retainAll(principal.scopes());
+                        }
+
+                        if (scopeSet.isEmpty()) {
                             return Mono.error(new AcpProtocolException(HttpStatus.FORBIDDEN.value(), HttpStatus.FORBIDDEN.getReasonPhrase()));
                         }
                     }
@@ -560,7 +568,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
                     return Mono.error(new AcpProtocolException(exception.getCode(), exception.getMessage()));
                 }
 
-                Class<?> returnType = apiDefinition.realReturnType();
+                Class<?> returnType = apiHandler.apiDefinition().realReturnType();
                 JSONObject result;
                 if (returnType == void.class || returnType == Void.class) {
                     result = new JSONObject();
