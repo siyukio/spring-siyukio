@@ -63,7 +63,7 @@ public record Token(
         }
         return Token.builder()
                 .subject(this.subject).audience(this.audience)
-                .type(this.type).principal(this.principal)
+                .type(Type.ACCESS).principal(this.principal)
                 .actor(this.actor)
                 .build();
     }
