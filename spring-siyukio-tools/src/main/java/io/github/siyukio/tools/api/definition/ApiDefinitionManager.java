@@ -197,15 +197,6 @@ public final class ApiDefinitionManager {
             case DISABLED:
                 authorization = null;
                 break;
-            case INHERIT:
-                if (authorization != null) {
-                    if (StringUtils.hasText(apiMapping.authorization().type())) {
-                        authorization = authorization.withType(apiMapping.authorization().type());
-                    }
-                    if (apiMapping.authorization().scopes().length > 0) {
-                        authorization = authorization.withScopes(List.of(apiMapping.authorization().scopes()));
-                    }
-                }
             default:
                 break;
         }
