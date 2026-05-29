@@ -44,6 +44,7 @@ public record Token(
     public final static String PRINCIPAL_TYPE_APP = "app";
     public final static String PRINCIPAL_TYPE_MEMBER = "mbr";
     public final static String PRINCIPAL_TYPE_INTERNAL = "int";
+    public final static String PRINCIPAL_TYPE_ADMIN_USER = "adm";
 
     public Token(Principal principal) {
         this(null, null, null, Type.ACCESS, principal, null, null);
@@ -83,6 +84,7 @@ public record Token(
     )
     @JsonSubTypes({
             @JsonSubTypes.Type(value = UserPrincipal.class, name = PRINCIPAL_TYPE_USER),
+            @JsonSubTypes.Type(value = AdminUserPrincipal.class, name = PRINCIPAL_TYPE_ADMIN_USER),
             @JsonSubTypes.Type(value = MemberPrincipal.class, name = PRINCIPAL_TYPE_MEMBER),
             @JsonSubTypes.Type(value = AppPrincipal.class, name = PRINCIPAL_TYPE_APP),
             @JsonSubTypes.Type(value = InternalPrincipal.class, name = PRINCIPAL_TYPE_INTERNAL)
@@ -114,6 +116,29 @@ public record Token(
 
         public UserPrincipal(String userId, String userName) {
             this(PRINCIPAL_TYPE_USER, userId, userName, null);
+        }
+    }
+
+    public record AdminUserPrincipal(
+            @JsonProperty("typ")
+            String type,
+            @JsonProperty("uid")
+            String userId,
+            @JsonProperty("unm")
+            String userName,
+            @JsonProperty("scp")
+            List<String> scopes
+    ) implements Principal {
+        public AdminUserPrincipal(String userId, String userName, String scope) {
+            this(PRINCIPAL_TYPE_ADMIN_USER, userId, userName, List.of(scope));
+        }
+
+        public AdminUserPrincipal(String userId, String userName, List<String> scopes) {
+            this(PRINCIPAL_TYPE_ADMIN_USER, userId, userName, scopes);
+        }
+
+        public AdminUserPrincipal(String userId, String userName) {
+            this(PRINCIPAL_TYPE_ADMIN_USER, userId, userName, null);
         }
     }
 

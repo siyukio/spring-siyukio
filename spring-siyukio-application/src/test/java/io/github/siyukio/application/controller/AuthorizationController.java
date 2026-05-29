@@ -43,6 +43,12 @@ public class AuthorizationController {
         return XDataUtils.copy(token, JSONObject.class);
     }
 
+    @ApiMapping(path = "/admin/token/get", authorization = @Authorization(type = Token.PRINCIPAL_TYPE_ADMIN_USER))
+    public JSONObject getAdminToken(Token token) {
+        log.info("{}", XDataUtils.toPrettyJSONString(token));
+        return XDataUtils.copy(token, JSONObject.class);
+    }
+
     @ApiMapping(path = "/app/token/get", authorization = @Authorization(type = Token.PRINCIPAL_TYPE_APP))
     public JSONObject getAppToken(Token token) {
         log.info("{}", XDataUtils.toPrettyJSONString(token));

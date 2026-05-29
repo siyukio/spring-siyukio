@@ -45,7 +45,7 @@ class AuthorizationControllerTests {
         }
 
         {
-            Token token = new Token(new Token.UserPrincipal("user-001", "user", "admin"));
+            Token token = new Token(new Token.AdminUserPrincipal("admin-user-001", "admin"));
             String auth = this.tokenProvider.createAuthorization(token, Duration.ofDays(360 * 100));
             log.info("Admin user: {}", auth);
         }
@@ -106,10 +106,15 @@ class AuthorizationControllerTests {
         this.apiMock.setAuthorization(authorization);
         this.apiMock.perform("/user/token/get", new JSONObject());
 
+    }
+
+    @Test
+    void testGetAdminUserTokenByAuthorization() {
+        String authorization;
         // Admin user
-        authorization = "eyJhbGciOiJFUzI1NiJ9.eyJ0eXAiOiJhY2MiLCJleHAiOjQ4OTAzNzI2NTIsInBybiI6eyJ1aWQiOiJ1c2VyLTAwMSIsInNjcCI6WyJhZG1pbiJdLCJ1bm0iOiJ1c2VyIiwidHlwIjoidXNyIn0sImp0aSI6ImFXZVpwemFFRHJkVkFjeGIwZ1NlQSJ9.kPYIGxU3j6j2AaQq18BwYEQW_bgHv0nE1ZVVoQaDdve84mRAddlNwMo4_CL5GdgUlyX3UHNriaISmWFmET-FUQ";
+        authorization = "eyJhbGciOiJFUzI1NiJ9.eyJ0eXAiOiJhY2MiLCJleHAiOjQ4OTA0MTg3OTYsInBybiI6eyJ1aWQiOiJhZG1pbi11c2VyLTAwMSIsInVubSI6ImFkbWluIHVzZXIiLCJ0eXAiOiJhZG0ifSwianRpIjoiYVdoQ1RKVE5nRTdIMjg0UHJhVnloIn0.P--7CDC1mtBaHBMP8HEmD8dTcp_TihnxFxFenpch1snJRu2-BA6CbqlU05mhLuoqLXkrbnAvRRhROHBZwx00Mw";
         this.apiMock.setAuthorization(authorization);
-        this.apiMock.perform("/user/token/get", new JSONObject());
+        this.apiMock.perform("/admin/token/get", new JSONObject());
 
     }
 
