@@ -1,9 +1,13 @@
 package io.github.siyukio.client.support;
 
+import com.github.benmanes.caffeine.cache.Cache;
 import io.github.siyukio.client.interceptor.*;
 import io.github.siyukio.tools.api.AipHandlerManager;
 import io.github.siyukio.tools.api.annotation.client.ApiClient;
 import io.github.siyukio.tools.api.token.TokenProvider;
+import io.github.siyukio.tools.cache.annotation.CacheConfig;
+import io.github.siyukio.tools.cache.definition.CacheDefinition;
+import io.github.siyukio.tools.util.CacheUtils;
 import io.github.siyukio.tools.util.HttpClientUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.Getter;
@@ -117,6 +121,18 @@ public class ApiClientFactoryBean implements FactoryBean<Object>, InitializingBe
 
         if (apiClient.loadBalance()) {
             restClientBuilder.requestInterceptor(new LoadBalanceInterceptor());
+        }
+
+        CacheConfig cacheConfig = apiClient.cacheConfig();
+        if (cacheConfig.maximumSize() > 0) {
+            CacheDefinition cacheDefinition = new CacheDefinition(
+                    cacheConfig.maximumSize(),
+                    cacheConfig.softValues(),
+                    cacheConfig.expireUnit(),
+                    cacheConfig.expireAfterAccess(),
+                    cacheConfig.expireAfterWrite());
+            Cache<String, String> cache = CacheUtils.createCache(cacheDefinition);
+            restClientBuilder.requestInterceptor(new CacheRequestInterceptor(cache));
         }
 
         if (this.aipHandlerManager != null && this.tokenProvider != null) {

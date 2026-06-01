@@ -12,16 +12,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.StringUtils;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -134,45 +130,4 @@ public class LocalRequestInterceptor implements ClientHttpRequestInterceptor {
         return new LocalJsonResponse(result);
     }
 
-    /**
-     * Local JSON response implementation of ClientHttpResponse.
-     */
-    private static class LocalJsonResponse implements ClientHttpResponse {
-
-        private final byte[] bodyBytes;
-        private final HttpStatusCode statusCode = HttpStatusCode.valueOf(200);
-        private final HttpHeaders headers;
-
-        LocalJsonResponse(String jsonBody) {
-            this.bodyBytes = jsonBody.getBytes(StandardCharsets.UTF_8);
-            this.headers = new HttpHeaders();
-            this.headers.setContentType(MediaType.APPLICATION_JSON);
-            this.headers.setContentLength(bodyBytes.length);
-        }
-
-        @Override
-        public HttpHeaders getHeaders() {
-            return headers;
-        }
-
-        @Override
-        public InputStream getBody() {
-            return new ByteArrayInputStream(bodyBytes);
-        }
-
-        @Override
-        public HttpStatusCode getStatusCode() {
-            return statusCode;
-        }
-
-        @Override
-        public String getStatusText() {
-            return statusCode.toString();
-        }
-
-        @Override
-        public void close() {
-            // no-op for mock response
-        }
-    }
 }

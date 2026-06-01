@@ -50,7 +50,9 @@ class CommonApiClientTest {
     @Test
     void testGetToken() {
         JSONObject result = commonApiClient.getToken();
-
         log.info("Api getToken: {}", XDataUtils.toPrettyJSONString(result));
+
+        result = commonApiClient.getToken();
+        log.info("Cache api getToken: {}", XDataUtils.toPrettyJSONString(result));
     }
 }

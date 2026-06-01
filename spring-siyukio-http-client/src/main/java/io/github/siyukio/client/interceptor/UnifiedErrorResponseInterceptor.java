@@ -4,15 +4,13 @@ import io.github.siyukio.tools.api.ApiException;
 import io.github.siyukio.tools.util.XDataUtils;
 import org.json.JSONObject;
 import org.springframework.http.HttpRequest;
-import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.StreamUtils;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -53,47 +51,8 @@ public class UnifiedErrorResponseInterceptor implements ClientHttpRequestInterce
      * Check if the response is JSON by Content-Type header.
      */
     private boolean isJsonResponse(ClientHttpResponse response) throws IOException {
-        String contentType = response.getHeaders().getContentType() != null
-                ? response.getHeaders().getContentType().toString()
-                : "";
-        return contentType.contains("application/json");
+        MediaType contentType = response.getHeaders().getContentType();
+        return contentType != null && contentType.equals(MediaType.APPLICATION_JSON);
     }
 
-    /**
-     * Response wrapper that returns the original string as body.
-     */
-    private static class StringResponseWrapper implements ClientHttpResponse {
-        private final ClientHttpResponse originalResponse;
-        private final byte[] bodyBytes;
-
-        StringResponseWrapper(ClientHttpResponse originalResponse, String body) {
-            this.originalResponse = originalResponse;
-            this.bodyBytes = body.getBytes(StandardCharsets.UTF_8);
-        }
-
-        @Override
-        public org.springframework.http.HttpHeaders getHeaders() {
-            return originalResponse.getHeaders();
-        }
-
-        @Override
-        public InputStream getBody() {
-            return new ByteArrayInputStream(bodyBytes);
-        }
-
-        @Override
-        public HttpStatusCode getStatusCode() throws IOException {
-            return originalResponse.getStatusCode();
-        }
-
-        @Override
-        public String getStatusText() throws IOException {
-            return originalResponse.getStatusText();
-        }
-
-        @Override
-        public void close() {
-            originalResponse.close();
-        }
-    }
 }

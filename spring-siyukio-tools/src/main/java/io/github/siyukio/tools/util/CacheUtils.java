@@ -4,7 +4,6 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Scheduler;
 import io.github.siyukio.tools.cache.definition.CacheDefinition;
-import org.json.JSONObject;
 
 import java.util.concurrent.TimeUnit;
 
@@ -16,7 +15,7 @@ public abstract class CacheUtils {
 
     private final static Scheduler EXECUTOR_SERVICE_SCHEDULER = Scheduler.forScheduledExecutorService(AsyncUtils.SINGLE_EXECUTOR_SERVICE);
 
-    public static Cache<String, JSONObject> createCache(CacheDefinition cacheDefinition) {
+    public static <T> Cache<String, T> createCache(CacheDefinition cacheDefinition) {
         Caffeine<Object, Object> builder = Caffeine.newBuilder()
                 .scheduler(EXECUTOR_SERVICE_SCHEDULER);
         builder.maximumSize(cacheDefinition.maximumSize());

@@ -1,5 +1,6 @@
 package io.github.siyukio.tools.api.annotation.client;
 
+import io.github.siyukio.tools.cache.annotation.CacheConfig;
 import org.springframework.core.annotation.AliasFor;
 import org.springframework.web.service.annotation.HttpExchange;
 
@@ -49,5 +50,12 @@ public @interface ApiClient {
      * Enable load balancing, default is false.
      */
     boolean loadBalance() default false;
+
+    /**
+     * Cache configuration for the client request.
+     *
+     * @return cache configuration
+     */
+    CacheConfig cacheConfig() default @CacheConfig();
 
 }
