@@ -1,6 +1,6 @@
 package io.github.siyukio.tools.entity.postgresql.annotation;
 
-import io.github.siyukio.tools.entity.annotation.CacheConfig;
+import io.github.siyukio.tools.cache.annotation.CacheConfig;
 import io.github.siyukio.tools.entity.definition.EntityDefinition;
 
 import java.lang.annotation.ElementType;

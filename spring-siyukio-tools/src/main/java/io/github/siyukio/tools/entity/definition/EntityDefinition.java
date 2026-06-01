@@ -1,5 +1,7 @@
 package io.github.siyukio.tools.entity.definition;
 
+import io.github.siyukio.tools.cache.definition.CacheDefinition;
+
 import java.util.List;
 
 /**

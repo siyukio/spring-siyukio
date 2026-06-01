@@ -2,11 +2,15 @@ package io.github.siyukio.postgresql.support;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import io.github.siyukio.postgresql.registrar.PostgresqlEntityRegistrar;
+import io.github.siyukio.tools.cache.annotation.CacheConfig;
+import io.github.siyukio.tools.cache.definition.CacheDefinition;
 import io.github.siyukio.tools.entity.ColumnType;
 import io.github.siyukio.tools.entity.EntityConstants;
 import io.github.siyukio.tools.entity.EntityExecutor;
-import io.github.siyukio.tools.entity.annotation.CacheConfig;
-import io.github.siyukio.tools.entity.definition.*;
+import io.github.siyukio.tools.entity.definition.ColumnDefinition;
+import io.github.siyukio.tools.entity.definition.EntityDefinition;
+import io.github.siyukio.tools.entity.definition.IndexDefinition;
+import io.github.siyukio.tools.entity.definition.KeyDefinition;
 import io.github.siyukio.tools.entity.executor.CacheEntityExecutor;
 import io.github.siyukio.tools.entity.executor.CryptoEntityExecutor;
 import io.github.siyukio.tools.entity.postgresql.PgEntityDao;

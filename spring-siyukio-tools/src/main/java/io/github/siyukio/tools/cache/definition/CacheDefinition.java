@@ -1,4 +1,4 @@
-package io.github.siyukio.tools.entity.definition;
+package io.github.siyukio.tools.cache.definition;
 
 import java.util.concurrent.TimeUnit;
 

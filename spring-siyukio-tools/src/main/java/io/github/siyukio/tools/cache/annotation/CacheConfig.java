@@ -1,4 +1,4 @@
-package io.github.siyukio.tools.entity.annotation;
+package io.github.siyukio.tools.cache.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

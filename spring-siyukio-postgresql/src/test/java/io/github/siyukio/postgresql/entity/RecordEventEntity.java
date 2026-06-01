@@ -2,7 +2,7 @@ package io.github.siyukio.postgresql.entity;
 
 import com.fasterxml.jackson.databind.EnumNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.EnumNaming;
-import io.github.siyukio.tools.entity.annotation.CacheConfig;
+import io.github.siyukio.tools.cache.annotation.CacheConfig;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgColumn;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgEntity;
 import io.github.siyukio.tools.entity.postgresql.annotation.PgIndex;

@@ -3,7 +3,7 @@ package io.github.siyukio.tools.util;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Scheduler;
-import io.github.siyukio.tools.entity.definition.CacheDefinition;
+import io.github.siyukio.tools.cache.definition.CacheDefinition;
 import org.json.JSONObject;
 
 import java.util.concurrent.TimeUnit;
