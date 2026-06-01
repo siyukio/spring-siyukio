@@ -527,8 +527,12 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
                 if (authorization != null) {
                     //validate authorization
                     Token.Principal principal = token.principal();
-                    if (StringUtils.hasText(authorization.type())) {
-                        if (!StringUtils.hasText(principal.type()) || !authorization.type().equals(principal.type())) {
+                    if (principal == null || !authorization.type().equals(principal.type())) {
+                        return Mono.error(new AcpProtocolException(HttpStatus.FORBIDDEN.value(), HttpStatus.FORBIDDEN.getReasonPhrase()));
+                    }
+                    if (StringUtils.hasText(authorization.actorType())) {
+                        Token.Principal actor = token.actor();
+                        if (actor == null || !authorization.actorType().equals(actor.type())) {
                             return Mono.error(new AcpProtocolException(HttpStatus.FORBIDDEN.value(), HttpStatus.FORBIDDEN.getReasonPhrase()));
                         }
                     }

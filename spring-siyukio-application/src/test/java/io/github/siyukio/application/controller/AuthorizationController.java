@@ -61,6 +61,12 @@ public class AuthorizationController {
         return XDataUtils.copy(token, JSONObject.class);
     }
 
+    @ApiMapping(path = "/memberWithApp/token/get", authorization = @Authorization(type = Token.PRINCIPAL_TYPE_MEMBER, actorType = Token.PRINCIPAL_TYPE_APP))
+    public JSONObject getMemberWithAppToken(Token token) {
+        log.info("{}", XDataUtils.toPrettyJSONString(token));
+        return XDataUtils.copy(token, JSONObject.class);
+    }
+
     @ApiMapping(path = "/internal/token/get", authorization = @Authorization(type = Token.PRINCIPAL_TYPE_INTERNAL))
     public JSONObject getInternalToken(Token token) {
         log.info("{}", XDataUtils.toPrettyJSONString(token));

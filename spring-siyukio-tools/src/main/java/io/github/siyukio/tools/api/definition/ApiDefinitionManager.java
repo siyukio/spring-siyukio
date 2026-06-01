@@ -186,13 +186,15 @@ public final class ApiDefinitionManager {
         if (apiController.authorization().state().equals(Authorization.State.REQUIRED)) {
             authorization = new ApiDefinition.Authorization(
                     apiController.authorization().type(),
-                    List.of(apiController.authorization().scopes()));
+                    List.of(apiController.authorization().scopes()),
+                    apiController.authorization().actorType());
         }
         switch (apiMapping.authorization().state()) {
             case REQUIRED:
                 authorization = new ApiDefinition.Authorization(
                         apiMapping.authorization().type(),
-                        List.of(apiMapping.authorization().scopes()));
+                        List.of(apiMapping.authorization().scopes()),
+                        apiMapping.authorization().actorType());
                 break;
             case DISABLED:
                 authorization = null;

@@ -58,8 +58,8 @@ class AuthorizationControllerTests {
 
         {
             Token token = new Token(
-                    new Token.AppPrincipal("app-001", "app"),
-                    new Token.MemberPrincipal("member-001", "member")
+                    new Token.MemberPrincipal("member-001", "member"),
+                    new Token.AppPrincipal("app-001", "app")
             );
             String auth = this.tokenProvider.createAuthorization(token, Duration.ofDays(360 * 100));
             log.info("App with member: {}", auth);
@@ -139,6 +139,15 @@ class AuthorizationControllerTests {
         authorization = "eyJhbGciOiJFUzI1NiJ9.eyJ0eXAiOiJhY2MiLCJleHAiOjQ4OTAzNzI2NTIsInBybiI6eyJtaWQiOiJtZW1iZXItMDAxIiwidHlwIjoibWJyIiwibW5tIjoibWVtYmVyIn0sImp0aSI6ImFXZVpwelhkbjJTYjFqdFFoWWZMQSJ9.lHQp77oZ6KEGfE-oDlaFCJxmRVuAR6yfxYwXq0wx9FsAam4h1BA4J7i1qx22BUz3LUTA2q0c1r7EQxHopXqfXg";
         this.apiMock.setAuthorization(authorization);
         this.apiMock.perform("/member/token/get", new JSONObject());
+    }
+
+    @Test
+    void testGetMemberWithAppTokenByAuthorization() {
+        String authorization;
+        // Member
+        authorization = "eyJhbGciOiJFUzI1NiJ9.eyJ0eXAiOiJhY2MiLCJhY3QiOnsiYW5tIjoiYXBwIiwidHlwIjoiYXBwIiwiYWlkIjoiYXBwLTAwMSJ9LCJleHAiOjQ4OTA3Mjc1MjcsInBybiI6eyJtaWQiOiJtZW1iZXItMDAxIiwidHlwIjoibWJyIiwibW5tIjoibWVtYmVyIn0sImp0aSI6ImFYMnBLcUJCOXNGc1hzMEpzam1QNCJ9.XVTttsjLiuFJt39w99ctJLq2N9GERiYAOb2m8_Peolx1nrz_YnpxuSOTCrNqXttosifbKolNQ8lPzOfWecZfvA";
+        this.apiMock.setAuthorization(authorization);
+        this.apiMock.perform("/memberWithApp/token/get", new JSONObject());
     }
 
     @Test

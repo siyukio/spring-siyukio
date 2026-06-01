@@ -33,6 +33,13 @@ public @interface Authorization {
     String[] scopes() default {};
 
     /**
+     * Actor type.
+     *
+     * @return
+     */
+    String actorType() default "";
+
+    /**
      * Authorization state enum.
      */
     enum State {

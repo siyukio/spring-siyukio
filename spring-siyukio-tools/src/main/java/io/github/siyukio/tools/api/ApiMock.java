@@ -66,8 +66,13 @@ public class ApiMock {
             }
 
             Token.Principal principal = token.principal();
-            if (StringUtils.hasText(authorization.type())) {
-                if (!StringUtils.hasText(principal.type()) || !authorization.type().equals(principal.type())) {
+            if (!authorization.type().equals(principal.type())) {
+                throw new ApiException(HttpStatus.FORBIDDEN);
+            }
+
+            if (StringUtils.hasText(authorization.actorType())) {
+                Token.Principal actor = token.actor();
+                if (actor == null || !authorization.actorType().equals(actor.type())) {
                     throw new ApiException(HttpStatus.FORBIDDEN);
                 }
             }

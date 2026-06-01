@@ -30,7 +30,8 @@ public record ApiDefinition(
     @With
     public record Authorization(
             String type,
-            List<String> scopes
+            List<String> scopes,
+            String actorType
     ) {
 
     }
