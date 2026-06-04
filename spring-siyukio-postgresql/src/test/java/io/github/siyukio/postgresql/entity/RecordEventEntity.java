@@ -1,5 +1,6 @@
 package io.github.siyukio.postgresql.entity;
 
+import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.fasterxml.jackson.databind.EnumNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.EnumNaming;
 import io.github.siyukio.tools.cache.annotation.CacheConfig;
@@ -18,7 +19,7 @@ import java.util.List;
 /**
  * @author Bugee
  */
-@PgEntity(comment = "record event", indexes = {
+@PgEntity(schema = "test", comment = "record event", indexes = {
         @PgIndex(columns = {"type"}),
         @PgIndex(columns = {"error", "rating"}),
         @PgIndex(columns = {"teamId", "userId"}, unique = true)
@@ -68,11 +69,17 @@ public record RecordEventEntity(
         @PgColumn(comment = "Collection of messages")
         JSONArray messages,
 
+        @PgColumn
+        JSONObject meta,
+
         @PgColumn(comment = "item")
         Item item,
 
         @PgColumn(comment = "items")
         List<Item> items,
+
+        @PgColumn
+        AcpSchema.SessionUpdate sessionUpdate,
 
         @PgColumn
         LoginType loginType,

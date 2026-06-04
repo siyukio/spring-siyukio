@@ -228,7 +228,7 @@ public abstract class PgSqlUtils {
         partList.add(name);
         String sqlType = getSqlType(columnDefinition);
         partList.add(sqlType);
-        if (columnDefinition.type() != ColumnType.JSON_OBJECT) {
+        if (columnDefinition.defaultValue() != null) {
             partList.add("DEFAULT");
             String defaultValue = getSqlDefault(columnDefinition);
             partList.add(defaultValue);

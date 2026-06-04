@@ -113,13 +113,14 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         EntityUtils.isSafe(columnName);
         String defaultValueStr = pgColumn.defaultValue();
         Object defaultValue;
-        boolean hasInterface = recordComponent.getType().getInterfaces().length > 0;
+        boolean isInterface = recordComponent.getType().isInterface() && !Collection.class.isAssignableFrom(recordComponent.getType());
+        boolean isRecord = recordComponent.getType().isRecord();
         if (defaultValueStr.isEmpty()) {
             defaultValue = switch (columnType) {
                 case ColumnType.INT, ColumnType.BIGINT, ColumnType.DOUBLE -> 0;
                 case ColumnType.BOOLEAN -> false;
-                case ColumnType.JSON_ARRAY -> hasInterface ? null : new JSONArray();
-                case ColumnType.JSON_OBJECT -> hasInterface ? null : new JSONObject();
+                case ColumnType.JSON_ARRAY -> isInterface ? null : new JSONArray();
+                case ColumnType.JSON_OBJECT -> isInterface || isRecord ? null : new JSONObject();
                 case ColumnType.TEXT -> recordComponent.getType().isEnum() ? null : "";
                 case ColumnType.DATETIME -> "";
             };
@@ -131,9 +132,9 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
                 case ColumnType.DOUBLE -> Double.parseDouble(defaultValueStr);
                 case ColumnType.BOOLEAN -> Boolean.valueOf(defaultValueStr);
                 case ColumnType.JSON_ARRAY ->
-                        hasInterface || isNull ? null : XDataUtils.parse(defaultValueStr, JSONArray.class);
+                        isInterface || isNull ? null : XDataUtils.parse(defaultValueStr, JSONArray.class);
                 case ColumnType.JSON_OBJECT ->
-                        hasInterface || isNull ? null : XDataUtils.parse(defaultValueStr, JSONObject.class);
+                        isInterface || isNull ? null : XDataUtils.parse(defaultValueStr, JSONObject.class);
                 case ColumnType.TEXT -> isNull ? null : defaultValueStr;
                 case ColumnType.DATETIME -> isNull ? null : XDataUtils.parse(defaultValueStr);
             };
@@ -403,7 +404,9 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
 
             String columnDefault = informationColumn.columnDefault();
             if (columnDefault == null) {
-                sqlList.add(PgSqlUtils.alterColumnDefaultSql(entityDefinition, columnDefinition));
+                if (columnDefinition.defaultValue() != null) {
+                    sqlList.add(PgSqlUtils.alterColumnDefaultSql(entityDefinition, columnDefinition));
+                }
             } else {
                 if (StringUtils.hasText(columnDefault)) {
                     int index = columnDefault.indexOf("::");
