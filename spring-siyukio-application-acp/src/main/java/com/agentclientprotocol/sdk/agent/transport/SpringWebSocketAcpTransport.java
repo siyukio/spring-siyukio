@@ -158,12 +158,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
                                     JSONRPCMessage response = tuple.getT1();
                                     String transportId = tuple.getT2();
                                     AcpSchemaExt.TransportMessage responseMessage = new AcpSchemaExt.TransportMessage(transportId, response);
-                                    Sinks.EmitResult emitResult = this.outboundSink.tryEmitNext(responseMessage);
-                                    if (!emitResult.isSuccess()) {
-                                        if (!isClosing.get()) {
-                                            log.error("Failed to enqueue outbound message");
-                                        }
-                                    }
+                                    safeEmitOutbound(responseMessage);
                                 })
                                 // 4. Restore the original data
                                 .map(Tuple2::getT1)
@@ -212,14 +207,67 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
         return Mono.deferContextual(ctx -> {
             String transportId = ctx.get(AcpSchemaExt.TRANSPORT_ID);
             AcpSchemaExt.TransportMessage transportMessage = new AcpSchemaExt.TransportMessage(transportId, message);
-            if (outboundSink.tryEmitNext(transportMessage).isSuccess()) {
+            Sinks.EmitResult emitResult = safeEmitOutbound(transportMessage);
+            if (emitResult.isSuccess()) {
                 return Mono.empty();
             } else {
                 return Mono.error(new RuntimeException(
-                        "Failed to enqueue outbound message"
+                        "Failed to sendMessage: " + emitResult
                 ));
             }
         });
+    }
+
+    /**
+     * Extract EmitResult from IllegalStateException thrown by emitNext
+     */
+    private Sinks.EmitResult extractEmitResult(IllegalStateException e) {
+        String msg = e.getMessage();
+        if (msg != null) {
+            for (Sinks.EmitResult result : Sinks.EmitResult.values()) {
+                if (msg.contains(result.name())) {
+                    return result;
+                }
+            }
+        }
+        return Sinks.EmitResult.FAIL_CANCELLED;  // Default fallback
+    }
+
+    /**
+     * Safely emit a message to the outbound sink with logging
+     */
+    private Sinks.EmitResult safeEmitOutbound(AcpSchemaExt.TransportMessage message) {
+        try {
+            this.outboundSink.emitNext(message, (signal, error) -> {
+                // Only retry on serialization failure during normal operation
+                return !isClosing.get() && error == Sinks.EmitResult.FAIL_NON_SERIALIZED;
+            });
+            return Sinks.EmitResult.OK;
+        } catch (IllegalStateException e) {
+            Sinks.EmitResult result = extractEmitResult(e);
+            if (!isClosing.get()) {
+                log.error("Failed to emit outbound message: {}", e.getMessage());
+            }
+            return result;
+        }
+    }
+
+    /**
+     * Safely emit a message to the inbound sink with logging
+     */
+    private Sinks.EmitResult safeEmitInbound(AcpSchemaExt.TransportMessage message) {
+        try {
+            this.inboundSink.emitNext(message, (signal, error) -> {
+                return !isClosing.get() && error == Sinks.EmitResult.FAIL_NON_SERIALIZED;
+            });
+            return Sinks.EmitResult.OK;
+        } catch (IllegalStateException e) {
+            Sinks.EmitResult result = extractEmitResult(e);
+            if (!isClosing.get()) {
+                log.error("Failed to emit inbound message: {}", e.getMessage());
+            }
+            return result;
+        }
     }
 
     @Override
@@ -359,15 +407,13 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
                 JSONRPCMessage jsonRpcMessage = AcpSchema.deserializeJsonRpcMessage(XDataUtils.ACP_JSON_MAPPER, message);
                 log.debug("Received Acp message: {}", jsonRpcMessage);
                 AcpSchemaExt.TransportMessage transportMessage = new AcpSchemaExt.TransportMessage(session.getId(), jsonRpcMessage);
-                Sinks.EmitResult emitResult = inboundSink.tryEmitNext(transportMessage);
+                Sinks.EmitResult emitResult = safeEmitInbound(transportMessage);
                 if (!emitResult.isSuccess()) {
-                    if (!isClosing.get()) {
-                        log.error("Failed to enqueue inbound message: {}", emitResult);
-                    }
+                    log.error("Error handleTextMessage inbound message: {}", emitResult);
                 }
             } catch (Exception e) {
                 if (!isClosing.get()) {
-                    log.error("Error processing inbound message", e);
+                    log.error("Error handleTextMessage", e);
                     exceptionHandler.accept(e);
                 }
             }
