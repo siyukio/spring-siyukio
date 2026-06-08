@@ -1,5 +1,6 @@
 package io.github.siyukio.application.dto.parameter;
 
+import com.agentclientprotocol.sdk.spec.AcpSchema;
 import io.github.siyukio.tools.api.annotation.ApiParameter;
 import io.github.siyukio.tools.api.annotation.Example;
 import lombok.Builder;
@@ -15,6 +16,9 @@ import java.util.List;
 @Builder
 @With
 public record ListRequest(
+
+        @ApiParameter(description = "Prompt request")
+        AcpSchema.PromptRequest promptRequest,
 
         @ApiParameter(required = false, minItems = 3, maxItems = 6, maxLength = 3,
                 examples = {
@@ -57,7 +61,7 @@ public record ListRequest(
 
         @ApiParameter(required = false)
         List<Item> itemList
-        
+
 ) {
 
     record Item(
