@@ -1,13 +1,13 @@
 package io.github.siyukio.client.interceptor;
 
 import com.github.benmanes.caffeine.cache.Cache;
-import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -24,28 +24,17 @@ import java.nio.charset.StandardCharsets;
  * @author Bugee
  */
 @Slf4j
-public class CacheRequestInterceptor implements ClientHttpRequestInterceptor {
+public class CacheAfterRequestInterceptor implements ClientHttpRequestInterceptor {
 
     private final Cache<String, String> cache;
 
-    public CacheRequestInterceptor(Cache<String, String> cache) {
+    public CacheAfterRequestInterceptor(Cache<String, String> cache) {
         this.cache = cache;
     }
 
     @Override
     public ClientHttpResponse intercept(org.springframework.http.HttpRequest request, byte[] body,
                                         ClientHttpRequestExecution execution) throws IOException {
-        URI uri = request.getURI();
-        String cacheKey = generateCacheKey(uri, body);
-
-        // Return cached response if present
-        String cachedValue = cache.getIfPresent(cacheKey);
-        if (cachedValue != null) {
-            log.debug("Cache hit for key: {}", cacheKey);
-            return new LocalJsonResponse(XDataUtils.toJSONString(cachedValue));
-        }
-
-        log.debug("Cache miss for key: {}, executing request", cacheKey);
         ClientHttpResponse response = execution.execute(request, body);
 
         if (response.getStatusCode() != HttpStatus.OK) {
@@ -57,12 +46,22 @@ public class CacheRequestInterceptor implements ClientHttpRequestInterceptor {
             return response;
         }
 
+        String cacheControl = response.getHeaders().getCacheControl();
+        if (StringUtils.hasText(cacheControl) && cacheControl.equals("no-store")) {
+            return response;
+        }
+
         // Read response body and cache it
         byte[] responseBody = response.getBody().readAllBytes();
         String responseBodyStr = new String(responseBody, StandardCharsets.UTF_8);
-        cache.put(cacheKey, responseBodyStr);
+        if (StringUtils.hasText(responseBodyStr)) {
+            URI uri = request.getURI();
+            String cacheKey = generateCacheKey(uri, body);
+            cache.put(cacheKey, responseBodyStr);
+            log.debug("Cache key: {}", cacheKey);
+        }
 
-        return new StringResponseWrapper(response, responseBodyStr);
+        return response;
     }
 
     /**

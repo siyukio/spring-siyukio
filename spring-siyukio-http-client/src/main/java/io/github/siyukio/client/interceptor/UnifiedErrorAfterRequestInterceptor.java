@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets;
  * Interceptor for unified error response handling.
  * Checks if response contains an error object and throws ApiException accordingly.
  */
-public class UnifiedErrorResponseInterceptor implements ClientHttpRequestInterceptor {
+public class UnifiedErrorAfterRequestInterceptor implements ClientHttpRequestInterceptor {
 
     @Override
     public ClientHttpResponse intercept(HttpRequest request, byte[] body,

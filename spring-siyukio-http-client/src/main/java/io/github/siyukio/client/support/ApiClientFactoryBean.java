@@ -109,9 +109,6 @@ public class ApiClientFactoryBean implements FactoryBean<Object>, InitializingBe
                 .defaultHeader("Accept", "*/*")
                 .defaultHeader("Accept-Encoding", "gzip, br")
                 .requestFactory(requestFactory)
-                .requestInterceptor(new UnifiedErrorResponseInterceptor())
-                .requestInterceptor(new GzipResponseInterceptor())
-                .requestInterceptor(new BrotliResponseInterceptor())
                 .messageConverters(List.of(
                         stringHttpMessageConverter,
                         new MappingJackson2HttpMessageConverter(XDataUtils.OBJECT_MAPPER),
@@ -119,10 +116,7 @@ public class ApiClientFactoryBean implements FactoryBean<Object>, InitializingBe
                         new FormHttpMessageConverter()
                 ));
 
-        if (apiClient.loadBalance()) {
-            restClientBuilder.requestInterceptor(new LoadBalanceInterceptor());
-        }
-
+        Cache<String, String> cache = null;
         CacheConfig cacheConfig = apiClient.cacheConfig();
         if (cacheConfig.maximumSize() > 0) {
             CacheDefinition cacheDefinition = new CacheDefinition(
@@ -131,12 +125,27 @@ public class ApiClientFactoryBean implements FactoryBean<Object>, InitializingBe
                     cacheConfig.expireUnit(),
                     cacheConfig.expireAfterAccess(),
                     cacheConfig.expireAfterWrite());
-            Cache<String, String> cache = CacheUtils.createCache(cacheDefinition);
-            restClientBuilder.requestInterceptor(new CacheRequestInterceptor(cache));
+            cache = CacheUtils.createCache(cacheDefinition);
+        }
+
+        if (cache != null) {
+            restClientBuilder.requestInterceptor(new CacheAfterRequestInterceptor(cache));
+        }
+
+        restClientBuilder.requestInterceptor(new UnifiedErrorAfterRequestInterceptor())
+                .requestInterceptor(new GzipAfterRequestInterceptor())
+                .requestInterceptor(new BrotliAfterRequestInterceptor());
+
+        if (cache != null) {
+            restClientBuilder.requestInterceptor(new CacheBeforeRequestInterceptor(cache));
+        }
+
+        if (apiClient.loadBalance()) {
+            restClientBuilder.requestInterceptor(new LoadBalanceBeforeRequestInterceptor());
         }
 
         if (this.aipHandlerManager != null && this.tokenProvider != null) {
-            restClientBuilder.requestInterceptor(new LocalRequestInterceptor(this.aipHandlerManager, this.tokenProvider));
+            restClientBuilder.requestInterceptor(new LocalBeforeRequestInterceptor(this.aipHandlerManager, this.tokenProvider));
         }
 
         RestClient restClient = restClientBuilder.build();

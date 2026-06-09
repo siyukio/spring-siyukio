@@ -27,6 +27,16 @@ public class LocalJsonResponse implements ClientHttpResponse {
         this.headers.setContentLength(bodyBytes.length);
     }
 
+    LocalJsonResponse(String jsonBody, boolean noCache) {
+        this.bodyBytes = jsonBody.getBytes(StandardCharsets.UTF_8);
+        this.headers = new HttpHeaders();
+        this.headers.setContentType(MediaType.APPLICATION_JSON);
+        this.headers.setContentLength(bodyBytes.length);
+        if (noCache) {
+            this.headers.setCacheControl("no-store");
+        }
+    }
+
     @Override
     public HttpHeaders getHeaders() {
         return headers;

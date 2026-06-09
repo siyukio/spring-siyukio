@@ -19,7 +19,7 @@ import java.io.InputStream;
  *
  * @author Bugee
  */
-public class BrotliResponseInterceptor implements ClientHttpRequestInterceptor {
+public class BrotliAfterRequestInterceptor implements ClientHttpRequestInterceptor {
 
     private static final String CONTENT_ENCODING = "Content-Encoding";
     private static final String BR = "br";

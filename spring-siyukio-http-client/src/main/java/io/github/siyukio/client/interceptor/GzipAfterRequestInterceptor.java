@@ -19,7 +19,7 @@ import java.util.zip.GZIPInputStream;
  *
  * @author Bugee
  */
-public class GzipResponseInterceptor implements ClientHttpRequestInterceptor {
+public class GzipAfterRequestInterceptor implements ClientHttpRequestInterceptor {
 
     private static final String CONTENT_ENCODING = "Content-Encoding";
     private static final String GZIP = "gzip";

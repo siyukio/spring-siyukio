@@ -31,13 +31,13 @@ import java.util.Set;
  * @author Bugee
  */
 @Slf4j
-public class LocalRequestInterceptor implements ClientHttpRequestInterceptor {
+public class LocalBeforeRequestInterceptor implements ClientHttpRequestInterceptor {
 
     private final Set<String> LOCAL_HOSTS = Set.of("localhost", "127.0.0.1", "::1");
     private final AipHandlerManager aipHandlerManager;
     private final TokenProvider tokenProvider;
 
-    public LocalRequestInterceptor(AipHandlerManager aipHandlerManager, TokenProvider tokenProvider) {
+    public LocalBeforeRequestInterceptor(AipHandlerManager aipHandlerManager, TokenProvider tokenProvider) {
         this.aipHandlerManager = aipHandlerManager;
         this.tokenProvider = tokenProvider;
     }
@@ -58,17 +58,15 @@ public class LocalRequestInterceptor implements ClientHttpRequestInterceptor {
                 if (apiDefinition.authorization() != null) {
                     String accessToken = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
                     if (!StringUtils.hasText(accessToken)) {
-                        ApiException apiException = new ApiException(
+                        throw new ApiException(
                                 HttpStatus.UNAUTHORIZED.value(),
                                 "Api client error:" + HttpStatus.UNAUTHORIZED.getReasonPhrase());
-                        return new LocalJsonResponse(XDataUtils.toJSONString(apiException.toJson()));
                     }
                     token = this.tokenProvider.verifyToken(accessToken);
                     if (token == null) {
-                        ApiException apiException = new ApiException(
+                        throw new ApiException(
                                 HttpStatus.UNAUTHORIZED.value(),
                                 "Api client error:" + HttpStatus.UNAUTHORIZED.getReasonPhrase());
-                        return new LocalJsonResponse(XDataUtils.toJSONString(apiException.toJson()));
                     }
                 }
                 ApiRequest apiRequest = ApiRequest.builder()

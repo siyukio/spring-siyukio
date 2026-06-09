@@ -26,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bugee
  */
 @Slf4j
-public class LoadBalanceInterceptor implements ClientHttpRequestInterceptor {
+public class LoadBalanceBeforeRequestInterceptor implements ClientHttpRequestInterceptor {
 
     private final Lock lock = new ReentrantLock();
     private volatile List<String> resolvedIps = new ArrayList<>();
