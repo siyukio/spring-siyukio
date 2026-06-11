@@ -15,7 +15,9 @@ import java.util.Map;
  */
 public final class AcpSchemaExt {
 
-    public static final String TRANSPORT_ID = "transport_id";
+    public static final String AGENT_NAME = "agentName";
+
+    public static final String TRANSPORT_ID = "transportId";
 
     public static final String METHOD_TOOL_LIST = "tool/list";
 

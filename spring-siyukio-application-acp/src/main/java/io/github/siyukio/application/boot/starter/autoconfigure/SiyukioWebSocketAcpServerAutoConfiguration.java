@@ -5,6 +5,7 @@ import com.agentclientprotocol.sdk.agent.AcpAsyncAgent;
 import com.agentclientprotocol.sdk.agent.SimpleAcpAgent;
 import com.agentclientprotocol.sdk.agent.transport.SpringWebSocketAcpTransport;
 import io.github.siyukio.application.acp.AcpSessionHandler;
+import io.github.siyukio.tools.acp.annotation.Agent;
 import io.github.siyukio.tools.api.AipHandlerManager;
 import io.github.siyukio.tools.api.token.TokenProvider;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,9 @@ import org.springframework.web.socket.config.annotation.DelegatingWebSocketConfi
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author Bugee
  */
@@ -29,38 +33,72 @@ public class SiyukioWebSocketAcpServerAutoConfiguration implements WebSocketConf
 
     private ApplicationContext applicationContext;
 
+    /**
+     * Resolves the agent name from @Agent annotation attributes.
+     * Checks both 'value' and 'name' aliases.
+     */
+    private String resolveAgentName(Agent annotation) {
+        // Both value() and name() are aliases for each other,
+        // so we can use either one
+        String name = annotation.value();
+        return name != null ? name.trim() : "";
+    }
+
     @Bean
     public SpringWebSocketAcpTransport webSocketAcpTransport(ObjectProvider<AcpSessionHandler> acpSessionHandlerProvider) {
-        AcpSessionHandler acpSessionHandler = acpSessionHandlerProvider.getIfAvailable(() -> {
+        Map<String, AcpSessionHandler> handlerMap = new HashMap<>();
+        acpSessionHandlerProvider.stream().forEach(handler -> {
+            Agent annotation = handler.getClass().getAnnotation(Agent.class);
 
-            String warning = """
-                    AcpSessionHandler bean not found, using default implementation.
-                    It is recommended to register an AcpSessionHandler implementation bean to avoid potential functional issues.
-                    Example implementation:
+            if (annotation != null) {
+                // Use the value/name attribute as the agent identifier
+                String agentName = resolveAgentName(annotation);
+
+                if (!agentName.isEmpty()) {
+                    if (handlerMap.containsKey(agentName)) {
+                        log.warn("Duplicate ACP agent name '{}' detected: {} and {}",
+                                agentName,
+                                handlerMap.get(agentName).getClass().getName(),
+                                handler.getClass().getName());
+                    }
+                    handlerMap.put(agentName, handler);
+                } else {
+                    // Default handler (no name specified)
+                    handlerMap.put("", handler);
+                }
+
+                log.info("Registered ACP agent: '{}' -> {}",
+                        agentName.isEmpty() ? "(default)" : agentName,
+                        handler.getClass().getName());
+            } else {
+                // Fallback: handlers without @Agent annotation become default
+                log.warn("AcpSessionHandler '{}' without @Agent annotation will be used as default",
+                        handler.getClass().getName());
+                handlerMap.putIfAbsent("", handler);
+            }
+        });
+
+        if (handlerMap.isEmpty()) {
+            log.warn("""
+                    
+                    No AcpSessionHandler bean found.
+                    It is recommended to register at least one @Agent annotated bean.
+                    Example:
                     
                         @Slf4j
-                        @Service
-                        public class AcpSessionHandlerImpl implements AcpSessionHandler {
-                    
-                            @Override
-                            public AcpSchema.InitializeResponse handleInit(Token token, AcpSchema.InitializeRequest req) {
-                                log.debug("AcpSchema.InitializeRequest: {}, {}", token, req);
-                                return AcpSessionHandler.super.init(token, req);
-                            }
-                    
-                            @Override
-                            public AcpSchema.NewSessionResponse handleNewSession(Token token, AcpSchema.NewSessionRequest req) {
-                                log.debug("AcpSchema.NewSessionResponse: {}, {}", token, req);
-                                return AcpSessionHandler.super.newSession(token, req);
-                            }
-                        }
-                    """;
-            log.warn("{}", warning);
-            return new AcpSessionHandler() {
-            };
-        });
+                        @Agent
+                        public class MyAgentAcpSessionHandler implements AcpSessionHandler { ... }
+                    """);
+            handlerMap.put("", new AcpSessionHandler() {
+            });
+        }
+        if (!handlerMap.containsKey("")) {
+            handlerMap.put("", new AcpSessionHandler() {
+            });
+        }
+
         TokenProvider tokenProvider = this.applicationContext.getBean(TokenProvider.class);
-        return new SpringWebSocketAcpTransport(tokenProvider, acpSessionHandler);
+        return new SpringWebSocketAcpTransport(tokenProvider, handlerMap);
     }
 
     @Bean

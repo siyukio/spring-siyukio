@@ -191,6 +191,7 @@ public class SimpleAcpClient {
         private Duration connectTimeout = Duration.ofSeconds(12);
         private String authorization = "";
         private boolean loadBalance = false;
+        private String agentName = "";
 
         /**
          * Creates a new Builder with the specified ACP server URI.
@@ -199,6 +200,11 @@ public class SimpleAcpClient {
          */
         public Builder(String uri) {
             this.uri = uri;
+        }
+
+        public Builder agentName(String agentName) {
+            this.agentName = agentName;
+            return this;
         }
 
         /**
@@ -311,7 +317,7 @@ public class SimpleAcpClient {
             SimpleAsyncAcpClient.Builder builder = new SimpleAsyncAcpClient.Builder(
                     this.sessionNotificationHandlers, this.requestPermissionHandler,
                     this.terminalHandler, this.readTextFileHandler, this.writeTextFileHandler,
-                    this.requestTimeout, this.connectTimeout, this.authorization
+                    this.requestTimeout, this.connectTimeout, this.authorization, this.agentName
             );
             URI uri = URI.create(this.uri);
             if ("http".equals(uri.getScheme())) {

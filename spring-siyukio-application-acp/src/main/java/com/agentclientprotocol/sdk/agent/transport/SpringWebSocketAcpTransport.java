@@ -70,7 +70,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
     private final AtomicBoolean isClosing = new AtomicBoolean(false);
     private final AtomicBoolean isStarted = new AtomicBoolean(false);
     private final TokenProvider tokenProvider;
-    private final AcpSessionHandler acpSessionHandler;
+    private final Map<String, AcpSessionHandler> acpSessionHandlerMap;
     private final ConcurrentHashMap<String, AuthSession> authSessionMap = new ConcurrentHashMap<>();
     private ScheduledFuture<?> keepAliveScheduler;
     private Consumer<Throwable> exceptionHandler = t -> log.error("WebSocket Acp Transport error", t);
@@ -79,8 +79,8 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
      * Creates a new WebSocketAcpTransport on the specified port with default path.
      *
      */
-    public SpringWebSocketAcpTransport(TokenProvider tokenProvider, AcpSessionHandler acpSessionHandler) {
-        this(DEFAULT_ACP_PATH, tokenProvider, acpSessionHandler);
+    public SpringWebSocketAcpTransport(TokenProvider tokenProvider, Map<String, AcpSessionHandler> acpSessionHandlerMap) {
+        this(DEFAULT_ACP_PATH, tokenProvider, acpSessionHandlerMap);
     }
 
     /**
@@ -88,9 +88,9 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
      *
      * @param path The WebSocket endpoint path (e.g., "/acp")
      */
-    public SpringWebSocketAcpTransport(String path, TokenProvider tokenProvider, AcpSessionHandler acpSessionHandler) {
+    public SpringWebSocketAcpTransport(String path, TokenProvider tokenProvider, Map<String, AcpSessionHandler> acpSessionHandlerMap) {
         this.tokenProvider = tokenProvider;
-        this.acpSessionHandler = acpSessionHandler;
+        this.acpSessionHandlerMap = acpSessionHandlerMap;
         Assert.hasText(path, "Path must not be empty");
         this.path = path;
 
@@ -299,6 +299,16 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
         return terminationSink.asMono();
     }
 
+    private AcpSessionHandler getAcpSessionHandler(Map<String, Object> meta) {
+        String agentName;
+        if (meta == null) {
+            agentName = "";
+        } else {
+            agentName = meta.getOrDefault(AcpSchemaExt.AGENT_NAME, "").toString();
+        }
+        return acpSessionHandlerMap.get(agentName);
+    }
+
     public class WebSocketAcpHandler extends TextWebSocketHandler implements HandshakeHandler {
 
         private final HandshakeHandler handshakeHandler = new DefaultHandshakeHandler();
@@ -436,6 +446,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
         @Override
         public Mono<AcpSchema.InitializeResponse> handle(AcpSchema.InitializeRequest request) {
             return AcpSessionHandler.withContext(authSessionMap, authSession -> {
+                AcpSessionHandler acpSessionHandler = getAcpSessionHandler(request.meta());
                 AcpSchema.InitializeResponse response = acpSessionHandler.handleInit(authSession.getToken(), request);
                 return Mono.just(response);
             });
@@ -447,6 +458,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
         @Override
         public Mono<AcpSchema.NewSessionResponse> handle(AcpSchema.NewSessionRequest request) {
             return AcpSessionHandler.withContext(authSessionMap, authSession -> {
+                AcpSessionHandler acpSessionHandler = getAcpSessionHandler(request.meta());
                 AcpSchema.NewSessionResponse response = acpSessionHandler.handleNewSession(authSession.getToken(), request);
                 return Mono.just(response);
             });
@@ -458,6 +470,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
         @Override
         public Mono<AcpSchema.LoadSessionResponse> handle(AcpSchema.LoadSessionRequest request) {
             return AcpSessionHandler.withContext(authSessionMap, authSession -> {
+                AcpSessionHandler acpSessionHandler = getAcpSessionHandler(request.meta());
                 AcpSchema.LoadSessionResponse response = acpSessionHandler.handleLoadSession(authSession.getToken(), request);
                 return Mono.just(response);
             });
@@ -469,6 +482,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
         @Override
         public Mono<Void> handle(AcpSchema.CancelNotification request) {
             return AcpSessionHandler.withContext(authSessionMap, authSession -> {
+                AcpSessionHandler acpSessionHandler = getAcpSessionHandler(Map.of());
                 try {
                     acpSessionHandler.handleCancel(authSession.getToken(), request);
                 } catch (Exception e) {
@@ -484,6 +498,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
         @Override
         public Mono<AcpSchema.SetSessionModeResponse> handle(AcpSchema.SetSessionModeRequest request) {
             return AcpSessionHandler.withContext(authSessionMap, authSession -> {
+                AcpSessionHandler acpSessionHandler = getAcpSessionHandler(Map.of());
                 AcpSchema.SetSessionModeResponse response = acpSessionHandler.handleSetSessionMode(authSession.getToken(), request);
                 return Mono.just(response);
             });
@@ -495,6 +510,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
         @Override
         public Mono<AcpSchema.SetSessionModelResponse> handle(AcpSchema.SetSessionModelRequest request) {
             return AcpSessionHandler.withContext(authSessionMap, authSession -> {
+                AcpSessionHandler acpSessionHandler = getAcpSessionHandler(Map.of());
                 AcpSchema.SetSessionModelResponse response = acpSessionHandler.handleSetSessionModel(authSession.getToken(), request);
                 return Mono.just(response);
             });
@@ -508,6 +524,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
             return AcpSessionHandler.withContext(authSessionMap, authSession -> {
                 Token token = authSession.getToken();
                 AcpSessionContext acpSessionContext = new AcpSessionContext(context, token, authSession.getId());
+                AcpSessionHandler acpSessionHandler = getAcpSessionHandler(request.meta());
                 AcpSchema.PromptResponse response = acpSessionHandler.handlePrompt(authSession.getToken(), request, acpSessionContext);
                 return Mono.just(response);
             });

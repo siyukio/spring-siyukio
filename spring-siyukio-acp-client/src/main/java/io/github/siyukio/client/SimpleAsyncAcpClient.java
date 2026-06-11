@@ -30,14 +30,18 @@ public class SimpleAsyncAcpClient {
 
     @Getter
     private final URI uri;
+    @Getter
+    private final String agentName;
     private final WebSocketAcpClientTransport webSocketAcpClientTransport;
     private final AcpAsyncClientExt acpAsyncClientExt;
 
     public SimpleAsyncAcpClient(
             URI uri,
+            String agentName,
             WebSocketAcpClientTransport webSocketAcpClientTransport,
             AcpAsyncClientExt acpAsyncClientExt) {
         this.uri = uri;
+        this.agentName = agentName;
         this.webSocketAcpClientTransport = webSocketAcpClientTransport;
         this.acpAsyncClientExt = acpAsyncClientExt;
     }
@@ -79,13 +83,13 @@ public class SimpleAsyncAcpClient {
 
     public AcpSchema.NewSessionResponse newSession() {
         String cwd = "/" + IdUtils.getUniqueId();
-        AcpSchema.NewSessionRequest newSessionRequest = new AcpSchema.NewSessionRequest(cwd, List.of(), Map.of());
+        AcpSchema.NewSessionRequest newSessionRequest = new AcpSchema.NewSessionRequest(cwd, List.of(), Map.of(AcpSchemaExt.AGENT_NAME, this.agentName));
         return this.acpAsyncClientExt.newSession(newSessionRequest).block();
     }
 
     public AcpSchema.LoadSessionResponse loadSession(String sessionId) {
         String cwd = "/" + IdUtils.getUniqueId();
-        AcpSchema.LoadSessionRequest loadSessionRequest = new AcpSchema.LoadSessionRequest(sessionId, cwd, List.of(), Map.of());
+        AcpSchema.LoadSessionRequest loadSessionRequest = new AcpSchema.LoadSessionRequest(sessionId, cwd, List.of(), Map.of(AcpSchemaExt.AGENT_NAME, this.agentName));
         return this.acpAsyncClientExt.loadSession(loadSessionRequest).block();
     }
 
@@ -107,7 +111,7 @@ public class SimpleAsyncAcpClient {
     public AcpSchema.PromptResponse prompt(String sessionId, String prompt) {
         List<AcpSchema.ContentBlock> prompts = new ArrayList<>();
         prompts.add(new AcpSchema.TextContent(prompt));
-        AcpSchema.PromptRequest promptRequest = new AcpSchema.PromptRequest(sessionId, prompts);
+        AcpSchema.PromptRequest promptRequest = new AcpSchema.PromptRequest(sessionId, prompts, Map.of(AcpSchemaExt.AGENT_NAME, this.agentName));
         return this.acpAsyncClientExt.prompt(promptRequest).block();
     }
 
@@ -245,7 +249,8 @@ public class SimpleAsyncAcpClient {
             WriteTextFileHandler writeTextFileHandler,
             Duration requestTimeout,
             Duration connectTimeout,
-            String authorization
+            String authorization,
+            String agentName
     ) {
 
         public SimpleAsyncAcpClient build(URI uri) {
@@ -286,12 +291,19 @@ public class SimpleAsyncAcpClient {
 
             AcpSchema.FileSystemCapability fileSystemCapability = new AcpSchema.FileSystemCapability(readTextFile, writeTextFile);
             AcpSchema.ClientCapabilities clientCapabilities = new AcpSchema.ClientCapabilities(fileSystemCapability, terminal);
-            AcpSchema.InitializeRequest initializeRequest = new AcpSchema.InitializeRequest(1, clientCapabilities);
+            AcpSchema.InitializeRequest initializeRequest = new AcpSchema.InitializeRequest(
+                    1,
+                    clientCapabilities,
+                    null,
+                    Map.of(
+                            AcpSchemaExt.AGENT_NAME, this.agentName
+                    ));
 
             AcpSchema.InitializeResponse initializeResponse = acpAsyncClientExt.initialize(initializeRequest).block();
             log.debug("Init async acp client: {}, {}", uri, XDataUtils.toJSONString(initializeResponse));
             return new SimpleAsyncAcpClient(
                     uri,
+                    this.agentName,
                     webSocketAcpClientTransport,
                     acpAsyncClientExt);
         }

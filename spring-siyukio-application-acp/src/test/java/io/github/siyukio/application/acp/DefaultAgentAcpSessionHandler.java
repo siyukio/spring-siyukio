@@ -2,13 +2,13 @@ package io.github.siyukio.application.acp;
 
 import com.agentclientprotocol.sdk.error.AcpProtocolException;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
+import io.github.siyukio.tools.acp.annotation.Agent;
 import io.github.siyukio.tools.acp.sdk.agent.AcpSessionContext;
 import io.github.siyukio.tools.acp.sdk.spec.AcpSchemaExt;
 import io.github.siyukio.tools.api.token.Token;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,12 +18,18 @@ import java.util.List;
  * @author Bugee
  */
 @Slf4j
-@Service
-public class AcpSessionHandlerImpl implements AcpSessionHandler {
+@Agent
+public class DefaultAgentAcpSessionHandler implements AcpSessionHandler {
+
+    @Override
+    public AcpSchema.InitializeResponse handleInit(Token token, AcpSchema.InitializeRequest req) {
+        log.debug("Default agent AcpSchema.InitializeRequest: {}, {}", token, req);
+        return AcpSchema.InitializeResponse.ok();
+    }
 
     @Override
     public AcpSchema.NewSessionResponse handleNewSession(Token token, AcpSchema.NewSessionRequest req) {
-        log.debug("AcpSchema.NewSessionRequest: {}, {}", token, req);
+        log.debug("Default agent AcpSchema.NewSessionRequest: {}, {}", token, req);
         AcpSchema.SessionModelState sessionModelState = new AcpSchema.SessionModelState("default", List.of());
         AcpSchema.SessionModeState sessionModeState = new AcpSchema.SessionModeState("default", List.of());
         return new AcpSchema.NewSessionResponse(token.jwtId(), sessionModeState, sessionModelState);
@@ -31,7 +37,7 @@ public class AcpSessionHandlerImpl implements AcpSessionHandler {
 
     @Override
     public AcpSchema.LoadSessionResponse handleLoadSession(Token token, AcpSchema.LoadSessionRequest req) {
-        log.debug("AcpSchema.LoadSessionResponse: {}, {}", token, req);
+        log.debug("Default agent AcpSchema.LoadSessionResponse: {}, {}", token, req);
         if (req.sessionId().equals(token.jwtId())) {
             AcpSchema.SessionModelState sessionModelState = new AcpSchema.SessionModelState("default", List.of());
             AcpSchema.SessionModeState sessionModeState = new AcpSchema.SessionModeState("default", List.of());
@@ -42,9 +48,9 @@ public class AcpSessionHandlerImpl implements AcpSessionHandler {
 
     @Override
     public AcpSchema.PromptResponse handlePrompt(Token token, AcpSchema.PromptRequest req, AcpSessionContext acpSessionContext) {
-        acpSessionContext.sendThought("Processing..." + req.sessionId());
+        acpSessionContext.sendThought("Processing default agent..." + req.sessionId());
         AcpSchemaExt.SessionInfoUpdate sessionInfoUpdate = new AcpSchemaExt.SessionInfoUpdate(
-                "session_info_update", "test", XDataUtils.format(LocalDateTime.now())
+                "session_info_update", "Default agent", XDataUtils.format(LocalDateTime.now())
         );
         acpSessionContext.sendUpdate(sessionInfoUpdate);
 //        try {
@@ -56,18 +62,18 @@ public class AcpSessionHandlerImpl implements AcpSessionHandler {
 
     @Override
     public void handleCancel(Token token, AcpSchema.CancelNotification req) {
-        log.debug("AcpSchema.CancelNotification: {}, {}", token, req);
+        log.debug("Default agent AcpSchema.CancelNotification: {}, {}", token, req);
     }
 
     @Override
     public AcpSchema.SetSessionModeResponse handleSetSessionMode(Token token, AcpSchema.SetSessionModeRequest req) {
-        log.debug("AcpSchema.SetSessionModeRequest: {}, {}", token, req);
+        log.debug("Default agent AcpSchema.SetSessionModeRequest: {}, {}", token, req);
         return new AcpSchema.SetSessionModeResponse();
     }
 
     @Override
     public AcpSchema.SetSessionModelResponse handleSetSessionModel(Token token, AcpSchema.SetSessionModelRequest req) {
-        log.debug("AcpSchema.SetSessionModelRequest: {}, {}", token, req);
+        log.debug("Default agent AcpSchema.SetSessionModelRequest: {}, {}", token, req);
         return new AcpSchema.SetSessionModelResponse();
     }
 }

@@ -44,6 +44,7 @@ public class SimpleAcpClientTest {
             String authorization = "eyJhbGciOiJFUzI1NiJ9.eyJ0eXAiOiJhY2MiLCJleHAiOjQ4OTAzNzI2NTIsInBybiI6eyJ1aWQiOiJ1c2VyLTAwMSIsInVubSI6InVzZXIiLCJ0eXAiOiJ1c3IifSwianRpIjoiYVdlWnB6WWZTZjVFSEpDV1B2Q2VZIn0.iBAhFSLsS0OQrh-Jauu0-NuGQhZLUuMfp1ATUHen9UPJQdvLK7xho1hr693NkZfPHnzpG5dbrex7F2bZzgCk8w";
             String serverUri = "ws://localhost:8080";
             SIMPLE_ACP_CLIENT = SimpleAcpClient.builder(serverUri)
+//                    .agentName("test")
 //                    .loadBalance(true)
                     .requestTimeout(Duration.ofSeconds(100))
                     .authorization(authorization)
