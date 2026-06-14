@@ -321,9 +321,9 @@ public class SimpleAcpClient {
             );
             URI uri = URI.create(this.uri);
             if ("http".equals(uri.getScheme())) {
-                uri = URI.create("ws://" + uri.getHost() + ":" + uri.getPort() + uri.getPath());
+                uri = convertToWebSocketUri(uri, "ws");
             } else if ("https".equals(uri.getScheme())) {
-                uri = URI.create("wss://" + uri.getHost() + ":" + uri.getPort() + uri.getPath());
+                uri = convertToWebSocketUri(uri, "wss");
             }
             boolean loadBalance = this.loadBalance;
             if (loadBalance) {
@@ -338,6 +338,19 @@ public class SimpleAcpClient {
             return new SimpleAcpClient(
                     simpleAsyncAcpClientLoadBalancer
             );
+        }
+
+        /**
+         * Converts an http/https URI to a ws/wss WebSocket URI, handling missing port correctly.
+         */
+        private static URI convertToWebSocketUri(URI originalUri, String wsScheme) {
+            String host = originalUri.getHost();
+            int port = originalUri.getPort();
+            String path = originalUri.getPath();
+            if (port == -1) {
+                return URI.create(wsScheme + "://" + host + path);
+            }
+            return URI.create(wsScheme + "://" + host + ":" + port + path);
         }
     }
 }

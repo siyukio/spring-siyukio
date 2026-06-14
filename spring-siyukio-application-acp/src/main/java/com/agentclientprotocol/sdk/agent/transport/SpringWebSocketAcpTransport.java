@@ -406,7 +406,9 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
         @Override
         protected void handleTextMessage(WebSocketSession session, TextMessage textMessage) {
             String message = this.getMessage(session, textMessage);
-
+            if (!StringUtils.hasText(message)) {
+                return;
+            }
             AuthSession authSession = authSessionMap.get(session.getId());
             if (authSession == null) {
                 log.error("Auth session is not found: {}", session.getId());

@@ -233,18 +233,13 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
                 if (last) {
                     fullData = messageBuffer.toString();
                     messageBuffer.setLength(0);
-                }
-            } finally {
-                lock.unlock();
-            }
+                    log.debug("Received WebSocket message: {}", fullData);
 
-            log.debug("Received WebSocket message: {}", fullData);
-
-            try {
-                AcpSchema.JSONRPCMessage jsonRpcMessage = AcpSchema.deserializeJsonRpcMessage(XDataUtils.ACP_JSON_MAPPER, fullData);
-                if (!inboundSink.tryEmitNext(jsonRpcMessage).isSuccess()) {
-                    if (!isClosing.get()) {
-                        log.error("Failed to enqueue inbound message");
+                    AcpSchema.JSONRPCMessage jsonRpcMessage = AcpSchema.deserializeJsonRpcMessage(XDataUtils.ACP_JSON_MAPPER, fullData);
+                    if (!inboundSink.tryEmitNext(jsonRpcMessage).isSuccess()) {
+                        if (!isClosing.get()) {
+                            log.error("Failed to enqueue inbound message");
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -252,6 +247,8 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
                     log.error("Error processing inbound message", e);
                     exceptionHandler.accept(e);
                 }
+            } finally {
+                lock.unlock();
             }
             return WebSocket.Listener.super.onText(webSocket, data, last);
         }
