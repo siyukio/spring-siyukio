@@ -1,5 +1,6 @@
 package io.github.siyukio.tools.acp.sdk.agent;
 
+import com.agentclientprotocol.sdk.spec.AcpSchema;
 import io.github.siyukio.tools.acp.sdk.spec.AcpSchemaExt;
 import reactor.core.publisher.Mono;
 
@@ -20,5 +21,9 @@ public class ToolContext {
 
     public Mono<Void> sendProgress(AcpSchemaExt.ProgressNotification progressNotification) {
         return this.agent.sendToolProgress(this.toolCallId, progressNotification);
+    }
+
+    public Mono<Void> sendUpdate(String sessionId, AcpSchema.SessionUpdate update) {
+        return this.agent.sendSessionUpdate(sessionId, update);
     }
 }

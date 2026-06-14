@@ -2,6 +2,7 @@ package io.github.siyukio.application.controller;
 
 import com.agentclientprotocol.sdk.agent.Command;
 import com.agentclientprotocol.sdk.agent.CommandResult;
+import com.agentclientprotocol.sdk.spec.AcpSchema;
 import io.github.siyukio.application.dto.CreateAuthorizationRequest;
 import io.github.siyukio.application.dto.CreateAuthorizationResponse;
 import io.github.siyukio.tools.acp.sdk.agent.AcpSessionContext;
@@ -66,6 +67,7 @@ public class AcpController {
                 );
                 acpSessionContext.sendToolProgress(progressNotification);
             }
+            acpSessionContext.sendUpdate("123", new AcpSchema.AgentMessageChunk("agent_message_chunk", new AcpSchema.TextContent("test")));
         }
         return XDataUtils.copy(token, JSONObject.class);
     }
