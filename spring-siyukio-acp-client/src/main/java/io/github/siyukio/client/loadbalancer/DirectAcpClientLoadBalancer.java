@@ -41,7 +41,7 @@ public class DirectAcpClientLoadBalancer implements SimpleAsyncAcpClientLoadBala
                 }
             }
         } finally {
-            this.lock.lock();
+            this.lock.unlock();
         }
         if (this.client == null || this.client.isClosed()) {
             throw new ApiException("No ACP clients available:" + this.uri.toString());

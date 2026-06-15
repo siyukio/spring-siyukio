@@ -95,7 +95,7 @@ public class DnsRandomAcpClientLoadBalancer implements SimpleAsyncAcpClientLoadB
                 this.lastResolvedTime = System.currentTimeMillis();
             }
         } finally {
-            this.lock.lock();
+            this.lock.unlock();
         }
         if (CollectionUtils.isEmpty(this.clients)) {
             throw new ApiException("No ACP clients available:" + this.uri.toString());
