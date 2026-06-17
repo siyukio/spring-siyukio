@@ -72,7 +72,7 @@ public class SimpleAsyncAcpClient {
             if (t instanceof TimeoutException) {
                 throw new ApiException("CallTool timeout: " + tool + "," + toolCallId);
             } else {
-                throw new ApiException("CallTool error: " + tool + "," + toolCallId + ex.getMessage());
+                throw new ApiException("CallTool error: " + tool + "," + toolCallId + " " + ex.getMessage());
             }
         }
     }
