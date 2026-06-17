@@ -177,10 +177,13 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
     @Override
     public Mono<Void> sendMessage(AcpSchema.JSONRPCMessage message) {
         return connectionReady.asMono().then(Mono.defer(() -> {
-            if (outboundSink.tryEmitNext(message).isSuccess()) {
+            Sinks.EmitResult emitResult = safeEmitOutbound(message);
+            if (emitResult.isSuccess()) {
                 return Mono.empty();
             } else {
-                return Mono.error(new RuntimeException("Failed to enqueue message"));
+                return Mono.error(new RuntimeException(
+                        "Failed to sendMessage: " + emitResult
+                ));
             }
         }));
     }
@@ -199,6 +202,58 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
             }
             return Mono.empty();
         })).then();
+    }
+
+    /**
+     * Extract EmitResult from IllegalStateException thrown by emitNext
+     */
+    private Sinks.EmitResult extractEmitResult(IllegalStateException e) {
+        String msg = e.getMessage();
+        if (msg != null) {
+            for (Sinks.EmitResult result : Sinks.EmitResult.values()) {
+                if (msg.contains(result.name())) {
+                    return result;
+                }
+            }
+        }
+        return Sinks.EmitResult.FAIL_CANCELLED;  // Default fallback
+    }
+
+    /**
+     * Safely emit a message to the outbound sink with logging
+     */
+    private Sinks.EmitResult safeEmitOutbound(AcpSchema.JSONRPCMessage message) {
+        try {
+            this.outboundSink.emitNext(message, (signal, error) -> {
+                // Only retry on serialization failure during normal operation
+                return !isClosing.get() && error == Sinks.EmitResult.FAIL_NON_SERIALIZED;
+            });
+            return Sinks.EmitResult.OK;
+        } catch (IllegalStateException e) {
+            Sinks.EmitResult result = extractEmitResult(e);
+            if (!isClosing.get()) {
+                log.error("Failed to emit outbound message: {}", e.getMessage());
+            }
+            return result;
+        }
+    }
+
+    /**
+     * Safely emit a message to the inbound sink with logging
+     */
+    private Sinks.EmitResult safeEmitInbound(AcpSchema.JSONRPCMessage message) {
+        try {
+            this.inboundSink.emitNext(message, (signal, error) -> {
+                return !isClosing.get() && error == Sinks.EmitResult.FAIL_NON_SERIALIZED;
+            });
+            return Sinks.EmitResult.OK;
+        } catch (IllegalStateException e) {
+            Sinks.EmitResult result = extractEmitResult(e);
+            if (!isClosing.get()) {
+                log.error("Failed to emit inbound message: {}", e.getMessage());
+            }
+            return result;
+        }
     }
 
     @Override
@@ -236,10 +291,9 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
                     log.debug("Received WebSocket message: {}", fullData);
 
                     AcpSchema.JSONRPCMessage jsonRpcMessage = AcpSchema.deserializeJsonRpcMessage(XDataUtils.ACP_JSON_MAPPER, fullData);
-                    if (!inboundSink.tryEmitNext(jsonRpcMessage).isSuccess()) {
-                        if (!isClosing.get()) {
-                            log.error("Failed to enqueue inbound message");
-                        }
+                    Sinks.EmitResult emitResult = safeEmitInbound(jsonRpcMessage);
+                    if (!emitResult.isSuccess()) {
+                        log.error("Error handling inbound message: {}", emitResult);
                     }
                 }
             } catch (Exception e) {

@@ -190,7 +190,7 @@ public class SpringWebSocketAcpTransport implements AcpAgentTransport {
                             if (authSession != null) {
                                 sendMessage(authSession, message.jsonRpcMessage());
                             } else {
-                                log.warn("AuthSession not found for outbound message: {}", message.jsonRpcMessage());
+                                log.debug("AuthSession not found for outbound message: {}", message.jsonRpcMessage());
                             }
                         }
                     } catch (Exception e) {
