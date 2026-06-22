@@ -52,7 +52,7 @@ public class UnifiedErrorAfterRequestInterceptor implements ClientHttpRequestInt
      */
     private boolean isJsonResponse(ClientHttpResponse response) throws IOException {
         MediaType contentType = response.getHeaders().getContentType();
-        return contentType != null && contentType.equals(MediaType.APPLICATION_JSON);
+        return contentType != null && contentType.getSubtype().equals("json");
     }
 
 }
