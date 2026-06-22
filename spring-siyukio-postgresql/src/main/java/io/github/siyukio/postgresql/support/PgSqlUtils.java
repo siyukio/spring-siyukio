@@ -620,7 +620,11 @@ public abstract class PgSqlUtils {
 
     public static List<Object> toConditionValue(TermsQueryBuilder termsQueryBuilder) {
         Set<Object> vlaueSet = termsQueryBuilder.getValueSet();
-        return List.of(vlaueSet.toArray(new Object[0]));
+        List<String> valueList = vlaueSet.stream().map(String::valueOf).toList();
+        String[] value = valueList.toArray(new String[0]);
+        List<Object> values = new ArrayList<>();
+        values.add(value);
+        return values;
     }
 
     public static String toConditionSql(TermQueryBuilder termQueryBuilder, Map<String, String> dictionaryMap) {
