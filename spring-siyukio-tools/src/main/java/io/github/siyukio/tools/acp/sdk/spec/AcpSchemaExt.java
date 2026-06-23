@@ -34,6 +34,49 @@ public final class AcpSchemaExt {
         return path;
     }
 
+    /**
+     * Get the meta from the given SessionUpdate by iterating through all known
+     * SessionUpdate implementations in both AcpSchema and AcpSchemaExt.
+     * @param sessionUpdate the SessionUpdate instance
+     * @return the meta map, or null if not set or unknown type
+     */
+    public static Map<String, Object> getSessionUpdateMeta(AcpSchema.SessionUpdate sessionUpdate) {
+        if (sessionUpdate instanceof SessionInfoUpdate info) {
+            return info.meta();
+        }
+        else if (sessionUpdate instanceof ConfigOptionUpdate config) {
+            return config.meta();
+        }
+        else if (sessionUpdate instanceof AcpSchema.UserMessageChunk msg) {
+            return msg.meta();
+        }
+        else if (sessionUpdate instanceof AcpSchema.AgentMessageChunk msg) {
+            return msg.meta();
+        }
+        else if (sessionUpdate instanceof AcpSchema.AgentThoughtChunk thought) {
+            return thought.meta();
+        }
+        else if (sessionUpdate instanceof AcpSchema.ToolCall tool) {
+            return tool.meta();
+        }
+        else if (sessionUpdate instanceof AcpSchema.ToolCallUpdateNotification notification) {
+            return notification.meta();
+        }
+        else if (sessionUpdate instanceof AcpSchema.Plan plan) {
+            return plan.meta();
+        }
+        else if (sessionUpdate instanceof AcpSchema.AvailableCommandsUpdate update) {
+            return update.meta();
+        }
+        else if (sessionUpdate instanceof AcpSchema.CurrentModeUpdate update) {
+            return update.meta();
+        }
+        else if (sessionUpdate instanceof AcpSchema.UsageUpdate update) {
+            return update.meta();
+        }
+        return null;
+    }
+
     public enum SessionConfigOptionCategory {
 
         @JsonProperty("mode")
