@@ -28,6 +28,7 @@ public class AcpSessionContext {
     @Getter
     private final Token token;
 
+    @Getter
     private final String transportId;
 
     public AcpSessionContext(PromptContext promptContext, Token token, String transportId) {
