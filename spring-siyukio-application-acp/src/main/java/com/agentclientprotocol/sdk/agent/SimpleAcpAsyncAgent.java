@@ -232,10 +232,11 @@ public class SimpleAcpAsyncAgent implements AcpAsyncAgentExt {
     }
 
     @Override
-    public Mono<Void> sendToolProgress(String toolCallId, AcpSchemaExt.ProgressNotification notification) {
+    public Mono<Void> sendToolUpdate(String toolCallId, AcpSchema.SessionUpdate update) {
         if (session == null) {
             return Mono.error(new IllegalStateException("Agent not started"));
         }
+        AcpSchema.SessionNotification notification = new AcpSchema.SessionNotification(toolCallId, update);
         return session.sendNotification(toolCallId, notification);
     }
 

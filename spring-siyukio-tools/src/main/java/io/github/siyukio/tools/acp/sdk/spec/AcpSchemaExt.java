@@ -37,41 +37,32 @@ public final class AcpSchemaExt {
     /**
      * Get the meta from the given SessionUpdate by iterating through all known
      * SessionUpdate implementations in both AcpSchema and AcpSchemaExt.
+     *
      * @param sessionUpdate the SessionUpdate instance
      * @return the meta map, or null if not set or unknown type
      */
     public static Map<String, Object> getSessionUpdateMeta(AcpSchema.SessionUpdate sessionUpdate) {
         if (sessionUpdate instanceof SessionInfoUpdate info) {
             return info.meta();
-        }
-        else if (sessionUpdate instanceof ConfigOptionUpdate config) {
+        } else if (sessionUpdate instanceof ConfigOptionUpdate config) {
             return config.meta();
-        }
-        else if (sessionUpdate instanceof AcpSchema.UserMessageChunk msg) {
+        } else if (sessionUpdate instanceof AcpSchema.UserMessageChunk msg) {
             return msg.meta();
-        }
-        else if (sessionUpdate instanceof AcpSchema.AgentMessageChunk msg) {
+        } else if (sessionUpdate instanceof AcpSchema.AgentMessageChunk msg) {
             return msg.meta();
-        }
-        else if (sessionUpdate instanceof AcpSchema.AgentThoughtChunk thought) {
+        } else if (sessionUpdate instanceof AcpSchema.AgentThoughtChunk thought) {
             return thought.meta();
-        }
-        else if (sessionUpdate instanceof AcpSchema.ToolCall tool) {
+        } else if (sessionUpdate instanceof AcpSchema.ToolCall tool) {
             return tool.meta();
-        }
-        else if (sessionUpdate instanceof AcpSchema.ToolCallUpdateNotification notification) {
+        } else if (sessionUpdate instanceof AcpSchema.ToolCallUpdateNotification notification) {
             return notification.meta();
-        }
-        else if (sessionUpdate instanceof AcpSchema.Plan plan) {
+        } else if (sessionUpdate instanceof AcpSchema.Plan plan) {
             return plan.meta();
-        }
-        else if (sessionUpdate instanceof AcpSchema.AvailableCommandsUpdate update) {
+        } else if (sessionUpdate instanceof AcpSchema.AvailableCommandsUpdate update) {
             return update.meta();
-        }
-        else if (sessionUpdate instanceof AcpSchema.CurrentModeUpdate update) {
+        } else if (sessionUpdate instanceof AcpSchema.CurrentModeUpdate update) {
             return update.meta();
-        }
-        else if (sessionUpdate instanceof AcpSchema.UsageUpdate update) {
+        } else if (sessionUpdate instanceof AcpSchema.UsageUpdate update) {
             return update.meta();
         }
         return null;
@@ -134,7 +125,8 @@ public final class AcpSchemaExt {
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record ProgressNotification(
-
+            @JsonProperty("sessionUpdate")
+            String sessionUpdate,
             @JsonProperty("progress")
             int progress,
             @JsonProperty("total")
@@ -143,14 +135,14 @@ public final class AcpSchemaExt {
             String message,
             @JsonProperty("_meta")
             Map<String, Object> meta
-    ) {
+    ) implements AcpSchema.SessionUpdate {
 
         public ProgressNotification(int progress, int total, String message) {
-            this(progress, total, message, null);
+            this("progress", progress, total, message, null);
         }
 
         public ProgressNotification(String message) {
-            this(100, 100, message, null);
+            this("progress", 100, 100, message, null);
         }
     }
 

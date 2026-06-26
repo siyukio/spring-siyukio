@@ -43,9 +43,9 @@ public class SimpleAcpClient {
         return new Builder(uri);
     }
 
-    public <T> T callTool(String tool, Object params, Class<T> typeClass, SimpleAsyncAcpClient.ProgressNotificationHandler progressNotificationHandler) {
+    public <T> T callTool(String tool, Object params, Class<T> typeClass, SimpleAsyncAcpClient.ToolNotificationHandler toolNotificationHandler) {
         SimpleAsyncAcpClient simpleAsyncAcpClient = this.simpleAsyncAcpClientLoadBalancer.getClient();
-        return simpleAsyncAcpClient.callTool(tool, params, typeClass, progressNotificationHandler);
+        return simpleAsyncAcpClient.callTool(tool, params, typeClass, toolNotificationHandler);
     }
 
     /**
@@ -202,6 +202,19 @@ public class SimpleAcpClient {
             this.uri = uri;
         }
 
+        /**
+         * Converts an http/https URI to a ws/wss WebSocket URI, handling missing port correctly.
+         */
+        private static URI convertToWebSocketUri(URI originalUri, String wsScheme) {
+            String host = originalUri.getHost();
+            int port = originalUri.getPort();
+            String path = originalUri.getPath();
+            if (port == -1) {
+                return URI.create(wsScheme + "://" + host + path);
+            }
+            return URI.create(wsScheme + "://" + host + ":" + port + path);
+        }
+
         public Builder agentName(String agentName) {
             this.agentName = agentName;
             return this;
@@ -338,19 +351,6 @@ public class SimpleAcpClient {
             return new SimpleAcpClient(
                     simpleAsyncAcpClientLoadBalancer
             );
-        }
-
-        /**
-         * Converts an http/https URI to a ws/wss WebSocket URI, handling missing port correctly.
-         */
-        private static URI convertToWebSocketUri(URI originalUri, String wsScheme) {
-            String host = originalUri.getHost();
-            int port = originalUri.getPort();
-            String path = originalUri.getPath();
-            if (port == -1) {
-                return URI.create(wsScheme + "://" + host + path);
-            }
-            return URI.create(wsScheme + "://" + host + ":" + port + path);
         }
     }
 }

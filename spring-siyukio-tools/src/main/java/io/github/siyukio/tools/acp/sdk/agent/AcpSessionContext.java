@@ -45,22 +45,18 @@ public class AcpSessionContext {
         this.toolContext = toolContext;
     }
 
-    public void sendToolProgress(AcpSchemaExt.ProgressNotification progressNotification) {
-        if (this.toolContext == null) {
-            return;
-        }
-        this.toolContext.sendProgress(progressNotification)
-                .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
-                .block();
-    }
-
     public void sendUpdate(AcpSchema.SessionUpdate sessionUpdate) {
-        if (this.promptContext == null) {
-            return;
+        if (this.promptContext != null) {
+            this.promptContext.sendUpdate(this.promptContext.getSessionId(), sessionUpdate)
+                    .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
+                    .block();
         }
-        this.promptContext.sendUpdate(this.promptContext.getSessionId(), sessionUpdate)
-                .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
-                .block();
+        if (this.toolContext != null) {
+            this.toolContext.sendUpdate(sessionUpdate)
+                    .contextWrite(ctx -> ctx.put(AcpSchemaExt.TRANSPORT_ID, transportId))
+                    .block();
+        }
+
     }
 
     public void sendUpdate(String sessionId, AcpSchema.SessionUpdate sessionUpdate) {

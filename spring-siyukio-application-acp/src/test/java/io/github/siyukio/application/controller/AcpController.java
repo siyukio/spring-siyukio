@@ -65,9 +65,14 @@ public class AcpController {
                 AcpSchemaExt.ProgressNotification progressNotification = new AcpSchemaExt.ProgressNotification(
                         i + 1, 3, XDataUtils.toJSONString(messageJson)
                 );
-                acpSessionContext.sendToolProgress(progressNotification);
+                acpSessionContext.sendUpdate(progressNotification);
             }
-            acpSessionContext.sendUpdate("123", new AcpSchema.AgentMessageChunk("agent_message_chunk", new AcpSchema.TextContent("test")));
+            acpSessionContext.sendUpdate(new AcpSchema.AgentMessageChunk("agent_message_chunk", new AcpSchema.TextContent("test")));
+
+            AcpSchemaExt.ProgressNotification progressNotification = new AcpSchemaExt.ProgressNotification(
+                    0, 0, "{}"
+            );
+            acpSessionContext.sendUpdate("123", progressNotification);
         }
         return XDataUtils.copy(token, JSONObject.class);
     }

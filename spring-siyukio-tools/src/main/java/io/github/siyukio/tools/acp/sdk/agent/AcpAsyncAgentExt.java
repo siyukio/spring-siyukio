@@ -1,7 +1,7 @@
 package io.github.siyukio.tools.acp.sdk.agent;
 
 import com.agentclientprotocol.sdk.agent.AcpAsyncAgent;
-import io.github.siyukio.tools.acp.sdk.spec.AcpSchemaExt;
+import com.agentclientprotocol.sdk.spec.AcpSchema;
 import reactor.core.publisher.Mono;
 
 /**
@@ -10,5 +10,5 @@ import reactor.core.publisher.Mono;
  */
 public interface AcpAsyncAgentExt extends AcpAsyncAgent {
 
-    Mono<Void> sendToolProgress(String toolCallId, AcpSchemaExt.ProgressNotification update);
+    Mono<Void> sendToolUpdate(String toolCallId, AcpSchema.SessionUpdate update);
 }

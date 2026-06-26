@@ -98,7 +98,7 @@ public class SimpleAcpClientTest {
                         return new AcpSchema.RequestPermissionResponse(new AcpSchema.PermissionCancelled());
                     })
                     .sessionNotificationHandler(notification -> {
-                        log.debug("SessionNotification: {}", XDataUtils.toPrettyJSONString(notification));
+                        log.debug("Client sessionNotification: {}", XDataUtils.toPrettyJSONString(notification));
                     }).build();
             AcpSchema.NewSessionResponse newSessionResponse = SIMPLE_ACP_CLIENT.newSession();
             log.info("newSessionResponse: {}", XDataUtils.toPrettyJSONString(newSessionResponse));
@@ -128,8 +128,8 @@ public class SimpleAcpClientTest {
         JSONObject result = SIMPLE_ACP_CLIENT.callTool(
                 "toolCallProgress",
                 new JSONObject(),
-                JSONObject.class, (progressNotification) -> {
-                    log.info("{}", XDataUtils.toPrettyJSONString(progressNotification));
+                JSONObject.class, (sessionUpdate) -> {
+                    log.info("Tool sessionUpdate:{}", XDataUtils.toPrettyJSONString(sessionUpdate));
                 });
         log.info("{}", XDataUtils.toPrettyJSONString(result));
     }

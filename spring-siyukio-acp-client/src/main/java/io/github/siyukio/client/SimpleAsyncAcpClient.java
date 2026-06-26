@@ -50,13 +50,13 @@ public class SimpleAsyncAcpClient {
         return this.webSocketAcpClientTransport.isClosing();
     }
 
-    public <T> T callTool(String tool, Object params, Class<T> typeClass, ProgressNotificationHandler progressNotificationHandler) {
+    public <T> T callTool(String tool, Object params, Class<T> typeClass, ToolNotificationHandler toolNotificationHandler) {
         String toolCallId = IdUtils.getUniqueId();
         JSONObject paramsJson = XDataUtils.copy(params, JSONObject.class);
         AcpSchemaExt.CallToolRequest request = new AcpSchemaExt.CallToolRequest(tool, toolCallId, paramsJson);
         AcpClientSession.NotificationHandler toolUpdateNotificationHandler = null;
-        if (progressNotificationHandler != null) {
-            toolUpdateNotificationHandler = new ToolUpdateNotificationHandler(progressNotificationHandler);
+        if (toolNotificationHandler != null) {
+            toolUpdateNotificationHandler = new ToolUpdateNotificationHandler(toolNotificationHandler);
         }
         try {
             JSONObject response = this.acpAsyncClientExt.callTool(request, toolUpdateNotificationHandler).block();
@@ -127,9 +127,9 @@ public class SimpleAsyncAcpClient {
     }
 
     @FunctionalInterface
-    public interface ProgressNotificationHandler {
+    public interface ToolNotificationHandler {
 
-        void handle(AcpSchemaExt.ProgressNotification progressNotification);
+        void handle(AcpSchema.SessionUpdate sessionUpdate);
 
     }
 
@@ -195,20 +195,20 @@ public class SimpleAsyncAcpClient {
 
     public static class ToolUpdateNotificationHandler implements AcpClientSession.NotificationHandler {
 
-        private final ProgressNotificationHandler progressNotificationHandler;
+        private final ToolNotificationHandler toolNotificationHandler;
 
-        public ToolUpdateNotificationHandler(ProgressNotificationHandler progressNotificationHandler) {
-            this.progressNotificationHandler = progressNotificationHandler;
+        public ToolUpdateNotificationHandler(ToolNotificationHandler toolNotificationHandler) {
+            this.toolNotificationHandler = toolNotificationHandler;
         }
 
         @Override
         public Mono<Void> handle(Object notification) {
             if (log.isDebugEnabled()) {
-                log.debug("{}", XDataUtils.toPrettyJSONString(notification));
+                log.debug("Tool notification: {}", XDataUtils.toPrettyJSONString(notification));
             }
 
-            AcpSchemaExt.ProgressNotification progressNotification = XDataUtils.copy(notification, AcpSchemaExt.ProgressNotification.class);
-            this.progressNotificationHandler.handle(progressNotification);
+            AcpSchema.SessionNotification sessionNotification = XDataUtils.copy(notification, AcpSchema.SessionNotification.class);
+            this.toolNotificationHandler.handle(sessionNotification.update());
             return Mono.empty();
         }
     }
