@@ -65,7 +65,7 @@ public abstract class XDataUtils {
             DateTimeFormatter.ISO_LOCAL_DATE
     );
 
-    private static final PropertyPlaceholderHelper PROPERTY_PLACEHOLDER_HELPER = new PropertyPlaceholderHelper("${", "}");
+    private static final PropertyPlaceholderHelper PROPERTY_PLACEHOLDER_HELPER = new PropertyPlaceholderHelper("${", "}", ":", '\\', false);
 
     static {
         // AcpSchema ext
