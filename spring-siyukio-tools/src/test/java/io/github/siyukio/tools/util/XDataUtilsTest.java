@@ -10,6 +10,7 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -137,6 +138,21 @@ public class XDataUtilsTest {
 
         AcpSchema.SessionUpdate sessionUpdate = XDataUtils.parse(json, AcpSchema.SessionUpdate.class);
         log.info("{}", sessionUpdate);
+    }
+
+    @Test
+    void testPropertyPlaceholderHelper() {
+        String template = """
+                [{
+                  "name": "APP_NAME",
+                  "value": "${appName:siyukio}"
+                },{
+                  "name": "NAME",
+                  "value": "${name:siyukio}"
+                }]
+                """;
+        String result = XDataUtils.replacePlaceholders(template, Map.of("name", "test"));
+        log.info("{}", result);
     }
 
     @EnumNaming(EnumNamingStrategies.LowerCamelCaseStrategy.class)

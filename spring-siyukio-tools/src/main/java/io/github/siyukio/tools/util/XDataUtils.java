@@ -133,7 +133,7 @@ public abstract class XDataUtils {
                 template,
                 placeholderName -> {
                     Object value = map.get(placeholderName);
-                    return value == null ? "" : String.valueOf(value);
+                    return value == null ? null : String.valueOf(value);
                 }
         );
     }
