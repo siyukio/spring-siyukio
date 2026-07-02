@@ -149,9 +149,12 @@ public class XDataUtilsTest {
                 },{
                   "name": "NAME",
                   "value": "${name:siyukio}"
+                },{
+                  "name": "TYPE",
+                  "value": "${type:siyukio}"
                 }]
                 """;
-        String result = XDataUtils.replacePlaceholders(template, Map.of("name", "test"));
+        String result = XDataUtils.replacePlaceholders(template, Map.of("name", "test", "appName", ""));
         log.info("{}", result);
     }
 
