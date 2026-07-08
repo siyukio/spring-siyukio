@@ -52,4 +52,18 @@ public class CryptoUtilsTest {
             log.info("encryptedText: {}", encryptedText);
         }
     }
+
+    @Test
+    void testHmacSha256() {
+        String secret = CryptoUtils.randomMasterKey();
+        log.info("secret: {}", secret);
+        String input = "gi9nm8iCHkwfCBBSyt8SmZ_g6SJqepZkWMEsjdYhycULk";
+        String result = CryptoUtils.hmacSha256(secret, input);
+        log.info("hmacSha256: {}", result);
+
+        // 84c9867b45e44b1b542c5954b5277b6bf927ed1edf0c8ee81ca6f36797624163
+        // Verify deterministic output: same input + secret = same result
+        String result2 = CryptoUtils.hmacSha256(secret, input);
+        assert result.equals(result2);
+    }
 }

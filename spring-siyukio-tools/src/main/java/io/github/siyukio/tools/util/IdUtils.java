@@ -20,7 +20,7 @@ public abstract class IdUtils {
                     + "yz").toCharArray();
 
     public static String getUniqueId() {
-        String id = GUID.v7().toUUID().toString().replaceAll("-", "");
+        String id = GUID.v7().toUUID().toString().replace("-", "");
         return toBase(id);
     }
 

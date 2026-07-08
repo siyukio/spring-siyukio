@@ -151,6 +151,29 @@ public abstract class CryptoUtils {
     }
 
     /**
+     * Compute HMAC-SHA256 hash of the input using the specified secret.
+     *
+     * @param secret secret key for HMAC
+     * @param input  input string to hash
+     * @return lowercase hexadecimal HMAC-SHA256 string
+     */
+    public static String hmacSha256(String secret, String input) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            SecretKeySpec keySpec = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+            mac.init(keySpec);
+            byte[] digest = mac.doFinal(input.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b & 0xff));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            throw new RuntimeException("HMAC-SHA256 failed", e);
+        }
+    }
+
+    /**
      * Encrypt a plaintext string using AES-GCM with a key derived from the provided password.
      * <p>
      * Key derivation: SHA-256(password) -> 32-byte AES key (AES-256).
