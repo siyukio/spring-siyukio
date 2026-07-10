@@ -14,6 +14,7 @@ import io.github.siyukio.tools.util.IdUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import org.json.JSONObject;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.Collection;
 import java.util.List;
@@ -69,7 +70,8 @@ public abstract class AbstractPgEntityDao<T> implements PgEntityDao<T> {
         KeyDefinition keyDefinition = entityDefinition.keyDefinition();
         // generate the primary key value
         if (keyDefinition.generated() && keyDefinition.type().equals(ColumnType.TEXT)) {
-            if (!entityJson.has(keyDefinition.fieldName())) {
+            String keyValue = entityJson.optString(keyDefinition.fieldName());
+            if (!StringUtils.hasText(keyValue)) {
                 entityJson.put(keyDefinition.fieldName(), IdUtils.getUniqueId());
             }
         }
@@ -107,7 +109,7 @@ public abstract class AbstractPgEntityDao<T> implements PgEntityDao<T> {
         if (CollectionUtils.isEmpty(tList)) {
             return 0;
         }
-        
+
         List<JSONObject> entityJsonList = XDataUtils.copy(tList, List.class, JSONObject.class);
         for (JSONObject entityJson : entityJsonList) {
             this.preInsert(entityJson);
