@@ -9,6 +9,8 @@ public interface EntityConstants {
 
     String UNIQUE_INDEX_SUFFIX = "uidx";
 
+    String GIN_INDEX_SUFFIX = "gidx";
+
     /**
      * Column name for storing record-specific encryption salt.
      * <p>

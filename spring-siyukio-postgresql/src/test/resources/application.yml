@@ -8,32 +8,32 @@ spring:
         idle-timeout: 600000
         max-lifetime: 1800000
       master:
-        url: jdbc:postgresql://localhost:5432/root
-        username: root
-        password: FYm7JqaEcptxUTgy
+        url: jdbc:postgresql://localhost:5432/postgres
+        username: postgres
+        password: postgres
       slaves:
-        - url: jdbc:postgresql://localhost:5432/root
-          username: root
-          password: FYm7JqaEcptxUTgy
+        - url: jdbc:postgresql://localhost:5432/postgres
+          username: postgres
+          password: postgres
 #    postgres-multi:
 #      db1:
 #        master:
-#          url: jdbc:postgresql://localhost:5432/root
-#          username: root
-#          password: FYm7JqaEcptxUTgy
+#          url: jdbc:postgresql://localhost:5432/postgres
+#          username: postgres
+#          password: postgres
 #        slaves:
-#          - url: jdbc:postgresql://localhost:5432/root
+#          - url: jdbc:postgresql://localhost:5432/postgres
 #            username: root
-#            password: FYm7JqaEcptxUTgy
+#            password: postgres
 #      db2:
 #        master:
-#          url: jdbc:postgresql://localhost:5432/root
-#          username: root
-#          password: FYm7JqaEcptxUTgy
+#          url: jdbc:postgresql://localhost:5432/postgres
+#          username: postgres
+#          password: postgres
 #        slaves:
-#          - url: jdbc:postgresql://localhost:5432/root
-#            username: root
-#            password: FYm7JqaEcptxUTgy
+#          - url: jdbc:postgresql://localhost:5432/postgres
+#            username: postgres
+#            password: postgres
 
 logging:
   level:

@@ -16,4 +16,6 @@ public @interface PgIndex {
     String[] columns();
 
     boolean unique() default false;
+
+    boolean gin() default false;
 }

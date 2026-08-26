@@ -18,6 +18,7 @@ import org.springframework.util.StringUtils;
 
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Bugee
@@ -117,8 +118,10 @@ public abstract class PgSqlUtils {
             """;
     private final static String CREATE_INDEX_TEMPLATE = "CREATE INDEX %s ON %s.%s ( %s ) ;";
     private final static String CREATE_UNIQUE_INDEX_TEMPLATE = "CREATE UNIQUE INDEX %s ON %s.%s ( %s ) ;";
+    private final static String CREATE_GIN_INDEX_TEMPLATE = "CREATE INDEX %s ON %s.%s USING GIN ( %s ) ;";
     private final static String CREATE_PARTITIONED_INDEX_TEMPLATE = "CREATE INDEX %s ON %s.%s ( %s ) INCLUDE (%s);";
     private final static String CREATE_PARTITIONED_UNIQUE_INDEX_TEMPLATE = "CREATE UNIQUE INDEX %s ON %s.%s ( %s ) INCLUDE (%s);";
+    private final static String CREATE_PARTITIONED_GIN_INDEX_TEMPLATE = "CREATE INDEX %s ON %s.%s USING GIN ( %s ) INCLUDE (%s);";
     private final static String INSERT_TEMPLATE = """
             INSERT INTO %s.%s ( %s )
             VALUES ( %s );
@@ -302,28 +305,61 @@ public abstract class PgSqlUtils {
     }
 
     public static String createPartitionedIndexSql(EntityDefinition entityDefinition, IndexDefinition indexDefinition) {
-        String schema = entityDefinition.schema();
-        String table = entityDefinition.table();
-        String indexName = indexDefinition.indexName();
-        KeyDefinition keyDefinition = entityDefinition.keyDefinition();
-        List<String> columnNameList = Arrays.stream(indexDefinition.columns()).map(EntityUtils::camelToSnake).toList();
-        String columns = String.join(", ", columnNameList);
-        if (indexDefinition.unique()) {
-            return String.format(CREATE_PARTITIONED_UNIQUE_INDEX_TEMPLATE, indexName, schema, table, columns, keyDefinition.columnName());
-        }
-        return String.format(CREATE_PARTITIONED_INDEX_TEMPLATE, indexName, schema, table, columns, keyDefinition.columnName());
+        String columns = buildIndexColumns(indexDefinition);
+        String template = resolvePartitionedTemplate(indexDefinition);
+        return String.format(template,
+                indexDefinition.indexName(),
+                entityDefinition.schema(),
+                entityDefinition.table(),
+                columns,
+                entityDefinition.keyDefinition().columnName());
     }
 
     public static String createIndexSql(EntityDefinition entityDefinition, IndexDefinition indexDefinition) {
-        String schema = entityDefinition.schema();
-        String table = entityDefinition.table();
-        String indexName = indexDefinition.indexName();
-        List<String> columnNameList = Arrays.stream(indexDefinition.columns()).map(EntityUtils::camelToSnake).toList();
-        String columns = String.join(", ", columnNameList);
-        if (indexDefinition.unique()) {
-            return String.format(CREATE_UNIQUE_INDEX_TEMPLATE, indexName, schema, table, columns);
+        String columns = buildIndexColumns(indexDefinition);
+        String template = resolveTemplate(indexDefinition);
+        return String.format(template,
+                indexDefinition.indexName(),
+                entityDefinition.schema(),
+                entityDefinition.table(),
+                columns);
+    }
+
+    /**
+     * Builds the column expression for an index.
+     * <p>
+     * GIN indexes append the 'gin_trgm_ops' operator class to each column.
+     */
+    private static String buildIndexColumns(IndexDefinition indexDefinition) {
+        List<String> columnNames = Arrays.stream(indexDefinition.columns())
+                .map(EntityUtils::camelToSnake)
+                .toList();
+        if (indexDefinition.gin()) {
+            return columnNames.stream()
+                    .map(column -> column + " gin_trgm_ops")
+                    .collect(Collectors.joining(", "));
         }
-        return String.format(CREATE_INDEX_TEMPLATE, indexName, schema, table, columns);
+        return String.join(", ", columnNames);
+    }
+
+    private static String resolveTemplate(IndexDefinition indexDefinition) {
+        if (indexDefinition.unique()) {
+            return CREATE_UNIQUE_INDEX_TEMPLATE;
+        }
+        if (indexDefinition.gin()) {
+            return CREATE_GIN_INDEX_TEMPLATE;
+        }
+        return CREATE_INDEX_TEMPLATE;
+    }
+
+    private static String resolvePartitionedTemplate(IndexDefinition indexDefinition) {
+        if (indexDefinition.unique()) {
+            return CREATE_PARTITIONED_UNIQUE_INDEX_TEMPLATE;
+        }
+        if (indexDefinition.gin()) {
+            return CREATE_PARTITIONED_GIN_INDEX_TEMPLATE;
+        }
+        return CREATE_PARTITIONED_INDEX_TEMPLATE;
     }
 
     public static List<String> createPartitionTableSql(EntityDefinition entityDefinition, String partitionTableName, long from, long to) {

@@ -22,7 +22,8 @@ import java.util.List;
 @PgEntity(schema = "test", comment = "record event", indexes = {
         @PgIndex(columns = {"type"}),
         @PgIndex(columns = {"error", "rating"}),
-        @PgIndex(columns = {"teamId", "userId"}, unique = true)
+        @PgIndex(columns = {"teamId", "userId"}, unique = true),
+        @PgIndex(columns = {"content"}, gin = true)
 }, cacheConfig = @CacheConfig(maximumSize = 10000))
 @Builder
 @With

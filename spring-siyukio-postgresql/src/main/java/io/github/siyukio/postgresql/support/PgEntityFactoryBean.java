@@ -165,7 +165,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         return new KeyDefinition(fieldName, columnName, columnType, pgKey.generated(), pgKey.comment());
     }
 
-    private String getIndexName(String table, String[] columns, boolean unique) {
+    private String getIndexName(String table, String[] columns, boolean unique, boolean gin) {
         List<String> list = new ArrayList<>();
         list.add(table);
         list.addAll(List.of(columns));
@@ -175,6 +175,8 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         }
         if (unique) {
             indexName += "_" + EntityConstants.UNIQUE_INDEX_SUFFIX;
+        } else if (gin) {
+            indexName += "_" + EntityConstants.GIN_INDEX_SUFFIX;
         } else {
             indexName += "_" + EntityConstants.INDEX_SUFFIX;
         }
@@ -188,9 +190,9 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
             IndexDefinition indexDefinition;
             String indexName;
             for (PgIndex pgIndex : pgIndexes) {
-                indexName = this.getIndexName(table, pgIndex.columns(), pgIndex.unique());
+                indexName = this.getIndexName(table, pgIndex.columns(), pgIndex.unique(), pgIndex.gin());
                 EntityUtils.isSafe(indexName);
-                indexDefinition = new IndexDefinition(indexName, pgIndex.columns(), pgIndex.unique());
+                indexDefinition = new IndexDefinition(indexName, pgIndex.columns(), pgIndex.unique(), pgIndex.gin());
                 indexDefinitions.add(indexDefinition);
             }
         }
@@ -202,21 +204,46 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
 
         // Create index on logical primary key ID to accelerate logical component queries
         String[] keyColumns = {keyDefinition.fieldName()};
-        String indexName = this.getIndexName(table, keyColumns, false);
+        String indexName = this.getIndexName(table, keyColumns, false, false);
         EntityUtils.isSafe(indexName);
-        IndexDefinition indexDefinition = new IndexDefinition(indexName, keyColumns, false);
+        IndexDefinition indexDefinition = new IndexDefinition(indexName, keyColumns, false, false);
         indexDefinitions.add(indexDefinition);
 
         for (PgIndex pgIndex : pgIndexes) {
             if (pgIndex.columns().length == 1 && pgIndex.columns()[0].equals(keyDefinition.fieldName())) {
                 continue;
             }
-            indexName = this.getIndexName(table, pgIndex.columns(), pgIndex.unique());
+            indexName = this.getIndexName(table, pgIndex.columns(), pgIndex.unique(), pgIndex.gin());
             EntityUtils.isSafe(indexName);
-            indexDefinition = new IndexDefinition(indexName, pgIndex.columns(), pgIndex.unique());
+            indexDefinition = new IndexDefinition(indexName, pgIndex.columns(), pgIndex.unique(), pgIndex.gin());
             indexDefinitions.add(indexDefinition);
         }
         return indexDefinitions;
+    }
+
+    private void checkGinIndex(String entityName, List<ColumnDefinition> columnDefinitions, PgIndex[] pgIndexes) {
+        if (pgIndexes.length == 0) {
+            return;
+        }
+        Map<String, ColumnType> columnTypeMap = columnDefinitions.stream()
+                .collect(Collectors.toMap(ColumnDefinition::fieldName, ColumnDefinition::type));
+        for (PgIndex pgIndex : pgIndexes) {
+            if (!pgIndex.gin()) {
+                continue;
+            }
+            for (String column : pgIndex.columns()) {
+                ColumnType columnType = columnTypeMap.get(column);
+                if (columnType == null) {
+                    throw new IllegalArgumentException(String.format(
+                            "Entity: '%s' gin index references unknown column: '%s'.", entityName, column));
+                }
+                if (columnType != ColumnType.TEXT) {
+                    throw new IllegalArgumentException(String.format(
+                            "Entity: '%s' gin index column '%s' must be of type TEXT, but found: '%s'.",
+                            entityName, column, columnType));
+                }
+            }
+        }
     }
 
     public EntityDefinition getEntityDefinition() {
@@ -279,6 +306,8 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         if (!StringUtils.hasText(keyInfo)) {
             keyInfo = EntityUtils.getKeyInfo(this.entityClass);
         }
+
+        this.checkGinIndex(this.entityClass.getSimpleName(), columnDefinitions, pgEntity.indexes());
 
         List<IndexDefinition> indexDefinitions;
         CacheDefinition cacheDefinition = null;
