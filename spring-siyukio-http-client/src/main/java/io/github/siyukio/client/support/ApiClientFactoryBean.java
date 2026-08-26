@@ -140,10 +140,6 @@ public class ApiClientFactoryBean implements FactoryBean<Object>, InitializingBe
             restClientBuilder.requestInterceptor(new CacheBeforeRequestInterceptor(cache));
         }
 
-        if (apiClient.loadBalance()) {
-            restClientBuilder.requestInterceptor(new LoadBalanceBeforeRequestInterceptor());
-        }
-
         if (this.aipHandlerManager != null && this.tokenProvider != null) {
             restClientBuilder.requestInterceptor(new LocalBeforeRequestInterceptor(this.aipHandlerManager, this.tokenProvider));
         }

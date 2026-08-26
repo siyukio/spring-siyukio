@@ -47,11 +47,6 @@ public @interface ApiClient {
     HttpClient.Version version() default HttpClient.Version.HTTP_2;
 
     /**
-     * Enable load balancing, default is false.
-     */
-    boolean loadBalance() default false;
-
-    /**
      * Cache configuration for the client request.
      *
      * @return cache configuration
