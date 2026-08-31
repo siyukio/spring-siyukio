@@ -205,4 +205,27 @@ public interface PgEntityDao<T> {
      * @return a {@link Page} containing the requested page of entities and metadata
      */
     Page<T> queryPage(QueryBuilder queryBuilder, SortBuilder sort, int page, int size);
+
+    /**
+     * Execute a raw SQL query and map each row to an element of the given type.
+     *
+     * @param querySql     the SQL query to execute
+     * @param elementType  the target element type for each row
+     * @param args         positional SQL parameters
+     * @param <E>          the element type
+     * @return a list of mapped elements (empty list if none)
+     */
+    <E> List<E> queryForList(String querySql, Class<E> elementType, Object... args);
+
+    /**
+     * Execute a raw SQL query that returns at most one row and map it to the
+     * given type.
+     *
+     * @param querySql     the SQL query to execute
+     * @param elementType  the target element type
+     * @param args         positional SQL parameters
+     * @param <E>          the element type
+     * @return the mapped element, or {@code null} if no row is found
+     */
+    <E> E queryForObject(String querySql, Class<E> elementType, Object... args);
 }

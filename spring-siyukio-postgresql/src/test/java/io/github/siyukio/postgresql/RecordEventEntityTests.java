@@ -215,4 +215,48 @@ public class RecordEventEntityTests {
         Page<RecordEventEntity> page = this.recordEventPgEntityDao.queryPage(boolQueryBuilder, sortBuilder, 1, 1);
         log.info("{}", XDataUtils.toPrettyJSONString(page));
     }
+
+    @Test
+    public void testQueryForList() {
+        RecordEventEntity recordEventEntity = this.createRandom();
+        recordEventEntity = this.recordEventPgEntityDao.insert(recordEventEntity);
+        log.info("{}", XDataUtils.toPrettyJSONString(recordEventEntity));
+
+        long oneMonthAgoTs = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000;
+        String sql = """
+                SELECT team_id, COUNT(*) AS record_count
+                FROM {{schema}}.record_event
+                WHERE created_at_ts >= ?
+                GROUP BY team_id
+                """;
+        List<TeamRecordCount> result = this.recordEventPgEntityDao.queryForList(sql, TeamRecordCount.class, oneMonthAgoTs);
+        log.info("{}", XDataUtils.toPrettyJSONString(result));
+    }
+
+    @Test
+    public void testQueryForObject() {
+        RecordEventEntity recordEventEntity = this.createRandom();
+        recordEventEntity = this.recordEventPgEntityDao.insert(recordEventEntity);
+        log.info("{}", XDataUtils.toPrettyJSONString(recordEventEntity));
+
+        long oneMonthAgoTs = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000;
+        String sql = """
+                SELECT COUNT(*) AS record_count
+                FROM {{schema}}.record_event
+                WHERE created_at_ts >= ?
+                """;
+        RecordCount result = this.recordEventPgEntityDao.queryForObject(sql, RecordCount.class, oneMonthAgoTs);
+        log.info("{}", XDataUtils.toPrettyJSONString(result));
+    }
+
+    public record TeamRecordCount(
+            String teamId,
+            long recordCount
+    ) {
+    }
+
+    public record RecordCount(
+            long recordCount
+    ) {
+    }
 }

@@ -125,4 +125,14 @@ public class CacheEntityExecutor implements EntityExecutor {
     public List<JSONObject> query(QueryBuilder queryBuilder, SortBuilder sort, int from, int size) {
         return this.delegate.query(queryBuilder, sort, from, size);
     }
+
+    @Override
+    public <E> List<E> queryForList(String querySql, Class<E> elementType, Object... args) {
+        return this.delegate.queryForList(querySql, elementType, args);
+    }
+
+    @Override
+    public <E> E queryForObject(String querySql, Class<E> elementType, Object... args) {
+        return this.delegate.queryForObject(querySql, elementType, args);
+    }
 }

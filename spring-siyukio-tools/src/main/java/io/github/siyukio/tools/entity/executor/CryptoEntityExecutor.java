@@ -168,4 +168,14 @@ public class CryptoEntityExecutor implements EntityExecutor {
         }
         return items;
     }
+
+    @Override
+    public <E> List<E> queryForList(String querySql, Class<E> elementType, Object... args) {
+        return this.delegate.queryForList(querySql, elementType, args);
+    }
+
+    @Override
+    public <E> E queryForObject(String querySql, Class<E> elementType, Object... args) {
+        return this.delegate.queryForObject(querySql, elementType, args);
+    }
 }

@@ -39,4 +39,8 @@ public interface EntityExecutor {
     JSONObject queryById(Object id);
 
     List<JSONObject> query(QueryBuilder queryBuilder, SortBuilder sort, int from, int size);
+
+    <E> List<E> queryForList(String querySql, Class<E> elementType, Object... args);
+
+    <E> E queryForObject(String querySql, Class<E> elementType, Object... args);
 }

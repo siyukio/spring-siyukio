@@ -221,4 +221,14 @@ public abstract class AbstractPgEntityDao<T> implements PgEntityDao<T> {
     public abstract List<T> queryList(QueryBuilder queryBuilder, SortBuilder sort, int from, int size);
 
     public abstract Page<T> queryPage(QueryBuilder queryBuilder, SortBuilder sort, int page, int size);
+
+    @Override
+    public final <E> List<E> queryForList(String querySql, Class<E> elementType, Object... args) {
+        return this.entityExecutor.queryForList(querySql, elementType, args);
+    }
+
+    @Override
+    public final <E> E queryForObject(String querySql, Class<E> elementType, Object... args) {
+        return this.entityExecutor.queryForObject(querySql, elementType, args);
+    }
 }

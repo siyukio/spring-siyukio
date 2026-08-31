@@ -8,6 +8,7 @@ import io.github.siyukio.tools.entity.definition.KeyDefinition;
 import io.github.siyukio.tools.entity.query.QueryBuilder;
 import io.github.siyukio.tools.entity.sort.SortBuilder;
 import io.github.siyukio.tools.util.EntityUtils;
+import io.github.siyukio.tools.util.XDataUtils;
 import org.json.JSONObject;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.util.StringUtils;
@@ -15,6 +16,7 @@ import org.springframework.util.StringUtils;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import org.springframework.jdbc.core.RowMapper;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -216,5 +218,40 @@ public class PgEntityExecutor implements EntityExecutor {
         allValues.add(size);
         allValues.add(from);
         return this.multiJdbcTemplate.getRandomSlave().query(querySql, (rs, rowNum) -> this.resultToEntityJson(rs), allValues.toArray());
+    }
+
+    @Override
+    public <E> List<E> queryForList(String querySql, Class<E> elementType, Object... args) {
+        querySql = this.resolveSchema(querySql);
+        return this.multiJdbcTemplate.getRandomSlave().query(querySql, this.resultToElementRowMapper(elementType), args);
+    }
+
+    @Override
+    public <E> E queryForObject(String querySql, Class<E> elementType, Object... args) {
+        querySql = this.resolveSchema(querySql);
+        return this.multiJdbcTemplate.getRandomSlave().queryForObject(querySql, this.resultToElementRowMapper(elementType), args);
+    }
+
+    private String resolveSchema(String querySql) {
+        if (querySql.contains("{{schema}}")) {
+            querySql = querySql.replaceAll("\\{\\{schema\\}\\}", this.entityDefinition.schema());
+        }
+        return querySql;
+    }
+
+    private <E> RowMapper<E> resultToElementRowMapper(Class<E> elementType) {
+        return (rs, rowNum) -> {
+            ResultSetMetaData metaData = rs.getMetaData();
+            int columnCount = metaData.getColumnCount();
+            JSONObject json = new JSONObject();
+            for (int index = 1; index <= columnCount; index++) {
+                String columnName = metaData.getColumnLabel(index);
+                String fieldName = EntityUtils.snakeToCamel(columnName);
+                Object value = rs.getObject(index);
+                json.put(columnName, value);
+                json.put(fieldName, value);
+            }
+            return XDataUtils.copy(json, elementType);
+        };
     }
 }
