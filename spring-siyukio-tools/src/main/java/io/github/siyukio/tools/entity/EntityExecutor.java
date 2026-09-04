@@ -24,6 +24,8 @@ public interface EntityExecutor {
 
     int updateBatch(List<JSONObject> entityJsons);
 
+    int update(String sql, List<Object> values);
+
     JSONObject upsert(JSONObject entityJson);
 
     int delete(Object id);

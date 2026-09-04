@@ -137,6 +137,12 @@ public class PgEntityExecutor implements EntityExecutor {
     }
 
     @Override
+    public int update(String sql, List<Object> values) {
+        sql = this.resolveSchema(sql);
+        return this.multiJdbcTemplate.getMaster().update(sql, values.toArray());
+    }
+
+    @Override
     public JSONObject upsert(JSONObject entityJson) {
         List<Object> values = PgSqlUtils.upsertValues(this.entityDefinition, entityJson);
         this.multiJdbcTemplate.getMaster().update(this.upsertSql, values.toArray());

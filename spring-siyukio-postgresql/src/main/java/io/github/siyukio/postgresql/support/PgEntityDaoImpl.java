@@ -22,14 +22,6 @@ public class PgEntityDaoImpl<T> extends AbstractPgEntityDao<T> implements PgEnti
     }
 
     @Override
-    public T upsert(T t) {
-        JSONObject entityJson = XDataUtils.copy(t, JSONObject.class);
-        this.preUpsert(entityJson);
-        entityJson = this.entityExecutor.upsert(entityJson);
-        return XDataUtils.copy(entityJson, this.entityClass);
-    }
-
-    @Override
     public List<T> queryList(QueryBuilder queryBuilder, SortBuilder sort, int from, int size) {
         if (from < 0) {
             from = 0;

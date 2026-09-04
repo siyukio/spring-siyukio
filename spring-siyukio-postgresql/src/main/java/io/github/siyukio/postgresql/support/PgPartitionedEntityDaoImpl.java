@@ -12,6 +12,7 @@ import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -22,6 +23,21 @@ public class PgPartitionedEntityDaoImpl<T> extends AbstractPgEntityDao<T> implem
 
     public PgPartitionedEntityDaoImpl(Class<T> entityClass, EntityExecutor entityExecutor) {
         super(entityClass, entityExecutor);
+    }
+
+    @Override
+    public final T update(T t) {
+        JSONObject entityJson = XDataUtils.copy(t, JSONObject.class);
+        this.preUpdate(entityJson);
+        String updateSql = PgSqlUtils.updateByIdPartitionedSql(this.entityExecutor.getEntityDefinition());
+        List<Object> updateValues = PgSqlUtils.updateValuesPartitioned(this.entityExecutor.getEntityDefinition(), entityJson);
+        this.entityExecutor.update(updateSql, updateValues);
+        return XDataUtils.copy(entityJson, this.entityClass);
+    }
+
+    @Override
+    public final int updateBatch(Collection<T> tList) {
+        throw new UnsupportedOperationException("upsert not supported");
     }
 
     @Override

@@ -118,7 +118,15 @@ public abstract class AbstractPgEntityDao<T> implements PgEntityDao<T> {
     }
 
     @Override
-    public final T update(T t) {
+    public T upsert(T t) {
+        JSONObject entityJson = XDataUtils.copy(t, JSONObject.class);
+        this.preUpsert(entityJson);
+        entityJson = this.entityExecutor.upsert(entityJson);
+        return XDataUtils.copy(entityJson, this.entityClass);
+    }
+
+    @Override
+    public T update(T t) {
         JSONObject entityJson = XDataUtils.copy(t, JSONObject.class);
         this.preUpdate(entityJson);
         entityJson = this.entityExecutor.update(entityJson);
@@ -126,7 +134,7 @@ public abstract class AbstractPgEntityDao<T> implements PgEntityDao<T> {
     }
 
     @Override
-    public final int updateBatch(Collection<T> tList) {
+    public int updateBatch(Collection<T> tList) {
         if (CollectionUtils.isEmpty(tList)) {
             return 0;
         }

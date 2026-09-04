@@ -66,6 +66,15 @@ public class CacheEntityExecutor implements EntityExecutor {
     }
 
     @Override
+    public int update(String sql, List<Object> values) {
+        int num = this.delegate.update(sql, values);
+        if (num > 0) {
+            this.cache.invalidateAll();
+        }
+        return num;
+    }
+
+    @Override
     public JSONObject upsert(JSONObject entityJson) {
         entityJson = this.delegate.upsert(entityJson);
         this.cache.invalidate(this.buildCacheKey(entityJson));

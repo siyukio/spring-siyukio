@@ -121,6 +121,11 @@ public class CryptoEntityExecutor implements EntityExecutor {
     }
 
     @Override
+    public int update(String sql, List<Object> values) {
+        return this.delegate.update(sql, values);
+    }
+
+    @Override
     public JSONObject upsert(JSONObject entityJson) {
         this.encrypt(entityJson);
         entityJson = this.delegate.upsert(entityJson);
