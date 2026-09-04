@@ -486,6 +486,25 @@ public abstract class PgSqlUtils {
         return String.format(UPDATE_TEMPLATE, schema, table, String.join(", ", columns), where);
     }
 
+    public static String updateByIdPartitionedSql(EntityDefinition entityDefinition) {
+        String schema = entityDefinition.schema();
+        String table = entityDefinition.table();
+
+        List<String> columns = new ArrayList<>();
+        for (ColumnDefinition columnDefinition : entityDefinition.columnDefinitions()) {
+            if (columnDefinition.fieldName().equals(EntityConstants.CREATED_AT_TS_FIELD)
+                    || columnDefinition.fieldName().equals(EntityConstants.CREATED_AT_FIELD)) {
+                continue;
+            }
+            columns.add(columnDefinition.columnName() + " = ?");
+        }
+        KeyDefinition keyDefinition = entityDefinition.keyDefinition();
+        String createdAtTsColumn = EntityUtils.camelToSnake(EntityConstants.CREATED_AT_TS_FIELD);
+        String where = createdAtTsColumn + " = ? AND " + keyDefinition.columnName() + " = ?";
+
+        return String.format(UPDATE_TEMPLATE, schema, table, String.join(", ", columns), where);
+    }
+
     public static List<Object> updateValues(EntityDefinition entityDefinition, JSONObject entityJson) {
         List<Object> values = new ArrayList<>();
 
@@ -498,6 +517,24 @@ public abstract class PgSqlUtils {
         }
 
         KeyDefinition keyDefinition = entityDefinition.keyDefinition();
+        values.add(entityJson.opt(keyDefinition.fieldName()));
+
+        return values;
+    }
+
+    public static List<Object> updateValuesPartitioned(EntityDefinition entityDefinition, JSONObject entityJson) {
+        List<Object> values = new ArrayList<>();
+
+        for (ColumnDefinition columnDefinition : entityDefinition.columnDefinitions()) {
+            if (columnDefinition.fieldName().equals(EntityConstants.CREATED_AT_TS_FIELD)
+                    || columnDefinition.fieldName().equals(EntityConstants.CREATED_AT_FIELD)) {
+                continue;
+            }
+            values.add(field2RowValue(entityJson, columnDefinition));
+        }
+
+        KeyDefinition keyDefinition = entityDefinition.keyDefinition();
+        values.add(entityJson.opt(EntityConstants.CREATED_AT_TS_FIELD));
         values.add(entityJson.opt(keyDefinition.fieldName()));
 
         return values;
