@@ -1,6 +1,7 @@
 package io.github.siyukio.postgresql.support;
 
 import io.github.siyukio.tools.entity.ColumnType;
+import io.github.siyukio.tools.entity.EntityConstants;
 import io.github.siyukio.tools.entity.definition.ColumnDefinition;
 import io.github.siyukio.tools.entity.definition.EntityDefinition;
 import io.github.siyukio.tools.entity.definition.IndexDefinition;
@@ -473,6 +474,10 @@ public abstract class PgSqlUtils {
 
         List<String> columns = new ArrayList<>();
         for (ColumnDefinition columnDefinition : entityDefinition.columnDefinitions()) {
+            if (columnDefinition.fieldName().equals(EntityConstants.CREATED_AT_TS_FIELD)
+                    || columnDefinition.fieldName().equals(EntityConstants.CREATED_AT_FIELD)) {
+                continue;
+            }
             columns.add(columnDefinition.columnName() + " = ?");
         }
         KeyDefinition keyDefinition = entityDefinition.keyDefinition();
@@ -485,6 +490,10 @@ public abstract class PgSqlUtils {
         List<Object> values = new ArrayList<>();
 
         for (ColumnDefinition columnDefinition : entityDefinition.columnDefinitions()) {
+            if (columnDefinition.fieldName().equals(EntityConstants.CREATED_AT_TS_FIELD)
+                    || columnDefinition.fieldName().equals(EntityConstants.CREATED_AT_FIELD)) {
+                continue;
+            }
             values.add(field2RowValue(entityJson, columnDefinition));
         }
 
