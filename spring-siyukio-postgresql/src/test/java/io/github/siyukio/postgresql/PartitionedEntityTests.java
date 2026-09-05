@@ -38,7 +38,6 @@ public class PartitionedEntityTests {
     public void testInsert() {
         PartitionedEntity partitionedEntity = PartitionedEntity.builder()
                 .message("insert")
-                .createdAtTs(System.currentTimeMillis() - 10000000L)
                 .build();
         partitionedEntity = this.partitionedPgEntityDao.insert(partitionedEntity);
         log.info("partitionedEntity: {}", partitionedEntity);

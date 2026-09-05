@@ -26,6 +26,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.postgresql.util.PSQLException;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
@@ -531,7 +532,113 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
     private void createPartition(EntityDefinition entityDefinition, String tableName, long from, long to) {
         List<String> sqlList = PgSqlUtils.createPartitionTableSql(entityDefinition, tableName, from, to);
         log.info("Create partition: {}, {}", entityDefinition.schema(), sqlList);
-        this.executeSqlScript("Create partition", entityDefinition.dbName(), sqlList);
+        try {
+            this.executeSqlScript("Create partition", entityDefinition.dbName(), sqlList);
+        } catch (Exception e) {
+            if (e.getCause() instanceof PSQLException) {
+                log.error("Create partition error, schema: {}, table: {}, from: {}, to: {}, sql: {}",
+                        entityDefinition.schema(), tableName, from, to, sqlList, e);
+                try {
+                    List<PartitionChildTable> conflictPartitions = this.queryConflictPartitions(entityDefinition, from, to);
+                    log.error("Conflict partitions, schema: {}, table: {}, from: {}, to: {}, conflict partitions: {}",
+                            entityDefinition.schema(), tableName, from, to, conflictPartitions);
+                    if (this.detachConflictPartitions(entityDefinition, conflictPartitions)) {
+                        boolean created = false;
+                        try {
+                            log.info("Retry create partition: {}, {}", entityDefinition.schema(), sqlList);
+                            this.executeSqlScript("Create partition", entityDefinition.dbName(), sqlList);
+                            created = true;
+                        } catch (Exception retryException) {
+                            log.error("Retry create partition error, schema: {}, table: {}, from: {}, to: {}, sql: {}",
+                                    entityDefinition.schema(), tableName, from, to, sqlList, retryException);
+                        }
+                        if (created) {
+                            this.migrateConflictPartitions(entityDefinition, tableName, conflictPartitions);
+                        }
+                    }
+                } catch (Exception queryException) {
+                    log.error("Query conflict partitions error, schema: {}, table: {}, from: {}, to: {}",
+                            entityDefinition.schema(), tableName, from, to, queryException);
+                }
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Queries the child partitions of the partitioned table which overlap with the range [from, to).
+     *
+     * @param entityDefinition the definition of the partitioned table
+     * @param from             the lower bound of the range, inclusive
+     * @param to               the upper bound of the range, exclusive
+     * @return the child partitions which overlap with the range, ordered by the lower bound
+     */
+    public List<PartitionChildTable> queryConflictPartitions(EntityDefinition entityDefinition, long from, long to) {
+        String sql = PgPartitionMigrationUtils.queryPartitionsSql(entityDefinition.schema(), entityDefinition.table(), from, to);
+        log.debug("Query conflict partitions: {}, {}", entityDefinition.table(), sql);
+        JdbcTemplate jdbcTemplate = PostgresqlEntityRegistrar.getMultiJdbcTemplate(entityDefinition.dbName()).getMaster();
+        return jdbcTemplate.query(sql, (rs, rowNum) -> new PartitionChildTable(
+                rs.getString("partition_name"),
+                rs.getLong("partition_from"),
+                rs.getLong("partition_to")));
+    }
+
+    /**
+     * Detaches the child partitions which conflict with the partition to be created.
+     *
+     * @param entityDefinition   the definition of the partitioned table
+     * @param conflictPartitions the child partitions to be detached
+     * @return true when the child partitions have been detached, false when there is nothing to detach
+     */
+    private boolean detachConflictPartitions(EntityDefinition entityDefinition, List<PartitionChildTable> conflictPartitions) {
+        if (conflictPartitions == null || conflictPartitions.isEmpty()) {
+            return false;
+        }
+        List<String> sqlList = new ArrayList<>();
+        for (PartitionChildTable conflictPartition : conflictPartitions) {
+            sqlList.add(PgPartitionMigrationUtils.detachPartitionSql(
+                    entityDefinition.schema(), entityDefinition.table(), conflictPartition.tableName()));
+        }
+        log.info("Detach conflict partitions: {}, {}", entityDefinition.schema(), sqlList);
+        try {
+            this.executeSqlScript("Detach conflict partitions", entityDefinition.dbName(), sqlList);
+            return true;
+        } catch (Exception e) {
+            log.error("Detach conflict partitions error, schema: {}, table: {}, sql: {}",
+                    entityDefinition.schema(), entityDefinition.table(), sqlList, e);
+            return false;
+        }
+    }
+
+    /**
+     * Migrates the data of the detached child partitions into the target partition, partition by partition.
+     *
+     * @param entityDefinition   the definition of the partitioned table
+     * @param targetPartition    the partition which the data is migrated into
+     * @param conflictPartitions the detached child partitions which the data is migrated from
+     */
+    private void migrateConflictPartitions(EntityDefinition entityDefinition, String targetPartition, List<PartitionChildTable> conflictPartitions) {
+        if (conflictPartitions == null || conflictPartitions.isEmpty()) {
+            return;
+        }
+        for (PartitionChildTable conflictPartition : conflictPartitions) {
+            String sql = PgPartitionMigrationUtils.migratePartitionSql(
+                    entityDefinition.schema(), targetPartition, conflictPartition.tableName());
+            log.info("Migrate partition data, schema: {}, target: {}, source: {}, from: {}, to: {}",
+                    entityDefinition.schema(), targetPartition, conflictPartition.tableName(),
+                    conflictPartition.from(), conflictPartition.to());
+            try {
+                this.executeSqlScript("Migrate partition data", entityDefinition.dbName(), List.of(sql));
+                log.info("Migrated partition data, schema: {}, target: {}, source: {}, from: {}, to: {}",
+                        entityDefinition.schema(), targetPartition, conflictPartition.tableName(),
+                        conflictPartition.from(), conflictPartition.to());
+            } catch (Exception e) {
+                log.error("Migrate partition data error, schema: {}, target: {}, source: {}, from: {}, to: {}, sql: {}",
+                        entityDefinition.schema(), targetPartition, conflictPartition.tableName(),
+                        conflictPartition.from(), conflictPartition.to(), sql, e);
+            }
+        }
     }
 
     private void checkTableSchema(EntityDefinition entityDefinition, JdbcTemplate jdbcTemplate) {
@@ -635,5 +742,19 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
 
         this.insertTableSqlScript(entityDefinition, multiJdbcTemplate.getMaster());
         return entityDao;
+    }
+
+    /**
+     * Child partition table of a range partitioned table.
+     *
+     * @param tableName the child partition table name, it contains the schema when the schema is not in the search path
+     * @param from      the lower bound of the partition range, inclusive
+     * @param to        the upper bound of the partition range, exclusive
+     */
+    public record PartitionChildTable(
+            String tableName,
+            long from,
+            long to
+    ) {
     }
 }
