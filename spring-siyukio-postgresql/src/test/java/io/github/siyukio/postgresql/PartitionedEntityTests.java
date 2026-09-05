@@ -10,6 +10,7 @@ import io.github.siyukio.tools.entity.sort.SortBuilder;
 import io.github.siyukio.tools.entity.sort.SortBuilders;
 import io.github.siyukio.tools.entity.sort.SortOrder;
 import io.github.siyukio.tools.util.IdUtils;
+import io.github.siyukio.tools.util.ProfilesUtils;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,10 @@ import java.util.List;
 @Slf4j
 @SpringBootTest
 public class PartitionedEntityTests {
+
+    static {
+        ProfilesUtils.setJUnit(false);
+    }
 
     @Autowired
     private PgEntityDao<PartitionedEntity> partitionedPgEntityDao;

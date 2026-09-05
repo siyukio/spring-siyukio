@@ -3,7 +3,6 @@ package io.github.siyukio.postgresql.support;
 import com.github.benmanes.caffeine.cache.Cache;
 import io.github.siyukio.tools.entity.definition.EntityDefinition;
 import io.github.siyukio.tools.util.*;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.postgresql.PGConnection;
@@ -31,9 +30,6 @@ public class PgDataProvider {
     private final String suffix = IdUtils.getUniqueId();
 
     private final Set<String> testSchemaSet = new HashSet<>();
-
-    @Getter
-    private final boolean junit = ProfilesUtils.isJUnit();
 
     private final MultiJdbcTemplate multiJdbcTemplate;
     // Map of schema.table to cache instance
@@ -122,8 +118,12 @@ public class PgDataProvider {
         }, 1000, 1000, TimeUnit.MILLISECONDS);
     }
 
+    public boolean isJunit() {
+        return ProfilesUtils.isJUnit();
+    }
+
     public String registerTestSchema(String schema) {
-        if (junit) {
+        if (isJunit()) {
             String testSchema = schema + "_" + suffix;
             if (!testSchemaSet.contains(testSchema)) {
                 log.info("Create PostgreSQL test schema: {}", testSchema);
