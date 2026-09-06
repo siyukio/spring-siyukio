@@ -34,8 +34,13 @@ public abstract class AbstractPgEntityDao<T> implements PgEntityDao<T> {
         this.entityExecutor = entityExecutor;
     }
 
+    @Override
+    public final EntityDefinition getEntityDefinition() {
+        return this.entityExecutor.getEntityDefinition();
+    }
+
     private void setDefaultField(JSONObject entityJson) {
-        EntityDefinition entityDefinition = this.entityExecutor.getEntityDefinition();
+        EntityDefinition entityDefinition = this.getEntityDefinition();
         // fill in the default value when column value is null
         Object columnValue;
         for (ColumnDefinition columnDefinition : entityDefinition.columnDefinitions()) {
@@ -66,7 +71,7 @@ public abstract class AbstractPgEntityDao<T> implements PgEntityDao<T> {
     }
 
     protected final void preInsert(JSONObject entityJson) {
-        EntityDefinition entityDefinition = this.entityExecutor.getEntityDefinition();
+        EntityDefinition entityDefinition = this.getEntityDefinition();
         KeyDefinition keyDefinition = entityDefinition.keyDefinition();
         // generate the primary key value
         if (keyDefinition.generated() && keyDefinition.type().equals(ColumnType.TEXT)) {
@@ -92,7 +97,7 @@ public abstract class AbstractPgEntityDao<T> implements PgEntityDao<T> {
 
     @Override
     public final String toString() {
-        EntityDefinition entityDefinition = this.entityExecutor.getEntityDefinition();
+        EntityDefinition entityDefinition = this.getEntityDefinition();
         return entityDefinition.schema() + "." + entityDefinition.table();
     }
 
@@ -153,7 +158,7 @@ public abstract class AbstractPgEntityDao<T> implements PgEntityDao<T> {
     @Override
     public final int delete(T t) {
         JSONObject entityJson = XDataUtils.copy(t, JSONObject.class);
-        String key = this.entityExecutor.getEntityDefinition().keyDefinition().fieldName();
+        String key = this.getEntityDefinition().keyDefinition().fieldName();
         Object id = entityJson.opt(key);
         return this.deleteById(id);
     }

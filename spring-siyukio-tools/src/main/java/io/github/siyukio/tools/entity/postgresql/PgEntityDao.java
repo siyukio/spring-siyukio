@@ -1,5 +1,6 @@
 package io.github.siyukio.tools.entity.postgresql;
 
+import io.github.siyukio.tools.entity.definition.EntityDefinition;
 import io.github.siyukio.tools.entity.page.Page;
 import io.github.siyukio.tools.entity.query.QueryBuilder;
 import io.github.siyukio.tools.entity.sort.SortBuilder;
@@ -19,6 +20,14 @@ import java.util.List;
  * @author Bugee
  */
 public interface PgEntityDao<T> {
+
+    /**
+     * Return the entity metadata definition associated with this DAO, including
+     * the target schema, table, key, columns, indexes and cache configuration.
+     *
+     * @return the {@link EntityDefinition} of the entity handled by this DAO
+     */
+    EntityDefinition getEntityDefinition();
 
     /**
      * Insert the given entity into the database.
