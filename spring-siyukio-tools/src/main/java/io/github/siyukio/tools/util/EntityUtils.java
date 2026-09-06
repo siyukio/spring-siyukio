@@ -246,6 +246,22 @@ public abstract class EntityUtils {
         return getPartitionTable(entityDefinition, startDateTime);
     }
 
+    /**
+     * Generate the previous partition table name relative to the current one.
+     *
+     * @param entityDefinition the entity definition
+     * @return the previous partition table name
+     */
+    public static PartitionTable getPreviousPartitionTable(EntityDefinition entityDefinition) {
+        PartitionTable currentPartitionTable = getCurrentPartitionTable(entityDefinition);
+
+        ZoneId zone = ZoneId.systemDefault();
+        // One millisecond before the start of the current partition belongs to the previous partition.
+        LocalDateTime startDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(currentPartitionTable.from() - 1), zone);
+
+        return getPartitionTable(entityDefinition, startDateTime);
+    }
+
     public record PartitionTable(
             String tableName,
             long from,

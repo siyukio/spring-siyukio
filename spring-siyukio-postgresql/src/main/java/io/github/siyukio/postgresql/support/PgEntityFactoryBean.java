@@ -529,20 +529,34 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         this.executeSqlScript("Create partitioned table", entityDefinition.dbName(), sqlList);
     }
 
-    private void createPartition(EntityDefinition entityDefinition, String tableName, long from, long to) {
+    /**
+     * Creates the child partition covering the range [from, to).
+     * When the range overlaps the existing child partitions, the conflicting partitions are detached,
+     * the partition is created again, and their data is migrated into the new partition.
+     *
+     * @param entityDefinition the definition of the partitioned table
+     * @param tableName        the child partition table name
+     * @param from             the lower bound of the partition range, inclusive
+     * @param to               the upper bound of the partition range, exclusive
+     * @return true when a partition conflict has occurred, false otherwise
+     */
+    private boolean createPartition(EntityDefinition entityDefinition, String tableName, long from, long to) {
         List<String> sqlList = PgSqlUtils.createPartitionTableSql(entityDefinition, tableName, from, to);
         log.info("Create partition: {}, {}", entityDefinition.schema(), sqlList);
         try {
             this.executeSqlScript("Create partition", entityDefinition.dbName(), sqlList);
+            return false;
         } catch (Exception e) {
             if (e.getCause() instanceof PSQLException) {
                 log.error("Create partition error, schema: {}, table: {}, from: {}, to: {}, sql: {}",
                         entityDefinition.schema(), tableName, from, to, sqlList, e);
+                boolean conflicted = false;
                 try {
                     List<PartitionChildTable> conflictPartitions = this.queryConflictPartitions(entityDefinition, from, to);
                     log.error("Conflict partitions, schema: {}, table: {}, from: {}, to: {}, conflict partitions: {}",
                             entityDefinition.schema(), tableName, from, to, conflictPartitions);
                     if (this.detachConflictPartitions(entityDefinition, conflictPartitions)) {
+                        conflicted = true;
                         boolean created = false;
                         try {
                             log.info("Retry create partition: {}, {}", entityDefinition.schema(), sqlList);
@@ -560,6 +574,7 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
                     log.error("Query conflict partitions error, schema: {}, table: {}, from: {}, to: {}",
                             entityDefinition.schema(), tableName, from, to, queryException);
                 }
+                return conflicted;
             } else {
                 throw e;
             }
@@ -689,11 +704,20 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
         this.checkIndex(entityDefinition, jdbcTemplate);
     }
 
-    private void checkPartition(EntityDefinition entityDefinition, EntityUtils.PartitionTable partitionTable, JdbcTemplate jdbcTemplate) {
+    /**
+     * Creates the partition when it does not exist yet.
+     *
+     * @param entityDefinition the definition of the partitioned table
+     * @param partitionTable   the partition to be checked
+     * @param jdbcTemplate     the jdbc template of the master data source
+     * @return true when a partition conflict has occurred, false otherwise
+     */
+    private boolean checkPartition(EntityDefinition entityDefinition, EntityUtils.PartitionTable partitionTable, JdbcTemplate jdbcTemplate) {
         Map<String, InformationColumn> informationColumnMap = this.queryColumns(entityDefinition.schema(), partitionTable.tableName(), jdbcTemplate);
         if (informationColumnMap.isEmpty()) {
-            this.createPartition(entityDefinition, partitionTable.tableName(), partitionTable.from(), partitionTable.to());
+            return this.createPartition(entityDefinition, partitionTable.tableName(), partitionTable.from(), partitionTable.to());
         }
+        return false;
     }
 
     private PgEntityDao<?> newInstance() {
@@ -722,7 +746,14 @@ public class PgEntityFactoryBean implements FactoryBean<PgEntityDao<?>>, Initial
 
             // check current partition
             EntityUtils.PartitionTable currentPartitionTable = EntityUtils.getCurrentPartitionTable(entityDefinition);
-            this.checkPartition(entityDefinition, currentPartitionTable, multiJdbcTemplate.getMaster());
+            if (this.checkPartition(entityDefinition, currentPartitionTable, multiJdbcTemplate.getMaster())) {
+                // The current partition conflicted with the existing child partitions and has been rebuilt,
+                // the conflicting data may also cover the previous partition.
+                EntityUtils.PartitionTable previousPartitionTable = EntityUtils.getPreviousPartitionTable(entityDefinition);
+                log.info("Check previousPartitionTable: {}, {}", entityDefinition.table(), previousPartitionTable.tableName());
+                boolean previousConflicted = this.checkPartition(entityDefinition, previousPartitionTable, multiJdbcTemplate.getMaster());
+                log.info("Checked previousPartitionTable: {}, conflicted: {}", previousPartitionTable.tableName(), previousConflicted);
+            }
 
             long initialDelay = ThreadLocalRandom.current().nextLong(1, 60);
             AsyncUtils.scheduleWithFixedDelay(() -> {
