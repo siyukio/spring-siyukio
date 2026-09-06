@@ -11,7 +11,9 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * @author Bugee
@@ -146,6 +148,16 @@ public abstract class EntityUtils {
         }
     }
 
+    private static LocalDateTime getPartitionStartDateTime(EntityDefinition.Partition partition, LocalDateTime dateTime) {
+        return switch (partition) {
+            case YEAR -> dateTime.withDayOfYear(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            case MONTH -> dateTime.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            case DAY -> dateTime.withHour(0).withMinute(0).withSecond(0).withNano(0);
+            case HOUR -> dateTime.withMinute(0).withSecond(0).withNano(0);
+            default -> throw new IllegalArgumentException("Unsupported partition type: " + partition);
+        };
+    }
+
     private static LocalDateTime getPartitionEndDateTime(EntityDefinition.Partition partition, LocalDateTime startDateTime) {
         return switch (partition) {
             case YEAR -> startDateTime.plusYears(1);
@@ -167,24 +179,18 @@ public abstract class EntityUtils {
     }
 
     /**
-     * Generate current partition table name based on main table name and partition type.
+     * Generate the partition table containing the given date time,
+     * based on main table name and partition type.
      *
      * @param entityDefinition the entity definition
-     * @return the current partition table name
+     * @param dateTime         any date time inside the target partition
+     * @return the partition table containing the given date time
      */
-    public static PartitionTable getCurrentPartitionTable(EntityDefinition entityDefinition) {
-        long timestamp = System.currentTimeMillis();
+    public static PartitionTable getPartitionTable(EntityDefinition entityDefinition, LocalDateTime dateTime) {
         ZoneId zone = ZoneId.systemDefault();
-        LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zone);
         EntityDefinition.Partition partition = entityDefinition.partition();
-        LocalDateTime startDateTime = switch (partition) {
-            case YEAR -> dateTime.withDayOfYear(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-            case MONTH -> dateTime.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-            case DAY -> dateTime.withHour(0).withMinute(0).withSecond(0).withNano(0);
-            case HOUR -> dateTime.withMinute(0).withSecond(0).withNano(0);
-            default -> throw new IllegalArgumentException("Unsupported partition type: " + partition);
-        };
 
+        LocalDateTime startDateTime = getPartitionStartDateTime(partition, dateTime);
         LocalDateTime endDateTime = getPartitionEndDateTime(partition, startDateTime);
 
         long from = startDateTime.atZone(zone).toInstant().toEpochMilli();
@@ -197,22 +203,47 @@ public abstract class EntityUtils {
                 from, to);
     }
 
+    /**
+     * Generate all partition tables covering the given date time range,
+     * the range is left-closed and right-open: [fromDateTime, toDateTime).
+     *
+     * @param entityDefinition the entity definition
+     * @param fromDateTime     the start of the range (inclusive)
+     * @param toDateTime       the end of the range (exclusive)
+     * @return the partition tables covering the given range, ordered by time
+     */
+    public static List<PartitionTable> getPartitionTables(EntityDefinition entityDefinition, LocalDateTime fromDateTime, LocalDateTime toDateTime) {
+        EntityDefinition.Partition partition = entityDefinition.partition();
+
+        List<PartitionTable> partitionTables = new ArrayList<>();
+        LocalDateTime startDateTime = getPartitionStartDateTime(partition, fromDateTime);
+        while (startDateTime.isBefore(toDateTime)) {
+            partitionTables.add(getPartitionTable(entityDefinition, startDateTime));
+            startDateTime = getPartitionEndDateTime(partition, startDateTime);
+        }
+        return partitionTables;
+    }
+
+    /**
+     * Generate current partition table name based on main table name and partition type.
+     *
+     * @param entityDefinition the entity definition
+     * @return the current partition table name
+     */
+    public static PartitionTable getCurrentPartitionTable(EntityDefinition entityDefinition) {
+        long timestamp = System.currentTimeMillis();
+        ZoneId zone = ZoneId.systemDefault();
+        LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zone);
+        return getPartitionTable(entityDefinition, dateTime);
+    }
+
     public static PartitionTable getNextPartitionTable(EntityDefinition entityDefinition) {
         PartitionTable currentPartitionTable = getCurrentPartitionTable(entityDefinition);
 
         ZoneId zone = ZoneId.systemDefault();
         LocalDateTime startDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(currentPartitionTable.to()), zone);
 
-        LocalDateTime endDateTime = getPartitionEndDateTime(entityDefinition.partition(), startDateTime);
-
-        long from = startDateTime.atZone(zone).toInstant().toEpochMilli();
-        long to = endDateTime.atZone(zone).toInstant().toEpochMilli();
-
-        String suffix = getPartitionSuffix(entityDefinition.partition(), startDateTime);
-
-        return new PartitionTable(
-                entityDefinition.table() + "_" + suffix,
-                from, to);
+        return getPartitionTable(entityDefinition, startDateTime);
     }
 
     public record PartitionTable(

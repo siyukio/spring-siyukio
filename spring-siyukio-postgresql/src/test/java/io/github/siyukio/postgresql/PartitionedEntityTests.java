@@ -1,7 +1,10 @@
 package io.github.siyukio.postgresql;
 
 import io.github.siyukio.postgresql.entity.PartitionedEntity;
+import io.github.siyukio.postgresql.registrar.PostgresqlEntityRegistrar;
+import io.github.siyukio.postgresql.support.PgSqlUtils;
 import io.github.siyukio.tools.entity.EntityConstants;
+import io.github.siyukio.tools.entity.definition.EntityDefinition;
 import io.github.siyukio.tools.entity.page.Page;
 import io.github.siyukio.tools.entity.postgresql.PgEntityDao;
 import io.github.siyukio.tools.entity.query.QueryBuilder;
@@ -9,6 +12,7 @@ import io.github.siyukio.tools.entity.query.QueryBuilders;
 import io.github.siyukio.tools.entity.sort.SortBuilder;
 import io.github.siyukio.tools.entity.sort.SortBuilders;
 import io.github.siyukio.tools.entity.sort.SortOrder;
+import io.github.siyukio.tools.util.EntityUtils;
 import io.github.siyukio.tools.util.IdUtils;
 import io.github.siyukio.tools.util.ProfilesUtils;
 import io.github.siyukio.tools.util.XDataUtils;
@@ -16,7 +20,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -201,5 +207,26 @@ public class PartitionedEntityTests {
         SortBuilder sortBuilder = SortBuilders.fieldSort(EntityConstants.CREATED_AT_TS_FIELD).order(SortOrder.DESC);
         Page<PartitionedEntity> page = this.partitionedPgEntityDao.queryPage(queryBuilder, sortBuilder, 0, 2);
         log.info("{}", XDataUtils.toPrettyJSONString(page));
+    }
+
+    @Test
+    public void testPartitionTables() {
+        EntityDefinition entityDefinition = this.partitionedPgEntityDao.getEntityDefinition();
+
+        // The range is left-closed and right-open: [2026-08-01 00:00, 2026-09-01 00:00).
+        List<EntityUtils.PartitionTable> partitionTables = EntityUtils.getPartitionTables(entityDefinition,
+                LocalDateTime.of(2026, 8, 1, 0, 0),
+                LocalDateTime.of(2026, 9, 1, 0, 0));
+
+        JdbcTemplate jdbcTemplate = PostgresqlEntityRegistrar.getMultiJdbcTemplate(entityDefinition.dbName()).getMaster();
+        for (EntityUtils.PartitionTable partitionTable : partitionTables) {
+            List<String> sqlList = PgSqlUtils.createPartitionTableSql(entityDefinition,
+                    partitionTable.tableName(), partitionTable.from(), partitionTable.to());
+            log.info("Create partition: {}, {}", partitionTable, sqlList);
+            for (String sql : sqlList) {
+                jdbcTemplate.execute(sql);
+            }
+        }
+        log.info("{}", XDataUtils.toPrettyJSONString(partitionTables));
     }
 }
