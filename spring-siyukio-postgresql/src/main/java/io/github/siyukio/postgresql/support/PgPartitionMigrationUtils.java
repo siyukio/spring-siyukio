@@ -30,10 +30,22 @@ public abstract class PgPartitionMigrationUtils {
                 WHERE inhparent = '%s'::regclass
                     AND pg_get_expr(pg_class.relpartbound, inhrelid) ~ 'FOR VALUES FROM \\(''([0-9]+)''\\) TO \\(''([0-9]+)''\\)'
             ) AS partitions
-            WHERE partition_to >= %d
+            WHERE partition_to > %d
                 AND partition_from < %d
             ORDER BY partition_from ;
             """;
+    /**
+     * Template of the sql which detaches a child partition from its partitioned table.
+     * <p>
+     * The placeholders are: the partitioned table name, the child partition name.
+     */
+    public final static String DETACH_PARTITION_TEMPLATE = "ALTER TABLE %s DETACH PARTITION %s ;";
+    /**
+     * Template of the sql which migrates the data of a partition into another partition.
+     * <p>
+     * The placeholders are: the target partition name, the source partition name.
+     */
+    public final static String MIGRATE_PARTITION_TEMPLATE = "INSERT INTO %s SELECT * FROM %s ;";
 
     /**
      * Builds the sql which queries the child partitions of the partitioned table.
@@ -50,13 +62,6 @@ public abstract class PgPartitionMigrationUtils {
         }
         return String.format(QUERY_PARTITIONS_TEMPLATE, schema + "." + table, from, to);
     }
-
-    /**
-     * Template of the sql which detaches a child partition from its partitioned table.
-     * <p>
-     * The placeholders are: the partitioned table name, the child partition name.
-     */
-    public final static String DETACH_PARTITION_TEMPLATE = "ALTER TABLE %s DETACH PARTITION %s ;";
 
     /**
      * Builds the sql which detaches the child partition from the partitioned table.
@@ -79,13 +84,6 @@ public abstract class PgPartitionMigrationUtils {
         }
         return String.format(DETACH_PARTITION_TEMPLATE, schema + "." + table, partition);
     }
-
-    /**
-     * Template of the sql which migrates the data of a partition into another partition.
-     * <p>
-     * The placeholders are: the target partition name, the source partition name.
-     */
-    public final static String MIGRATE_PARTITION_TEMPLATE = "INSERT INTO %s SELECT * FROM %s ;";
 
     /**
      * Builds the sql which migrates the data of the source partition into the target partition.
