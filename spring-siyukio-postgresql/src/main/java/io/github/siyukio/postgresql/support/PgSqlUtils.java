@@ -122,7 +122,7 @@ public abstract class PgSqlUtils {
     private final static String CREATE_GIN_INDEX_TEMPLATE = "CREATE INDEX %s ON %s.%s USING GIN ( %s ) ;";
     private final static String CREATE_PARTITIONED_INDEX_TEMPLATE = "CREATE INDEX %s ON %s.%s ( %s ) INCLUDE (%s);";
     private final static String CREATE_PARTITIONED_UNIQUE_INDEX_TEMPLATE = "CREATE UNIQUE INDEX %s ON %s.%s ( %s ) INCLUDE (%s);";
-    private final static String CREATE_PARTITIONED_GIN_INDEX_TEMPLATE = "CREATE INDEX %s ON %s.%s USING GIN ( %s ) INCLUDE (%s);";
+
     private final static String INSERT_TEMPLATE = """
             INSERT INTO %s.%s ( %s )
             VALUES ( %s );
@@ -358,7 +358,7 @@ public abstract class PgSqlUtils {
             return CREATE_PARTITIONED_UNIQUE_INDEX_TEMPLATE;
         }
         if (indexDefinition.gin()) {
-            return CREATE_PARTITIONED_GIN_INDEX_TEMPLATE;
+            return CREATE_GIN_INDEX_TEMPLATE;
         }
         return CREATE_PARTITIONED_INDEX_TEMPLATE;
     }

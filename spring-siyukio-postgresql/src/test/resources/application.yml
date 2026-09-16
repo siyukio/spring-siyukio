@@ -9,12 +9,12 @@ spring:
         max-lifetime: 1800000
       master:
         url: jdbc:postgresql://localhost:5432/postgres
-        username: postgres
-        password: postgres
+        username: root
+        password: FYm7JqaEcptxUTgys
       slaves:
         - url: jdbc:postgresql://localhost:5432/postgres
-          username: postgres
-          password: postgres
+          username: root
+          password: FYm7JqaEcptxUTgys
 #    postgres-multi:
 #      db1:
 #        master:

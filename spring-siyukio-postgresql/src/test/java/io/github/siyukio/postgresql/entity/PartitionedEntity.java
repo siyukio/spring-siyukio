@@ -17,7 +17,8 @@ import java.time.LocalDateTime;
 @PgEntity(schema = "test", comment = "partitioned entity",
         partition = EntityDefinition.Partition.MONTH,
         indexes = {
-                @PgIndex(columns = {"message", "createdAtTs"})
+                @PgIndex(columns = {"message", "createdAtTs"}),
+                @PgIndex(columns = {"salt"}, gin = true)
         })
 @Builder
 @With
