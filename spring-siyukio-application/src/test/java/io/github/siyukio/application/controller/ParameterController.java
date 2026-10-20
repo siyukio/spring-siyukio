@@ -1,6 +1,7 @@
 package io.github.siyukio.application.controller;
 
 import io.github.siyukio.application.dto.parameter.*;
+import io.github.siyukio.tools.api.ApiRequest;
 import io.github.siyukio.tools.api.annotation.ApiController;
 import io.github.siyukio.tools.api.annotation.ApiMapping;
 import io.github.siyukio.tools.api.annotation.Authorization;
@@ -67,5 +68,9 @@ public class ParameterController {
                 .total(1).build();
     }
 
+    @ApiMapping(path = "/tool-gateway/**", authorization = @Authorization(state = Authorization.State.DISABLED))
+    public void testToolGateway(ApiRequest request) {
+        log.info("{}", XDataUtils.toPrettyJSONString(request));
+    }
 
 }

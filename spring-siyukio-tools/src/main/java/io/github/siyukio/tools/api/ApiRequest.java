@@ -21,6 +21,8 @@ public record ApiRequest(
 
         String body,
 
-        String userAgent
+        String userAgent,
+
+        String path
 ) {
 }

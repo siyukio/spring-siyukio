@@ -78,7 +78,12 @@ public final class RequestArgumentResolver implements HandlerMethodArgumentResol
         if (userAgent == null) {
             userAgent = "";
         }
-        return new ApiRequest(headerMap, simpleParameterMap, ip, body, userAgent);
+        //servlet path
+        String path = httpServletRequest.getServletPath();
+        if (path == null) {
+            path = "";
+        }
+        return new ApiRequest(simpleParameterMap, headerMap, ip, body, userAgent, path);
     }
 
     private String getRequestBody(HttpServletRequest httpServletRequest) throws IOException {
