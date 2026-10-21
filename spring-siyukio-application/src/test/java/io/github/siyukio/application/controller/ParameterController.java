@@ -68,7 +68,7 @@ public class ParameterController {
                 .total(1).build();
     }
 
-    @ApiMapping(path = "/tool-gateway/**", authorization = @Authorization(state = Authorization.State.DISABLED))
+    @ApiMapping(path = "/tool-gateway/**")
     public void testToolGateway(ApiRequest request) {
         log.info("{}", XDataUtils.toPrettyJSONString(request));
     }

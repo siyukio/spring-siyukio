@@ -17,6 +17,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.ModelAndView;
 
 import java.util.HashSet;
@@ -59,6 +60,18 @@ public final class ValidateAuthorizationInterceptor implements HandlerIntercepto
         return authorization;
     }
 
+    private String getBestMatchingPattern(HttpServletRequest request) {
+        Object bestPattern = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
+        if (bestPattern == null) {
+            return null;
+        }
+        if (bestPattern instanceof String pattern) {
+            return pattern;
+        }
+        //PathPattern is used when the handler mapping is configured with PathPatternParser.
+        return bestPattern.toString();
+    }
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
 
@@ -75,6 +88,13 @@ public final class ValidateAuthorizationInterceptor implements HandlerIntercepto
         //
         String path = ApiProfiles.getApiPath(request.getRequestURI());
         ApiHandler apiHandler = this.aipHandlerManager.getApiHandler(path);
+        if (apiHandler == null) {
+            //Fallback to the best matching pattern, which supports path variables.
+            String bestPattern = this.getBestMatchingPattern(request);
+            if (StringUtils.hasText(bestPattern)) {
+                apiHandler = this.aipHandlerManager.getApiHandler(bestPattern);
+            }
+        }
         if (apiHandler == null) {
             return true;
         }
