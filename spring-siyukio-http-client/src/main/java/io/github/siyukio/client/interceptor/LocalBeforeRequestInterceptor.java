@@ -76,6 +76,7 @@ public class LocalBeforeRequestInterceptor implements ClientHttpRequestIntercept
                         .headers(Map.of())
                         .body(new String(body, StandardCharsets.UTF_8))
                         .path(path)
+                        .method(request.getMethod().name())
                         .build();
                 return createLocalResponse(apiHandler, token, apiRequest);
             }

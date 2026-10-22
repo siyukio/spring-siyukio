@@ -23,6 +23,8 @@ public record ApiRequest(
 
         String userAgent,
 
-        String path
+        String path,
+
+        String method
 ) {
 }
