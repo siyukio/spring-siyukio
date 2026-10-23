@@ -1,5 +1,7 @@
 package io.github.siyukio.application.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.siyukio.application.dto.parameter.*;
 import io.github.siyukio.tools.api.ApiRequest;
 import io.github.siyukio.tools.api.annotation.ApiController;
@@ -10,6 +12,7 @@ import io.github.siyukio.tools.api.dto.PageResponse;
 import io.github.siyukio.tools.util.XDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
+import org.springframework.http.MediaType;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -68,9 +71,13 @@ public class ParameterController {
                 .total(1).build();
     }
 
-    @ApiMapping(path = "/tool-gateway/**")
-    public void testToolGateway(ApiRequest request) {
+    @ApiMapping(path = "/tool-gateway/**", produces = {MediaType.APPLICATION_JSON_VALUE})
+    public JsonNode testToolGateway(ApiRequest request) {
         log.info("{}", XDataUtils.toPrettyJSONString(request));
+        ObjectNode objectNode = XDataUtils.OBJECT_MAPPER.createObjectNode();
+        objectNode.put("path", request.path());
+        objectNode.put("method", request.method());
+        return objectNode;
     }
 
 }

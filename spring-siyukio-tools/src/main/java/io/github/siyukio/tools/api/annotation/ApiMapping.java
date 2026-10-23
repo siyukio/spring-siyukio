@@ -28,6 +28,9 @@ public @interface ApiMapping {
     @AliasFor(annotation = RequestMapping.class)
     String[] path();
 
+    @AliasFor(annotation = RequestMapping.class)
+    String[] produces() default {};
+
     /**
      *
      * Whether the API requires authorization validation.
