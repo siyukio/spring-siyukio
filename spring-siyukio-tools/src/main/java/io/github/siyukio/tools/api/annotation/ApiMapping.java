@@ -19,7 +19,7 @@ import java.lang.annotation.*;
 @Documented
 @ResponseBody
 @CrossOrigin
-@RequestMapping(method = {RequestMethod.POST, RequestMethod.GET})
+@RequestMapping(method = {RequestMethod.POST, RequestMethod.GET, RequestMethod.PUT, RequestMethod.DELETE})
 public @interface ApiMapping {
 
     /**
